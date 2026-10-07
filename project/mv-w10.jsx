@@ -39,7 +39,7 @@ const outro = {
   par: L => [1 - prog(L.b, 7.4, 7.95), 0, 0, 0],
   cam: L => [1.02 - .02 * prog(L.b, 0, 4, E.io), 0, 0, 0],
   lb: L => prog(L.b, 7.3, 7.9, E.io) * 4.2,
-  sfx: [[.25, 'chime', 1175], [1.25, 'chime', 1568], [2.6, 'jump'], ...ITEMS.map((_, i) => [3 + i * .25, 'blip', 900 + i * 80]), [6, 'heart'], [6.5, 'heart']],
+  sfx: [[.25, 'chime', 1175], [1.25, 'chime', 1319], [1.75, 'chime', 1568], [2.6, 'jump'], ...ITEMS.map((_, i) => [3 + i * .25, 'blip', 900 + i * 80]), [6, 'heart'], [6.5, 'heart']],
   text: ITEMS.flat().join('') + 'Vibe Coding 清单清单截个图存好。我是 Clawd，下次见。周一早上。作业，交了。周一 08:00需要注意的细节 · 导演剪辑版信息截至 2026 年 10 月',
   draw(cx, tx, L) {
     const b = L.b, t = L.t, k = prog(b, 2.7, 3.1, E.out), fade = 1 - prog(b, 7.2, 7.6);
@@ -67,41 +67,49 @@ const outro = {
     clawd(cx, { x: lerp(960, 1720, away), y: lerp(800, 990, away) - jump, px: lerp(22, 12, away), pose: (b >= .25 && b < 2.5) || (b >= 4 && b < 5.5) ? 'wave' : 'idle', ph: t * 12, blink: (t % 3) < .1, eye: away > .9 ? -1 : 0, alpha: (b < 2.6 ? prog(b, 0, .25) * (1 - k * .0) : 1) * fade, eyeShape: b >= 4 && b < 5.5 ? 'happy' : null });
     // 歌词（先于清单出现，Clawd 在卡片前）
     lyric(tx, L, { at: .25, out: 2.5, text: '周一早上。作业，交了。', x: 960, y: 370, size: 64, w: 900, col: '#ffffff', align: 'center', anim: 'rise', outAnim: 'up' });
-    lyric(tx, L, { at: 1.25, out: 2.5, text: '清单截个图存好。\n我是 ‹Clawd›，下次见。', x: 960, y: 510, size: 44, w: 700, col: '#e8e9ee', acc: [C.clawd], align: 'center', anim: 'rise', outAnim: 'up' });
+    lyric(tx, L, { at: 1.25, out: 2.5, text: '清单截个图存好。', x: 960, y: 500, size: 44, w: 700, col: '#e8e9ee', align: 'center', anim: 'rise', outAnim: 'up' });
+    lyric(tx, L, { at: 1.75, out: 2.55, text: '我是 ‹Clawd›，下次见。', x: 960, y: 570, size: 44, w: 700, col: '#e8e9ee', acc: [C.clawd], align: 'center', anim: 'rise', outAnim: 'up' });
     alpha(tx, prog(b, 0, .3) * (1 - prog(b, 7.2, 7.6)), () => txt(tx, '周一 08:00', 70, 66, fnt(400, 22, F.mono), 'rgba(255,255,255,.5)'));
   },
 };
-const segBar = b => Math.max(0, Math.min(7, Math.floor(b % 8)));
+// 前两小节是凌晨三点的安静开场，副歌从第 2 小节起（O = 2），清单从第 10 小节起
+const O = 2, segBar = b => Math.max(0, Math.min(7, Math.floor(((b - O) % 8 + 8) % 8)));
 const lightLook = i => [LOOK.RISO, LOOK.PAPER].includes(SEG[i][1]);
 const finale = {
   scene: '10 回声 · 清单', bars: 18,
-  look: L => SEG[segBar(L.b)][1],
+  look: L => L.b < O ? LOOK.VOID : SEG[segBar(L.b)][1],
   enter: { kind: TR.FLASH, a: .5, b: .5, flash: 1 },
-  hud: { num: '10', name: '清单', time: '03:00', line: '能跑，也能讲清', small: true, ink: L => lightLook(segBar(L.b)) ? '#1f1b2e' : '#ffffff', acc: C.clawd },
-  you: [[0, 1.6, '能跑了。diff 看过，测试也自己跑过了。']],
+  hud: { num: '10', name: '清单', time: '03:00', line: '能跑，也能讲清', small: true, ink: L => L.b >= O && lightLook(segBar(L.b)) ? '#1f1b2e' : '#ffffff', acc: C.clawd },
+  you: [[.1, 1.85, '能跑了。diff 看过，测试也自己跑过了。']],
   noBanner: true,
-  par: L => SEG[segBar(L.b)][2],
-  cam: L => { const k = L.b % 1; return [1.05 - .05 * E.out(Math.min(1, k * 3)), 0, 0, 0]; },
-  flash: L => L.b >= 1 ? .35 * Math.exp(-(L.b % 1) * 18) : 0,
-  pulse: L => 1,
-  sfx: [[0, 'sparkle'], ...SEG.flatMap((_, i) => [[8 + i, 'stamp'], [8 + i + .05, 'blip', 900 + i * 90]]), [15.5, 'rule']],
-  text: SEG.map(s => s[3]).join('') + '能跑了。diff 看过，测试也自己跑过了。作业给别人用上线目标背景约束验收AGENTS.md · 3 行旗舰 · 主力 · 轻量任务总价权限 · 检查点 · 撤销+ // assertTrue(isLocked(...)).env清单',
+  par: L => L.b < O ? [.25 + .5 * prog(L.b, 1.5, 2), .3, 0, 0] : SEG[segBar(L.b)][2],
+  cam: L => { if (L.b < O) return [1 + .03 * prog(L.b, 0, O, E.io), 0, 0, 0]; const k = L.b % 1; return [1.05 - .05 * E.out(Math.min(1, k * 3)), 0, 0, 0]; },
+  flash: L => L.b >= O + 1 ? .35 * Math.exp(-(L.b % 1) * 18) : L.b >= O ? .8 * Math.exp(-(L.b - O) * 10) : 0,
+  pulse: L => L.b < O ? 0 : 1,
+  sfx: [[.5, 'chime', 1319], [O, 'sparkle'], ...SEG.flatMap((_, i) => [[O + 8 + i, 'stamp'], [O + 8 + i + .05, 'blip', 900 + i * 90]]), [O + 15.5, 'rule']],
+  text: SEG.map(s => s[3]).join('') + '凌晨三点。登录功能，交了。能跑了。diff 看过，测试也自己跑过了。作业给别人用上线目标背景约束验收AGENTS.md · 3 行旗舰 · 主力 · 轻量任务总价权限 · 检查点 · 撤销+ // assertTrue(isLocked(...)).env清单',
   draw(cx, tx, L) {
     const b = L.b, t = L.t, i = segBar(b), s = SEG[i], lb = b % 1;
     const [num, look, , rule, fam, col, acc, skin] = s;
+    if (b < O) { // 凌晨三点：安静，只有时钟和一句话
+      clawd(cx, { x: 1640, y: 960, px: 16, pose: 'idle', ph: t * 6, blink: (t % 2.4) < .25, eye: -1, sweat: 0 });
+      alpha(cx, prog(b, 0, .4) * (1 - prog(b, O - .15, O)), () => { txt(cx, '03:00', 960, 430, fnt(700, 200, F.mono), rgba('#ffffff', .1 + .05 * Math.sin(t * 3)), 'center'); });
+      lyric(tx, L, { at: .5, out: O - .08, text: '凌晨三点。\n登录功能，‹交了›。', x: 960, y: 640, size: 64, w: 900, col: '#ffffff', acc: [C.clawd], align: 'center', anim: 'rise', outAnim: 'blur' });
+      return;
+    }
     // Clawd 每小节换一身打扮，跳一下
     const hopK = prog(lb, 0, .25, E.out);
-    clawd(cx, { x: 1640, y: 960 - Math.sin(Math.PI * hopK) * 70, px: 16, pose: b < 8 ? 'wave' : 'idle', ph: t * 12, blink: (t % 3) < .1, eye: -1, ...skin });
-    if (b < 8.1) {
+    clawd(cx, { x: 1640, y: 960 - Math.sin(Math.PI * hopK) * 70, px: 16, pose: b < O + 8 ? 'wave' : 'idle', ph: t * 12, blink: (t % 3) < .1, eye: -1, ...skin });
+    if (b < O + 8.1) {
       // 副歌：逐字点亮；下面是这个世界的标志物
       motif(cx, tx, i, lb * 2, t);
-      sing(tx, L, { at: 0, x: 960, y: 470, size: 96, fam: F.sans, w: 900, col: k => SEG[Math.max(0, Math.min(7, k))][5], glow: k => SEG[Math.max(0, Math.min(7, k))][6], hold: 8.05 });
+      sing(tx, L, { at: O, x: 960, y: 470, size: 96, fam: F.sans, w: 900, col: k => SEG[Math.max(0, Math.min(7, k))][5], glow: k => SEG[Math.max(0, Math.min(7, k))][6], hold: 8.05 });
     } else {
       // 清单在八个世界里一条条攒起来
-      const n = Math.min(8, Math.floor(b - 8) + 1), ink = col, f = fam === F.poster ? fnt(400, 44, F.poster) : fnt(900, 42, fam);
+      const n = Math.min(8, Math.floor(b - O - 8) + 1), ink = col, f = fam === F.poster ? fnt(400, 44, F.poster) : fnt(900, 42, fam);
       txt(tx, '清单', 330, 190, fnt(900, 40, fam === F.poster ? F.poster : F.sans), acc);
       for (let j = 0; j < n; j++) {
-        const y = 260 + j * 76, fresh = j === n - 1, k = fresh ? prog(b - 8 - j, 0, .12, E.out) : 1;
+        const y = 260 + j * 76, fresh = j === n - 1, k = fresh ? prog(b - O - 8 - j, 0, .12, E.out) : 1;
         alpha(tx, Math.min(1, k * 2), () => scaleAt(tx, 330, y, fresh ? lerp(1.25, 1, k) : 1, () => {
           tx.strokeStyle = ink; tx.lineWidth = 3; tx.strokeRect(330, y - 18, 36, 36);
           tx.strokeStyle = acc; tx.lineWidth = 6; tx.lineCap = 'round'; tx.beginPath(); tx.moveTo(337, y); tx.lineTo(346, y + 9); tx.lineTo(361, y - 10); tx.stroke();

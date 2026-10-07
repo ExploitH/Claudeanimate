@@ -11,7 +11,16 @@ const flick = (b, at) => b < at ? 0 : b > at + .2 ? 1 : hash(Math.floor(b * 64) 
 // 赛跑：A 单价低绕 6 圈，B 单价高绕 2 圈
 const RACE = [4.25, 8];
 const lapsA = b => 6 * prog(b, RACE[0], RACE[1], E.lin), lapsB = b => 2 * prog(b, RACE[0], 6.25, E.lin);
-return {
+// 3D 赛道：椭圆跑道躺在一个向后倾 TILT 的平面上，中心在画面 (600, 560)
+const TR3 = { ox: 580, oy: 560, rx: 330, rz: 300, tilt: .62 };
+const trackLocal = (laps, r0, h) => { const a = Math.PI / 2 - laps * 6.283; return [Math.cos(a) * (TR3.rx + r0), h, Math.sin(a) * (TR3.rz + r0), a]; };
+function trackPt(laps, r0, h) { // 局部点 → 画布坐标（和 3D 相机同一套透视）
+  const [X, Y, Z] = trackLocal(laps, r0, h), c = Math.cos(TR3.tilt), sn = Math.sin(TR3.tilt);
+  const y = Y * c - Z * sn, z = Y * sn + Z * c, Z0 = (window.MV_3D && window.MV_3D.U.Z0) || 2015, k = Z0 / (Z0 - z);
+  return [960 + (TR3.ox - 960 + X) * k, 540 - (540 - TR3.oy + y) * k];
+}
+// 击掌之后停半拍（副歌段 4–12 不动，跟主旋律对齐）
+return K.warpWorld({
   scene: '05 霓虹 · 选模型和费用', bars: 20, look: 5,
   enter: { kind: TR.FLASH, a: .5, b: .5, flash: 1 },
   hud: { num: '05', name: '选模型和费用', time: '22:30', line: '额度没了？', ink: '#ffe7ff', acc: PK },
@@ -25,7 +34,40 @@ return {
   sfx: [[0, 'alarm'], [1.5, 'whoosh'], [2, 'whoosh'], [2.5, 'whoosh'], [3, 'whoosh'], [4.25, 'zap'], ...[1, 2, 3, 4, 5].map(i => [4.25 + i * 3.75 / 6, 'coin']), [5.25, 'coin'], [6.25, 'coin'], [7.5, 'stamp'],
     [8, 'buzz'], [8.5, 'buzz'], [9, 'buzz'], [10.25, 'blip', 1500], [10.75, 'blip', 500], [12, 'ding'], [13, 'glitch'], [14, 'buzz'], [16.5, 'pop'], [16.5, 'sparkle'], [17, 'swish']],
   text: TIERS.flatMap(t => [t[0], t[2], ...t[3]]).join('') + MODELS.join('') + '登录才写一半，这个月的额度见底了钱花哪儿了？每一轮，前面所有内容都要重新发一遍选模型，看活儿分数受测试用的工具影响，公开题目也可能混进了训练数据国内能直接用的，都有编程套餐：我不介意。免费版可能拿你的代码去训练——看清设置课程练习一般没事；实习和公司的代码，按公司规定登录功能写到一半，额度见底了钱都花哪儿了？本月额度每一轮，之前的内容都重新发一遍对话越长，每轮越贵第 1 轮第 2 轮第 3 轮第 4 轮模型1k3k6k10k tokens便宜的模型多绕几圈总价反而更高单价低单价高A 总价B 总价A 反超算完成一个任务花多少，别只盯单价token：模型计费的单位，约一个词或一两个汉字FINISH LAP思考强度：难题调高，机械活调低思考强度难题机械活订阅有用量上限；按量付费的 API，记得设预算提醒预算提醒排行榜看看就好分数受测试工具影响，公开题目也可能混进训练数据拿你自己的真实任务，试两三个模型排行榜国内能直接用，都有面向编程的套餐卡住了？换个模型再问一遍放心，我不会介意免费版可能拿你的数据去训练：看清设置课程练习一般没关系；实习和公司代码，按公司规定',
+  three(T, U) {
+    const scene = new T.Scene();
+    scene.add(new T.AmbientLight(0xffffff, .4));
+    const l1 = new T.PointLight(0xff4fb8, 3, 0, 2); l1.position.set(-200, 600, 700); scene.add(l1);
+    const plane = new T.Group(); scene.add(plane);
+    const neon = (col, op = 1) => new T.MeshBasicMaterial({ color: new T.Color(col).convertSRGBToLinear(), transparent: true, opacity: op });
+    // 跑道：三圈霓虹管（中线 + 内外两条），一圈半透明路面
+    [[0, 7, PU], [-50, 3, '#e8c9ff'], [50, 3, '#e8c9ff']].forEach(([d, tube, col]) => {
+      const m = new T.Mesh(new T.TorusGeometry(1, tube / TR3.rx, 8, 160), neon(col)); m.rotation.x = Math.PI / 2; m.scale.set(TR3.rx + d, TR3.rz + d, 1); plane.add(m);
+    });
+    const road = new T.Mesh(new T.RingGeometry(.86, 1.14, 160), new T.MeshBasicMaterial({ color: 0x2a0a40, transparent: true, opacity: .55, side: T.DoubleSide, depthWrite: false }));
+    road.rotation.x = -Math.PI / 2; road.scale.set(TR3.rx, TR3.rz, 1); plane.add(road);
+    // 看台：外侧一排发光的柱子
+    for (let i = 0; i < 28; i++) { const a = i / 28 * 6.283, p = new T.Mesh(new T.BoxGeometry(10, 40 + (i % 3) * 20, 10), neon(i % 2 ? PK : CY, .7)); p.position.set(Math.cos(a) * (TR3.rx + 85), 20, Math.sin(a) * (TR3.rz + 150)); plane.add(p); }
+    // 终点线：黑白格
+    for (let i = 0; i < 6; i++) { const q = new T.Mesh(new T.BoxGeometry(14, 2, 32), new T.MeshBasicMaterial({ color: i % 2 ? 0x222222 : 0xffffff })); q.position.set(0, 2, TR3.rz - 50 + i * 20); q.scale.z = .62; plane.add(q); }
+    const mkCar = col => { const g = new T.Group(); const body = new T.Mesh(new T.BoxGeometry(58, 18, 30), new T.MeshStandardMaterial({ color: new T.Color(col).convertSRGBToLinear(), emissive: new T.Color(col).convertSRGBToLinear(), emissiveIntensity: .8 })); body.position.y = 12; const cab = new T.Mesh(new T.BoxGeometry(26, 14, 24), neon('#ffffff', .9)); cab.position.set(-4, 26, 0); g.add(body, cab); plane.add(g); return g; };
+    const cars = [mkCar(CY), mkCar(PK)];
+    return {
+      scene,
+      update(L) {
+        const b = L.b, kc = prog(b, 3.95, 4.2) * (1 - prog(b, 7.95, 8.1));
+        if (kc <= 0) return false;
+        U.at(plane, TR3.ox, TR3.oy, 0); plane.rotation.set(TR3.tilt, 0, 0); plane.scale.setScalar(.85 + .15 * kc);
+        [[lapsA(b), 25], [lapsB(b), -25]].forEach(([laps, r0], i) => {
+          const [X, , Z, a] = trackLocal(laps, r0, 0);
+          cars[i].position.set(X, 0, Z); cars[i].rotation.set(0, a + Math.PI / 2 + Math.PI, .25 * (i ? 1 : 1));
+        });
+        return true;
+      },
+    };
+  },
   draw(cx, tx, L) {
+    const has3d = !!window.THREE;
     const b = L.b, t = L.t;
     // ---------- 额度表 ----------
     const kq = prog(b, 0, .2) * (1 - prog(b, 1.3, 1.5)) + prog(b, 12, 12.2) * (1 - prog(b, 12.9, 13.05));
@@ -55,6 +97,9 @@ return {
     const kc = prog(b, 3.95, 4.2) * (1 - prog(b, 7.95, 8.1));
     if (kc > 0) alpha(cx, kc, () => {
       const ox = 600, oy = 560, rx = 400, ry = 210;
+      if (has3d) { // 3D 赛道：只在这里写车标签（按透视投影到画面上）
+        [[lapsA(b), 25, CY, 'A'], [lapsB(b), -25, PK, 'B']].forEach(([laps, r0, col, lab]) => { const [x, y] = trackPt(laps, r0, 70); ntxt(cx, lab, x, y, fnt(900, 24), col, 'center'); });
+      } else {
       glow(cx, PU, 24, () => { cx.strokeStyle = PU; cx.lineWidth = 6; cx.beginPath(); cx.ellipse(ox, oy, rx, ry, 0, 0, 6.283); cx.stroke(); cx.lineWidth = 2; cx.strokeStyle = '#e8c9ff'; cx.beginPath(); cx.ellipse(ox, oy, rx - 50, ry - 50, 0, 0, 6.283); cx.stroke(); cx.beginPath(); cx.ellipse(ox, oy, rx + 50, ry + 50, 0, 0, 6.283); cx.stroke(); });
       glow(cx, WH, 10, () => { for (let i = 0; i < 6; i++) { cx.fillStyle = i % 2 ? '#222' : WH; cx.fillRect(ox - 6, oy + ry - 50 + i * 17, 12, 17); } });
       const car = (laps, rr0, col, lab) => {
@@ -63,6 +108,7 @@ return {
         ntxt(cx, lab, x, y - 40, fnt(900, 24), col, 'center');
       };
       car(lapsA(b), 25, CY, 'A'); car(lapsB(b), -25, PK, 'B');
+      }
       if (b >= 6.25) ntxt(cx, 'B 到终点', ox + 120, oy + ry + 40, fnt(900, 28), PK, 'left');
       // 总价条
       const x0 = 1120, uw = 110, cA = Math.floor(lapsA(b) + 1e-6) * 1, cB = Math.floor(lapsB(b) + 1e-6) * 2.4;
@@ -141,5 +187,5 @@ return {
     lyric(tx, L, { at: 17, out: 19.8, text: '免费版可能拿你的代码去训练——\n‹看清设置›', x: LX, y: 380, size: 56, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(PK) });
     lyric(tx, L, { at: 17.4, out: 19.8, text: '课程练习一般没事；\n实习和公司的代码，按公司规定', x: LX, y: 600, size: 38, w: 700, col: mixC(PK, '#ffffff', .5), anim: 'fade' });
   },
-};
+}, [[0, 0], [16.6, 16.6], [17.1, 16.6]], 20);
 };

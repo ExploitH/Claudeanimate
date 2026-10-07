@@ -10,12 +10,13 @@ const SEGS = [[0, '在 UserService 里', 1], [0, '加一个 login(username, pass
 const SEG_AT = [9, 9.25, 9.5, 9.75, 10, 10.25, 10.4];
 const STK = [['你是世界顶级程序员', -.12, -150, -110], ['必须!!!', .18, 120, -40], ['给你小费 $', -.06, -40, 70]];
 const CL = [1640, 880];
-return {
-  scene: '03 印刷 · 提示词', bars: 20, look: 3,
+// 在原 18 小节的基础上加两处停顿：Clawd 盯着问号树闭眼（1 小节），GARBAGE 印上后压暗静止（1 小节）
+return K.warpWorld({
+  scene: '03 印刷 · 提示词', bars: 18, look: 3,
   enter: { kind: TR.WIPE, a: 1, b: 3, col: PINK },
   hud: { num: '03', name: '提示词', time: '21:20', line: '帮我写个登录', ink: INK, acc: PINK, mv: [.5, .9] },
   you: [[.55, 1.6, '帮我写个登录功能']],
-  rule: { n: 2, at: 18.5, text: '提示词写清目标、背景、约束、验收标准' },
+  rule: { n: 2, at: 16.5, text: '提示词写清目标、背景、约束、验收标准' },
   src: [[8, 13, 'Anthropic, Prompting best practices'], [15.25, 16.5, 'Anthropic, Prompting best practices']],
   par: L => { const b = L.b, h = Math.max(L.hit(1, .4), L.hit(4, .5), L.hit(16, .4)); return [.5 + 2.2 * h, 1, 0, 0]; },
   cam: L => { const b = L.b, h = L.hit(4, .3) + L.hit(1, .25); return [1 + .03 * h, -.006 + .02 * L.hit(4, .3) * Math.sin(L.t * 60), 0, 0]; },
@@ -127,5 +128,5 @@ return {
     lyric(tx, L, { at: 16, out: 17.8, text: '这些老套路，用不着了', x: LX, y: 280, size: 60, w: 900, col: INK, anim: 'slide' });
     lyric(tx, L, { at: 16.2, out: 17.8, text: '语气太重，我反而用力过猛。\n‹正常说话›就好', x: LX, y: 440, size: 48, w: 700, col: INK, acc: [PINK], anim: 'fade' });
   },
-};
+}, [[0, 0], [2.9, 2.9], [3.9, 2.9], [5.65, 4.65], [6.65, 4.65]], 20);
 };

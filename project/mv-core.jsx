@@ -708,34 +708,15 @@ const RES = { '流畅': [960, 540], '高': [1600, 900], '原生': [1920, 1080] }
 function renderFrame(T, P, tw, fv, res) {
   GLR.init();
   const pk = pickWorlds(P, T), uA = worldU(pk.A, T, tw), uB = pk.B ? worldU(pk.B, T, tw) : null;
-  const dw = (w, ci, ti, L) => { const cx = GLR.ctx(ci, res), tx = GLR.ctx(ti, res); cx.textBaseline = tx.textBaseline = 'middle'; w.m.draw(cx, tx, L, fv); };
+  const dw = (w, ci, ti, L) => {
+    const cx = GLR.ctx(ci, res), tx = GLR.ctx(ti, res); cx.textBaseline = tx.textBaseline = 'middle'; w.m.draw(cx, tx, L, fv);
+    // 3D 层：世界没在 draw 里手动叠，就叠在内容层最上面（文字层仍在它之上）
+    if (w.m.three && !L.did3d && window.MV_3D) window.MV_3D.draw(cx, w.m, L);
+  };
   dw(pk.A, 0, 1, uA.L);
   if (uB) dw(pk.B, 2, 3, uB.L);
   const curW = pk.B && pk.k >= .5 ? pk.B : pk.A;
   drawHud(GLR.ctx(4, res), T, P, curW, pk.B ? bump(pk.k, .5, .28) : 0);
-
-  // ---------- Three.js 3D 层（叠加在 Canvas 2D 层上）----------
-  // 渲染到独立 canvas，合成前叠到 text 层（index=1）
-  if (window.MV_3D) {
-    // 找到 text 层 canvas（index 1），在上面以原始像素坐标叠 3D 内容
-    const layer1 = GLR.layers[1];
-    const rawCtx = layer1.getContext('2d');
-    const blend3d = (wid, b, alpha) => {
-      if (alpha <= 0) return;
-      const c3d = window.MV_3D.render(wid, b, T, res);
-      if (!c3d) return;
-      rawCtx.save();
-      // GLR.ctx 对 layer1 已经做了 setTransform(res[0]/W, 0, 0, res[1]/H, 0, 0)
-      // 这里要逆掉这个 scale 才能以像素坐标绘制
-      rawCtx.setTransform(1, 0, 0, 1, 0, 0);
-      rawCtx.globalAlpha = alpha;
-      rawCtx.globalCompositeOperation = 'source-over';
-      rawCtx.drawImage(c3d, 0, 0, res[0], res[1]);
-      rawCtx.restore();
-    };
-    blend3d(pk.A.m.id, uA.L.b, pk.B ? 1 - pk.k * 0.5 : 1);
-    if (pk.B) blend3d(pk.B.m.id, uB.L.b, pk.k * 0.5);
-  }
 
   const e = pk.e || {}, ex = e.p || [.5, .5, 0, 0], ec = hex(e.col || '#d97757').map(v => v / 255);
   let flash = Math.max(uA.flash, uB ? uB.flash : 0);
@@ -750,7 +731,10 @@ function renderFrame(T, P, tw, fv, res) {
 }
 function Frame({ T, P, tw, fv }) {
   const res = RES[tw.quality] || RES['流畅'];
-  const url = useMemo(() => renderFrame(T, P, tw, fv, res), [T, res[0], P, fv, tw.fx]);
+  // three.js 晚到时（暂停状态下）重画一次当前帧
+  const [k3, setK3] = useState(0);
+  useEffect(() => { const f = () => setK3(k => k + 1); window.addEventListener('mv3d-ready', f); return () => window.removeEventListener('mv3d-ready', f); }, []);
+  const url = useMemo(() => renderFrame(T, P, tw, fv, res), [T, res[0], P, fv, tw.fx, k3]);
   return <img src={url} alt="" style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, display: 'block' }} />;
 }
 
@@ -831,8 +815,42 @@ function AudioTrack({ P, T0, dur, opt }) {
 }
 
 // ---------- 工具包：传给世界模块 ----------
+// ---------- 时间伸缩：给已有的世界加停顿 ----------
+// knots = [[新小节, 原小节], ...]，分段线性；斜率 0 的一段就是「停住」（画面按原时间冻结在那一刻，背景动态和节拍照常）。
+// 返回包好的模块：draw/画风参数/3D 都按原时间算，音效、来源、气泡、规则按新时间排。
+function warpWorld(m, knots, bars) {
+  const kn = knots.slice().sort((a, b) => a[0] - b[0]);
+  const f = n => {
+    if (n <= kn[0][0]) return n - kn[0][0] + kn[0][1];
+    for (let i = 0; i + 1 < kn.length; i++) { const [n0, o0] = kn[i], [n1, o1] = kn[i + 1]; if (n < n1) return o0 + (o1 - o0) * (n - n0) / (n1 - n0); }
+    const [nl, ol] = kn[kn.length - 1]; return ol + n - nl;
+  };
+  const inv = o => {
+    if (o <= kn[0][1]) return o - kn[0][1] + kn[0][0];
+    for (let i = 0; i + 1 < kn.length; i++) { const [n0, o0] = kn[i], [n1, o1] = kn[i + 1]; if (o1 > o0 && o >= o0 && o < o1) return n0 + (n1 - n0) * (o - o0) / (o1 - o0); if (o1 === o0 && o === o0) return n0; }
+    const [nl, ol] = kn[kn.length - 1]; return nl + o - ol;
+  };
+  const WL = L => {
+    if (L.warped) return L;
+    const b = f(L.b), nb = L.b;
+    // 冲击类衰减按真实时间走，停住时不会卡在半亮
+    return { ...L, b, nb, warped: true, p: (b0, b1, e) => prog(b, b0, b1, e), in: (b0, b1) => b >= b0 && b < b1, hit: (b0, d = .5) => { const n0 = inv(b0); return nb >= n0 ? Math.exp(-(nb - n0) / d * 4) : 0; } };
+  };
+  const wf = x => typeof x === 'function' ? L => x(WL(L)) : x;
+  const r = { ...m, bars, warpF: f, warpInv: inv,
+    draw: (cx, tx, L, fv) => { const W2 = WL(L); m.draw(cx, tx, W2, fv); if (W2.did3d) L.did3d = true; },
+    par: wf(m.par), cam: wf(m.cam), focus: wf(m.focus), look: wf(m.look), lb: wf(m.lb), pulse: wf(m.pulse), flash: wf(m.flash),
+    sfx: (m.sfx || []).map(([b, ...x]) => [inv(b), ...x]), src: (m.src || []).map(([b0, b1, ...x]) => [inv(b0), inv(b1), ...x]),
+    you: (m.you || []).map(([a, o, ...x]) => [inv(a), inv(o), ...x]) };
+  if (m.rule) r.rule = { ...m.rule, at: inv(m.rule.at) };
+  if (m.three) r.three = (T, U) => { const s = m.three(T, U); return { ...s, update: (L, c, u) => s.update(WL(L), c, u) }; };
+  return r;
+}
+
 const K = { W, H, BPM, BEAT, BAR, F, C, E, LOOK, TR, clamp01, prog, lerp, bump, hash, hex, mixC, rgba, fnt, cw, rr, circ, seg, arrow, txt, tw, scaleAt, rotAt, alpha,
-  lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt, sing };
+  lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt, sing,
+  warpWorld,
+  three: (ctx, L, o) => { L.did3d = true; return !!window.MV_3D && window.MV_3D.draw(ctx, L.w.m, L, o); } };
 window.MV_K = K;
 
 function Piece({ tw }) {

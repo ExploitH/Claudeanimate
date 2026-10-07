@@ -72,68 +72,71 @@ const lerpM = (a, b, k) => a + (b - a) * k;
 
 // ---------- 各段编曲 ----------
 const ARR = {
-  w00(S) { // 开机：心跳、音乐盒、渐强
-    each(0, 5, b => { S.add('kick', b, 0, 0, 0, .9, 'heart'); S.add('kick', b, 2, 0, 0, .55, 'heart'); });
-    S.add('drone', 0, 0, 26, 24, .5);
+  w00(S) { // 开机：心跳（两小节只有光标）、音乐盒（打字）、停一拍、渐强
+    each(0, 7, b => { S.add('kick', b, 0, 0, 0, .9, 'heart'); S.add('kick', b, 2, 0, 0, .55, 'heart'); });
+    S.add('drone', 0, 0, 26, 32, .5);
     S.add('pad', 0, 0, CH.Dm.pad, 8, .55, 'warm');
     ['Dm', 'Bb', 'F', 'C'].forEach((c, i) => S.add('pad', 2 + i, 0, CH[c].pad, 4, .7, 'warm'));
     hook(S, 2, 'box', 0, 0, 4, .9);
-    S.add('riser', 4, 0, 0, 8, .8);
-    roll(S, 5, 0, 4, 'snare', 'main', .1, .75, .25);
-    S.add('rev', 5, 0, 0, 4, .7);
+    S.add('pad', 6, 0, CH.Dm.pad, 8, .6, 'string');
+    S.add('riser', 6, 0, 0, 8, .8);
+    roll(S, 7, 0, 4, 'snare', 'main', .1, .75, .25);
+    S.add('rev', 7, 0, 0, 4, .7);
   },
-  w01(S) { // 梦（22 小节：引文停顿 +2，肥皂泡缓升 +1，晶体化呼吸 +1）
+  w01(S) { // 梦：lo-fi 摇摆 → 第 8 小节停一拍（只剩流体）→ 肥皂泡 → 第 13 小节冻结成四拍
     pads(S, 0, 22, PD, 'warm', .65);
-    arps(S, 0, 14, PD, 'tri', .5, [0, 1, 2, 3, 2, 1, 2, 3], .55);
-    S.add('crackle', 0, 0, 0, 56, .5);
+    arps(S, 0, 13, PD, 'tri', .5, [0, 1, 2, 3, 2, 1, 2, 3], .55);
+    S.add('crackle', 0, 0, 0, 52, .5);
     S.add('crash', 0, 0, 0, 0, .5);
-    each(6, 13, b => { S.add('kick', b, 0, 0, 0, .8, 'soft'); S.add('kick', b, 2.5, 0, 0, .55, 'soft'); S.add('snare', b, 2, 0, 0, .55, 'lofi'); });
-    S.add('kick', 13, 0, 0, 0, .8, 'soft');
-    hats(S, 6, 13, .5, .3, false, false, true);
-    roots(S, 6, 22, PD, 'sub', .6, [[0, 4]]);
-    // 引文停顿（b=5~6）：音乐减弱，只剩长笛
-    S.add('lp', 5, 0, 3000, 1); S.add('lp', 6, 0, 15000, 2);
-    hook(S, 4, 'flute', 0, 0, 9, .85); // 延长至 b=13（引文后移）
-    S.add('rev', 13, 0, 0, 4, .6);
-    // 结晶之后：四拍底鼓，琶音变亮（b=14 起）
-    four(S, 14, 22, .78);
-    back(S, 14, 22, 'clap', .55);
-    hats(S, 14, 22, .25, .22);
-    roots(S, 14, 22, PD, 'saw', .55, [[0, .5], [.5, .5, 12], [1, .5], [1.5, .5, 12], [2, .5], [2.5, .5, 12], [3, .5], [3.5, .5, 12]]);
-    arps(S, 14, 22, PD, 'arp', .25, [0, 1, 2, 3, 1, 2, 3, 2], .42, 12);
-    S.add('crash', 14, 0, 0, 0, .55);
+    each(4, 13, b => { if (b === 8) return; S.add('kick', b, 0, 0, 0, .8, 'soft'); S.add('kick', b, 2.5, 0, 0, .55, 'soft'); S.add('snare', b, 2, 0, 0, .55, 'lofi'); });
+    hats(S, 4, 8, .5, .3, false, false, true); hats(S, 9, 13, .5, .3, false, false, true);
+    roots(S, 4, 13, PD, 'sub', .6, [[0, 4]]);
+    hook(S, 4, 'flute', 0, 0, 8, .85);
+    S.add('lp', 8, 0, 1400, .5); S.add('lp', 8, 3, 15000, 1);
+    S.add('rev', 12, 0, 0, 4, .6);
+    // 冻结之后：四拍底鼓，琶音变亮
+    four(S, 13, 22, .78);
+    back(S, 13, 22, 'clap', .55);
+    hats(S, 13, 22, .25, .22);
+    roots(S, 13, 22, PD, 'saw', .55, [[0, .5], [.5, .5, 12], [1, .5], [1.5, .5, 12], [2, .5], [2.5, .5, 12], [3, .5], [3.5, .5, 12]]);
+    arps(S, 13, 22, PD, 'arp', .25, [0, 1, 2, 3, 1, 2, 3, 2], .42, 12);
+    S.add('crash', 13, 0, 0, 0, .55);
     roll(S, 21, 2, 4, 'snare', 'main', .2, .8, .25);
   },
-  w02(S) { // 轨道（20 小节：「我不记得你」停顿 +2，压缩飞散 +1，结尾 +1）
+  w02(S) { // 轨道：开头只有心跳和弦乐（「我不记得你」停两拍），第 4 小节起合成器进来；绕轨道时钟琴；塞满变闷
     S.add('crash', 0, 0, 0, 0, .6);
     pads(S, 0, 20, PD, 'string', .8);
-    // 停顿期间（b=2~4）：低沉心跳，宇宙安静
-    each(0, 2, b => { S.add('kick', b, 0, 0, 0, .4, 'heart'); });
-    S.add('lp', 1, 0, 2000, 2); S.add('lp', 4, 0, 15000, 1); // 停顿后滤波恢复
+    each(0, 4, b => { S.add('kick', b, 0, 0, 0, .55, 'heart'); S.add('kick', b, 2, 0, 0, .35, 'heart'); });
+    S.add('lp', 0, 0, 2200, .5); S.add('lp', 4, 0, 15000, 1);
     roots(S, 4, 20, PD, 'saw', .6, [[0, .5], [.5, .5], [1, .5], [1.5, .5], [2, .5], [2.5, .5], [3, .5], [3.5, .5]]);
     arps(S, 4, 20, PD, 'arp', .25, [0, 1, 2, 3, 2, 3, 1, 2], .4, 12);
     four(S, 4, 20, .72);
-    hats(S, 4, 20, .5, .3, true, true);
+    hats(S, 5, 20, .5, .3, true, true);
     back(S, 6, 20, 'snare', .55);
-    each(9, 13, b => [74, 77, 81, 84].forEach((m, j) => S.add('bell', b, j, m, 1, .5)));
-    S.add('lp', 13, 0, 650, 2); S.add('lp', 15, 0, 15000, 3);
+    each(10, 14, b => [74, 77, 81, 84].forEach((m, j) => S.add('bell', b, j, m, 1, .5)));
+    S.add('lp', 14, 0, 650, 2); S.add('lp', 16, 0, 15000, 3);
+    [76, 79, 83].forEach((m, j) => S.add('bell', 16, 3 + j * 2, m, 3, .55));
+    S.add('crash', 18, 2, 0, 0, .55);
     roll(S, 19, 2, 4, 'snare', 'main', .2, .7, .25);
   },
-  w03(S) { // 印刷：放克（20 小节，+2 拍：便签飞走后多 2 拍收尾）
+  w03(S) { // 印刷：放克；第 3、5 小节是两处停顿（只剩贝斯和弦乐），主旋律第 10 小节进
     S.add('crash', 0, 0, 0, 0, .6);
-    pads(S, 4, 20, PD, 'string', .5);
+    pads(S, 3, 20, PD, 'string', .5);
+    const hold = b => b === 3 || b === 5;
     each(0, 20, b => {
       const c = CH[PD[b % 4]], r = c.r + 12;
+      if (hold(b)) { S.add('bass', b, 0, r, 3.5, .6, 'pluck'); S.add('stab', b, 0, c.pad, .5, .4); return; }
       [[0, r], [.75, r], [1.5, r + 12], [2, r], [2.5, r + 7], [3.25, r], [3.5, r + 12]].forEach(([bt, m]) => S.add('bass', b, bt, m, .35, .75, 'pluck'));
       [0, 1.5, 2.5].forEach(bt => S.add('kick', b, bt, 0, 0, bt ? .7 : .9, 'main'));
       S.add('clap', b, 1, 0, 0, .6); S.add('clap', b, 3, 0, 0, .6);
       if (b >= 2) [.5, 1.5, 2.5, 3.5].forEach(bt => S.add('stab', b, bt, c.pad, .2, .45));
+      for (let j = 0; j < 16; j++) S.add('hat', b, j / 4, 0, 0, .28 * (j % 4 === 0 ? .75 : 1), 'closed');
     });
-    hats(S, 0, 20, .25, .28);
-    hook(S, 8, 'square', 0, 0, 8, .7);
+    S.add('crash', 6, 0, 0, 0, .5);
+    hook(S, 10, 'square', 0, 0, 8, .7);
     roll(S, 19, 3, 4, 'snare', 'main', .3, .8, .125);
   },
-  w04(S) { // 纸：拇指琴（20 小节，+2 拍：失败纸条堆叠后多停留 2 拍）
+  w04(S) { // 纸：拇指琴；Clawd 被纸条埋住时音乐变闷，新纸滑进来时打开
     pads(S, 0, 20, PD, 'organ', .6);
     arps(S, 0, 20, PD, 'kalimba', .5, [0, 1, 2, 3, 1, 2, 3, 2], .6);
     each(0, 20, b => {
@@ -142,9 +145,8 @@ const ARR = {
       for (let j = 0; j < 16; j++) S.add('shaker', b, j / 4, 0, 0, j % 2 ? .35 : .2);
       const r = CH[PD[b % 4]].r + 12; S.add('bass', b, 0, r, 1.5, .7, 'upright'); S.add('bass', b, 2.5, r + 7, 1, .55, 'upright');
     });
-    hook(S, 4, 'whistle', 0, 0, 8, .7);
-    // 失败纸条堆叠段（b=13~15）：音乐压低，像被纸条压住
-    S.add('lp', 13, 0, 1800, 2); S.add('lp', 15, 0, 12000, 2);
+    hook(S, 5, 'whistle', 0, 0, 8, .7);
+    S.add('lp', 14, 0, 1500, 1.5); S.add('lp', 16, 1, 14000, 1);
   },
   w05(S) { // 霓虹：第一次副歌
     S.add('siren', 0, 0, 0, 4, .45);
@@ -175,7 +177,7 @@ const ARR = {
     [74, 76, 77, 79, 81, 84].forEach((m, j) => S.add('bell', 11, j * 2, m, 2.5, .75));
     roll(S, 21, 2, 4, 'snare', 'main', .2, .8, .25);
   },
-  w07(S) { // 存档：芯片音乐（20 小节，GAME OVER +2 拍，心逐一灭）
+  w07(S) { // 存档：芯片音乐；三颗心灭掉后整段静音（GAME OVER、CONTINUE 菜单），选完再回来
     S.add('kick', 0, 0, 0, 0, 1, 'chip');
     const live = b => !(b >= 13 && b < 16);
     each(0, 20, b => {
@@ -188,54 +190,43 @@ const ARR = {
       for (let j = 0; j < 16; j++) S.add('chiparp', b, j / 4, c.arp[j % 3] + 12, .22, .75 * soft);
     });
     hook(S, 4, 'chip', 0, 0, 8, 1);
-    // 三颗心逐一灭（b=13/13.5/14）：每次低通滤波骤降
-    [13, 13.5, 14].forEach((at, i) => { S.add('lp', at, 0, 1200 - i * 300, .3); S.add('lp', at, .5, 15000, .2); });
-    S.add('mute', 14, 0, 0, 2); // GAME OVER 段静音
-    // CONTINUE 菜单三项逐一亮出（b=14.75/15.25/15.75）：短促钟声
-    [[14, 3, 69, .4], [14, 3.5, 72, .4], [15, 3, 74, .4]].forEach(([b, bt, m, v]) => S.add('bell', b, bt, m, .5, v));
     hook(S, 18, 'chip', 0, 0, 2, .5);
   },
-  w08(S) { // 黑色电影：爵士（20 小节，口哨停顿 +1，diff 揭露 +1）
+  w08(S) { // 黑色电影：爵士；第 2 小节举牌之后一整小节只有贝斯和鼓刷，小号第 5 小节进
     each(0, 20, b => {
-      const cn = PJ[b % 4], c = CH[cn], quiet = b >= 15;
-      WALK[cn].forEach((m, j) => S.add('bass', b, j, m, .95, .8, 'upright'));
-      [0, 1, 1 + 2 / 3, 2, 3, 3 + 2 / 3].forEach(bt => S.add('ride', b, bt, 0, 0, bt % 1 ? .3 : .45));
+      const cn = PJ[b % 4], c = CH[cn], quiet = b >= 16, hush = b === 2;
+      WALK[cn].forEach((m, j) => S.add('bass', b, j, m, .95, hush ? .55 : .8, 'upright'));
+      if (!hush) [0, 1, 1 + 2 / 3, 2, 3, 3 + 2 / 3].forEach(bt => S.add('ride', b, bt, 0, 0, bt % 1 ? .3 : .45));
       S.add('snare', b, 1, 0, 0, .5, 'brush'); S.add('snare', b, 3, 0, 0, .5, 'brush');
-      if (!quiet) { S.add('kick', b, 0, 0, 0, .35, 'soft'); S.add('kick', b, 2, 0, 0, .25, 'soft'); }
-      S.add('rhodes', b, 0, c.pad, 1.2, .55); S.add('rhodes', b, 1 + 2 / 3, c.pad, 1.6, .45);
+      if (!quiet && !hush) { S.add('kick', b, 0, 0, 0, .35, 'soft'); S.add('kick', b, 2, 0, 0, .25, 'soft'); }
+      if (!hush) { S.add('rhodes', b, 0, c.pad, 1.2, .55); S.add('rhodes', b, 1 + 2 / 3, c.pad, 1.6, .45); }
     });
-    // 口哨停顿（b=2~3）：音乐减弱，只剩贝斯和鼓刷
-    S.add('lp', 2, 0, 2500, 1); S.add('lp', 3, 0, 12000, 1);
-    // diff 揭露慢镜头（b=3.5~4.2）：低沉钟声，体积感
-    S.add('bell', 3, 2, 57, 2, .35); // 低沉 D 音，慢慢撑开
+    S.add('bell', 3, 0, 57, 3, .35);
     for (const [b, bt, m, d] of NOIR) S.add('trumpet', 5 + b, S.sw(bt), m, d, .75);
   },
-  w09(S) { // 警报：工业 → 静 → 重建（26 小节，+2 拍：删库前静止加长 +1，四条原因逐条打出 +1）
-    S.add('drone', 0, 0, 26, 52, .7);
-    each(0, 11, b => { for (let j = 0; j < 16; j++) S.add('tick', b, j / 4, 0, 0, b >= 9 ? .5 : .28); });
-    each(9, 11, b => { for (let j = 0; j < 16; j++) S.add('tick', b, j / 4 + .125, 0, 0, .3); });
+  w09(S) { // 警报：工业 → 删库前静一拍、第 12 小节重击 → 余波 → 重建
+    S.add('drone', 0, 0, 26, 48, .7);
+    each(0, 12, b => { for (let j = 0; j < 16; j++) S.add('tick', b, j / 4, 0, 0, b >= 10 ? .5 : .28); });
+    each(10, 12, b => { for (let j = 0; j < 16; j++) S.add('tick', b, j / 4 + .125, 0, 0, .3); });
     S.add('kick', 0, 0, 0, 0, .7, 'heart'); S.add('kick', 1, 0, 0, 0, .7, 'heart');
-    each(2, 9, b => {
+    each(2, 10, b => {
       const c = CH[PA[(b - 2) % 4]];
       [0, .75, 2, 2.75].forEach(bt => S.add('kick', b, bt, 0, 0, .9, 'main'));
       S.add('snare', b, 1, 0, 0, .7, 'ind'); S.add('snare', b, 3, 0, 0, .7, 'ind');
       S.add('bass', b, 0, c.r, 3.5, .85, '808');
       S.add('pad', b, 0, c.pad, 4, .7, 'dark');
     });
-    hats(S, 2, 9, .25, .22);
+    hats(S, 2, 10, .25, .22);
     S.add('siren', 2, 0, 0, 8, .35);
-    S.add('riser', 9, 0, 0, 7, .9);
-    each(9, 11, b => S.add('kick', b, 0, 0, 0, .8, 'main'));
-    S.add('kick', 10, 2, 0, 0, .8, 'main');
-    // 删库前静一拍（b=10.3 静音，比原来延长）
-    S.add('mute', 10, 3, 0, 1.5);
-    S.add('impact', 11, 0, 0, 0, 1);
-    S.add('crash', 11, 0, 0, 0, .9);
-    S.add('lp', 11, .5, 520, 1); S.add('lp', 13, 0, 15000, 4);
-    S.add('drone', 11, 0, 26, 12, .6);
-    S.add('rev', 13, 0, 0, 4, .6);
-    // 四条原因逐条打出（b=14~16）：每条配一个低沉点击音，音乐缓慢重建
-    [14, 14.5, 15, 15.5].forEach((b, i) => S.add('bell', Math.floor(b), (b % 1) * 4, [45, 47, 48, 50][i], 1, .35));
+    S.add('riser', 10, 0, 0, 7, .9);
+    each(10, 12, b => S.add('kick', b, 0, 0, 0, .8, 'main'));
+    S.add('kick', 11, 2, 0, 0, .8, 'main');
+    S.add('mute', 11, 3, 0, 1);
+    S.add('impact', 12, 0, 0, 0, 1);
+    S.add('crash', 12, 0, 0, 0, .9);
+    S.add('lp', 12, .5, 520, 1); S.add('lp', 15, 0, 15000, 4);
+    S.add('drone', 12, 0, 26, 16, .6);
+    S.add('rev', 15, 0, 0, 4, .6);
     pads(S, 16, 24, PR, 'warm', .8);
     arps(S, 16, 24, PR, 'tri', .5, [0, 1, 2, 3, 2, 1, 2, 3], .5);
     four(S, 18, 24, .75);
@@ -250,19 +241,23 @@ const ARR = {
     roll(S, 25, 0, 4, 'snare', 'main', .2, 1, .25);
     S.add('rev', 25, 0, 0, 4, .8);
   },
-  w10(S) { // 终章：E 小调全编制（18 小节，+2 拍：副歌前停顿 +1，清单落下 +1）
-    S.add('impact', 0, 0, 0, 0, .9);
-    S.add('crash', 0, 0, 0, 0, .9); S.add('crash', 8, 0, 0, 0, .8);
-    pads(S, 0, 18, PE, 'string', .8); pads(S, 0, 18, PE, 'choir', .55);
-    four(S, 0, 18, 1);
-    back(S, 0, 18, 'snare', .7, 'gated'); back(S, 0, 18, 'clap', .5);
-    hats(S, 0, 18, .25, .24); hats(S, 0, 18, .5, .25, true, true);
-    roots(S, 0, 18, PE, 'saw', .75, [[0, .5], [.5, .5, 12], [1, .5], [1.5, .5, 12], [2, .5], [2.5, .5, 12], [3, .5], [3.5, .5, 12]]);
-    arps(S, 0, 18, PE, 'arp', .25, [0, 1, 2, 3, 1, 2, 3, 2], .36, 12);
-    hook(S, 0, 'saw', 2, 0, 8, .95); hook(S, 8, 'saw', 2, 0, 8, .95);
-    hook(S, 8, 'saw', 2, 0, 8, .4, 12);
-    // 清单落下段（b=9~17）：每小节一条，加钟声点缀
-    [9, 10, 11, 12, 13, 14, 15, 16].forEach((b, i) => S.add('bell', b, 0, [74, 76, 77, 79, 81, 79, 77, 76][i], 2, .4));
+  w10(S) { // 终章：凌晨三点的两小节安静（时钟、音乐盒），第 2 小节重击进 E 小调全编制；副歌 2–10，清单 10–18
+    S.add('pad', 0, 0, CH.Em.pad, 8, .55, 'warm');
+    each(0, 2, b => { for (let j = 0; j < 4; j++) S.add('tick', b, j, 0, 0, .35); });
+    hook(S, 0, 'box', 2, 6, 8, .7);
+    S.add('riser', 1, 0, 0, 4, .9);
+    roll(S, 1, 2, 4, 'snare', 'main', .2, .9, .25);
+    const O = 2;
+    S.add('impact', O, 0, 0, 0, .9);
+    S.add('crash', O, 0, 0, 0, .9); S.add('crash', O + 8, 0, 0, 0, .8);
+    pads(S, O, 18, PE, 'string', .8); pads(S, O, 18, PE, 'choir', .55);
+    four(S, O, 18, 1);
+    back(S, O, 18, 'snare', .7, 'gated'); back(S, O, 18, 'clap', .5);
+    hats(S, O, 18, .25, .24); hats(S, O, 18, .5, .25, true, true);
+    roots(S, O, 18, PE, 'saw', .75, [[0, .5], [.5, .5, 12], [1, .5], [1.5, .5, 12], [2, .5], [2.5, .5, 12], [3, .5], [3.5, .5, 12]]);
+    arps(S, O, 18, PE, 'arp', .25, [0, 1, 2, 3, 1, 2, 3, 2], .36, 12);
+    hook(S, O, 'saw', 2, 0, 8, .95); hook(S, O + 8, 'saw', 2, 0, 8, .95);
+    hook(S, O + 8, 'saw', 2, 0, 8, .4, 12);
     [2, 2.5, 3, 3.5].forEach((bt, j) => S.add('tom', 17, bt, [220, 180, 150, 120][j], 0, .7));
   },
   w11(S) { // 片尾：音乐盒、E 大三和弦、两下心跳

@@ -9,8 +9,9 @@ const jit = (t, s, k = 1) => (hash(Math.floor(t * 12) + s * 7.7) - .5) * k;
 function sheet(ctx, x, y, w, h, col, rot, fn) { // 一张剪纸：白边 + 颜色
   rotAt(ctx, x + w / 2, y + h / 2, rot, () => { rr(ctx, x - 6, y - 6, w + 12, h + 12, 6, CREAM); rr(ctx, x, y, w, h, 4, col); if (fn) fn(); });
 }
-return {
-  scene: '04 纸 · 上下文', bars: 20, look: 4,
+// 在原 18 小节上加三处停顿：纸摞叠好（半小节）、两根纸条比完（半小节）、Clawd 被失败纸条埋住（1 小节）
+return K.warpWorld({
+  scene: '04 纸 · 上下文', bars: 18, look: 4,
   enter: { kind: TR.TEAR, a: 1, b: 3 },
   hud: { num: '04', name: '上下文', time: '21:45', line: '怎么又错了', ink: NAVY, acc: CORAL },
   you: [[.95, 2.15, '怎么又报错了？'], [11.95, 13.3, '再试一次……再试一次……']],
@@ -137,5 +138,5 @@ return {
     lyric(tx, L, { at: 15.75, out: 17.8, text: '用到新库？\n把‹官方文档›的那一段贴给我，', x: LX, y: 300, size: 48, w: 900, ...ink, anim: 'rise' });
     lyric(tx, L, { at: 16.5, out: 17.8, text: '或者接一个能查文档的工具。\n«MCP»：让 AI 连接外部工具和数据的标准接口', x: LX, y: 520, size: 34, w: 700, ...ink, acc: [CORAL, BLUEG], anim: 'rise' });
   },
-};
+}, [[0, 0], [4.2, 4.2], [4.7, 4.2], [8.9, 8.4], [9.4, 8.4], [15.3, 14.3], [16.3, 14.3]], 20);
 };

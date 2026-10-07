@@ -35,8 +35,51 @@ return {
   sfx: [[1, 'plot'], [1.5, 'ding'], [1.75, 'glitch'], [2.25, 'plot'], [2.6, 'plot'], ...PARTS.map((_, i) => [3.25 + i * .25, 'click']), [6.5, 'plot'], [8, 'plot'], [8.5, 'plot'], [9, 'plot'], [9.05, 'ding'],
     [14, 'tick'], [14.75, 'alarm'], ...SEVEN.map((_, i) => [16.25 + i * .25, 'click']), [19, 'blip', 900], [19.5, 'blip', 1100], [20, 'blip', 1300], [20.75, 'shatter']],
   text: PARTS.flat().join('') + RUNG.flat().join('') + SEVEN.join('') + '同一个模型，换个工具，结果就不一样。模型之外的一切，都叫 harness：同一套 CORE-Bench：换成别的模型工具按自主程度，有六级：越要靠流程兜底病历、银行记录就摆在外面原因：默认公开，没人改成私有这门课的路线还有：同一个模型：这个工具里顺利写完，换个工具就半路出错✓ 顺利写完✗ 半路出错模型差别在模型外面那一层HARNESS模型之外的全部，都算 harness模型是发动机，harness 是整辆车Princeton HAL · 2025-12同一个 Claude Opus 4.5 · CORE-Bench通用框架Claude Code修正评分错误后42%78%95%换成其他模型，差距小得多有的在通用框架里反而更好模型和 harness，放在一起看自主程度：从低到高亲眼看的代码需要的检查和隔离越往上，你亲眼看的代码越少越得靠流程兜底RedAccess · 2026-05扫了约 38 万个 Lovable、Base44、Replit 等平台生成的公开应用约 5000 个暴露了病历、银行记录原因：默认公开，用户没改成私有选工具，看这七项这门课的建议先用 IDEA 里的 Qoder熟悉 Git 和命令行后，再试命令行 Agent应用生成平台，只拿来做原型别让几个 Agent 同时改同一批文件UserService.java冲突',
+  three(T, U) {
+    // 爆炸图：线框发动机在中间慢慢转，七个部件从纵深沿各自的轴飞到位（工程爆炸图）
+    const scene = new T.Scene(), mat = new T.LineBasicMaterial({ color: 0xeaf4ff, transparent: true }), hot = new T.LineBasicMaterial({ color: 0xffd75e, transparent: true });
+    const wire = (geo, m = mat) => new T.LineSegments(new T.EdgesGeometry(geo, 20), m);
+    const eng = new T.Group(); scene.add(eng);
+    eng.add(wire(new T.BoxGeometry(220, 120, 130)));
+    const pistons = [-70, 0, 70].map(x => { const g = new T.Group(); g.add(wire(new T.BoxGeometry(46, 40, 46))); const rod = wire(new T.CylinderGeometry(9, 9, 40, 10)); rod.position.y = 38; g.add(rod); const cap = wire(new T.CylinderGeometry(16, 16, 8, 14)); cap.position.y = 62; g.add(cap); g.position.set(x, 80, 0); eng.add(g); return g; });
+    const fly = wire(new T.CylinderGeometry(42, 42, 16, 24), hot); fly.rotation.z = Math.PI / 2; fly.position.x = 140; eng.add(fly);
+    const crank = wire(new T.CylinderGeometry(8, 8, 300, 8)); crank.rotation.z = Math.PI / 2; crank.position.y = -40; eng.add(crank);
+    // 七个部件的形状：提示词卡片、工具扳手、锁、齿轮、文件、钩子、环形箭头
+    const shapes = [
+      () => wire(new T.BoxGeometry(90, 60, 8)),
+      () => { const g = new T.Group(); g.add(wire(new T.BoxGeometry(18, 80, 10))); const h = wire(new T.TorusGeometry(22, 7, 6, 12, Math.PI * 1.4)); h.position.y = 50; g.add(h); return g; },
+      () => { const g = new T.Group(); g.add(wire(new T.BoxGeometry(70, 52, 30))); const h = wire(new T.TorusGeometry(22, 5, 6, 14, Math.PI)); h.position.y = 26; g.add(h); return g; },
+      () => wire(new T.CylinderGeometry(40, 40, 16, 12)),
+      () => wire(new T.BoxGeometry(60, 80, 12)),
+      () => wire(new T.TorusGeometry(26, 6, 6, 14, Math.PI * 1.3)),
+      () => wire(new T.TorusGeometry(34, 5, 6, 20, Math.PI * 1.7)),
+    ];
+    const parts = shapes.map(f => { const o = f(); scene.add(o); return o; });
+    return {
+      scene,
+      update(L) {
+        const b = L.b, t = L.t, ke = prog(b, 3, 3.2) * (1 - prog(b, 7.35, 7.5));
+        if (ke <= 0) return false;
+        mat.opacity = ke; hot.opacity = ke;
+        const [x0, y0] = CEN;
+        U.at(eng, x0, y0 + 10, 0); eng.scale.setScalar(1.25);
+        eng.rotation.set(.35, -.5 + .35 * Math.sin(t * .35), 0);
+        pistons.forEach((p, i) => p.position.y = 80 + 14 * Math.sin(t * 6 + i * 2.1));
+        fly.rotation.x = t * 3;
+        parts.forEach((o, i) => {
+          const at = 3.25 + i * .25, k = prog(b, at, at + .35, E.out), kf = 1 - prog(b, 6.35, 6.55);
+          o.visible = k > 0 && kf > 0; if (!o.visible) return;
+          const a = -Math.PI / 2 + (i / PARTS.length) * 6.283, R = lerp(900, 360, k), px = x0 + Math.cos(a) * R * 1.12, py = y0 + Math.sin(a) * R * .95;
+          U.at(o, px, py, lerp(-1800, 0, k));
+          o.rotation.set(.4 + (1 - k) * 4 + .2 * Math.sin(t + i), (1 - k) * 6 + t * .6 + i, 0);
+          o.scale.setScalar(kf);
+        });
+        return true;
+      },
+    };
+  },
   draw(cx, tx, L) {
-    const b = L.b, t = L.t;
+    const b = L.b, t = L.t, has3d = !!window.THREE;
     // ---------- 两辆车，同一台发动机 ----------
     const k1 = prog(b, .95, 1.15) * (1 - prog(b, 2.05, 2.2));
     if (k1 > 0) alpha(cx, k1, () => {
@@ -59,12 +102,12 @@ return {
     const ke = prog(b, 3, 3.2) * (1 - prog(b, 7.35, 7.5));
     if (ke > 0) alpha(cx, ke, () => {
       const [x0, y0] = CEN;
-      engine(cx, x0, y0 + 20, 1.1);
+      if (!has3d) engine(cx, x0, y0 + 20, 1.1);
       PARTS.forEach(([n, d], i) => {
         const at = 3.25 + i * .25, k = prog(b, at, at + .2, E.out), kf = 1 - prog(b, 6.35, 6.55); if (k <= 0 || kf <= 0) return;
         cx.save(); cx.globalAlpha *= kf; tx.save(); tx.globalAlpha *= kf;
         const a = -Math.PI / 2 + (i / PARTS.length) * 6.283, R = lerp(900, 360, k), px = x0 + Math.cos(a) * R * 1.12, py = y0 + Math.sin(a) * R * .95;
-        cx.strokeStyle = WL; cx.lineWidth = 3; cx.strokeRect(px - 46, py - 30, 92, 60);
+        if (!has3d) { cx.strokeStyle = WL; cx.lineWidth = 3; cx.strokeRect(px - 46, py - 30, 92, 60); }
         if (k > .9) { cx.setLineDash([6, 6]); seg(cx, x0 + Math.cos(a) * 140, y0 + Math.sin(a) * 100, px - Math.cos(a) * 50, py - Math.sin(a) * 34, rgba(WL, .7), 2); cx.setLineDash([]); }
         alpha(tx, k, () => { const right = Math.cos(a) > .2, left = Math.cos(a) < -.2, al = right ? 'left' : left ? 'right' : 'center', ox = right ? 62 : left ? -62 : 0, oy = right || left ? 0 : Math.sin(a) < 0 ? -56 : 56;
           txt(tx, n, px + ox, py + oy - (d ? 14 : 0), fnt(900, 34), WL, al); if (d) txt(tx, d, px + ox, py + oy + 22, fnt(500, 22), YE, al); txt(tx, String(i + 1), px, py, fnt(700, 26, F.mono), YE, 'center'); });

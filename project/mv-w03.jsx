@@ -11,11 +11,11 @@ const SEG_AT = [9, 9.25, 9.5, 9.75, 10, 10.25, 10.4];
 const STK = [['你是世界顶级程序员', -.12, -150, -110], ['必须!!!', .18, 120, -40], ['给你小费 $', -.06, -40, 70]];
 const CL = [1640, 880];
 return {
-  scene: '03 印刷 · 提示词', bars: 18, look: 3,
+  scene: '03 印刷 · 提示词', bars: 20, look: 3,
   enter: { kind: TR.WIPE, a: 1, b: 3, col: PINK },
   hud: { num: '03', name: '提示词', time: '21:20', line: '帮我写个登录', ink: INK, acc: PINK, mv: [.5, .9] },
   you: [[.55, 1.6, '帮我写个登录功能']],
-  rule: { n: 2, at: 16.5, text: '提示词写清目标、背景、约束、验收标准' },
+  rule: { n: 2, at: 18.5, text: '提示词写清目标、背景、约束、验收标准' },
   src: [[8, 13, 'Anthropic, Prompting best practices'], [15.25, 16.5, 'Anthropic, Prompting best practices']],
   par: L => { const b = L.b, h = Math.max(L.hit(1, .4), L.hit(4, .5), L.hit(16, .4)); return [.5 + 2.2 * h, 1, 0, 0]; },
   cam: L => { const b = L.b, h = L.hit(4, .3) + L.hit(1, .25); return [1 + .03 * h, -.006 + .02 * L.hit(4, .3) * Math.sin(L.t * 60), 0, 0]; },

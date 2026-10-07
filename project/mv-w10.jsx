@@ -74,7 +74,7 @@ const outro = {
 const segBar = b => Math.max(0, Math.min(7, Math.floor(b % 8)));
 const lightLook = i => [LOOK.RISO, LOOK.PAPER].includes(SEG[i][1]);
 const finale = {
-  scene: '10 回声 · 清单', bars: 16,
+  scene: '10 回声 · 清单', bars: 18,
   look: L => SEG[segBar(L.b)][1],
   enter: { kind: TR.FLASH, a: .5, b: .5, flash: 1 },
   hud: { num: '10', name: '清单', time: '03:00', line: '能跑，也能讲清', small: true, ink: L => lightLook(segBar(L.b)) ? '#1f1b2e' : '#ffffff', acc: C.clawd },

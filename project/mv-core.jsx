@@ -713,6 +713,30 @@ function renderFrame(T, P, tw, fv, res) {
   if (uB) dw(pk.B, 2, 3, uB.L);
   const curW = pk.B && pk.k >= .5 ? pk.B : pk.A;
   drawHud(GLR.ctx(4, res), T, P, curW, pk.B ? bump(pk.k, .5, .28) : 0);
+
+  // ---------- Three.js 3D 层（叠加在 Canvas 2D 层上）----------
+  // 渲染到独立 canvas，合成前叠到 text 层（index=1）
+  if (window.MV_3D) {
+    // 找到 text 层 canvas（index 1），在上面以原始像素坐标叠 3D 内容
+    const layer1 = GLR.layers[1];
+    const rawCtx = layer1.getContext('2d');
+    const blend3d = (wid, b, alpha) => {
+      if (alpha <= 0) return;
+      const c3d = window.MV_3D.render(wid, b, T, res);
+      if (!c3d) return;
+      rawCtx.save();
+      // GLR.ctx 对 layer1 已经做了 setTransform(res[0]/W, 0, 0, res[1]/H, 0, 0)
+      // 这里要逆掉这个 scale 才能以像素坐标绘制
+      rawCtx.setTransform(1, 0, 0, 1, 0, 0);
+      rawCtx.globalAlpha = alpha;
+      rawCtx.globalCompositeOperation = 'source-over';
+      rawCtx.drawImage(c3d, 0, 0, res[0], res[1]);
+      rawCtx.restore();
+    };
+    blend3d(pk.A.m.id, uA.L.b, pk.B ? 1 - pk.k * 0.5 : 1);
+    if (pk.B) blend3d(pk.B.m.id, uB.L.b, pk.k * 0.5);
+  }
+
   const e = pk.e || {}, ex = e.p || [.5, .5, 0, 0], ec = hex(e.col || '#d97757').map(v => v / 255);
   let flash = Math.max(uA.flash, uB ? uB.flash : 0);
   if (pk.B && (e.kind === TR.FLASH || e.flash)) flash = Math.max(flash, bump(pk.k, .5, .16) * (e.flash ?? 1));

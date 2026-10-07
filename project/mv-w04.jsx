@@ -10,7 +10,7 @@ function sheet(ctx, x, y, w, h, col, rot, fn) { // 一张剪纸：白边 + 颜�
   rotAt(ctx, x + w / 2, y + h / 2, rot, () => { rr(ctx, x - 6, y - 6, w + 12, h + 12, 6, CREAM); rr(ctx, x, y, w, h, 4, col); if (fn) fn(); });
 }
 return {
-  scene: '04 纸 · 上下文', bars: 18, look: 4,
+  scene: '04 纸 · 上下文', bars: 20, look: 4,
   enter: { kind: TR.TEAR, a: 1, b: 3 },
   hud: { num: '04', name: '上下文', time: '21:45', line: '怎么又错了', ink: NAVY, acc: CORAL },
   you: [[.95, 2.15, '怎么又报错了？'], [11.95, 13.3, '再试一次……再试一次……']],

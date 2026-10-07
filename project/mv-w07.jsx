@@ -14,18 +14,22 @@ function crystal(ctx, x, y, t, c = P.blu) { const bob = Math.sin(t * 4) * 6; px(
 function bug(ctx, x, y, t) { const l = Math.floor(t * 8) % 2; px(ctx, x - 24, y - 36, 48, 36, P.red); px(ctx, x - 12, y - 30, 6, 6, P.yel); px(ctx, x + 6, y - 30, 6, 6, P.yel); px(ctx, x - 30, y - 6 + l * 6, 6, 12, P.red); px(ctx, x + 24, y - 6 + (1 - l) * 6, 6, 12, P.red); px(ctx, x - 12, y - 48, 6, 12, P.red); px(ctx, x + 6, y - 48, 6, 12, P.red); }
 function heart(ctx, x, y, on) { const c = on ? P.red : P.dgy; px(ctx, x, y, 12, 12, c); px(ctx, x + 18, y, 12, 12, c); px(ctx, x - 6, y + 6, 42, 12, c); px(ctx, x, y + 18, 30, 6, c); px(ctx, x + 6, y + 24, 18, 6, c); }
 return {
-  scene: '07 存档 · 工作流程', bars: 18, look: 7,
+  scene: '07 存档 · 工作流程', bars: 20, look: 7,
   enter: { kind: TR.PIXEL, a: 2, b: 2, col: '#ffec27' },
   hud: { num: '07', name: '工作流程', time: '23:40', line: '一口气改完', ink: P.wht, acc: P.yel },
   you: [[.95, 2.0, '一口气全改完吧，快点']],
-  rule: { n: 6, at: 16.5, text: '先出计划，小步提交' },
+  rule: { n: 6, at: 18.5, text: '先出计划，小步提交' },
   src: [[8.25, 9, 'Anthropic, Prompting best practices']],
-  par: L => { const b = L.b, go = b >= 12.75 && b < 14.25; return [go ? 9 : 6, b < 12 ? 1 : 0, 2.5, 0]; },
+  par: L => { const b = L.b, go = b >= 14 && b < 16.5; return [go ? 9 : 6, b < 13 ? 1 : 0, 2.5, 0]; },
   cam: L => [1, 0, (L.b >= 7.5 && L.b < 7.75 ? (hash(Math.floor(L.t * 30)) - .5) * .01 : 0), 0],
-  focus: L => [.5, .5, .2, .8 * prog(L.b, 12.7, 12.8) * (1 - prog(L.b, 14.2, 14.3))],
-  pulse: L => L.b >= 12 && L.b < 14 ? 0 : .7,
+  focus: L => [.5, .5, .2, .8 * prog(L.b, 14, 14.1) * (1 - prog(L.b, 16.2, 16.3))],
+  pulse: L => L.b >= 13 && L.b < 16 ? 0 : .7,
   sfx: [[1, 'jump'], [1.5, 'glitch'], [1.75, 'q', 600], [2.5, 'blip', 700], ...HOPS.map(b => [b, 'jump']), [4.75, 'stamp'], [5.5, 'powerup'], ...SAVES.map(s => [s[0], 'save']), [7.5, 'hurt'], [8, 'rewind'],
-    [9, 'jump'], [10, 'coin'], [11.25, 'buzz'], [12, 'hurt'], [12.25, 'hurt'], [12.5, 'hurt'], [12.75, 'gameover'], [13.5, 'menu'], [13.75, 'menu'], [14, 'menu'], [14.25, 'coin']],
+    [9, 'jump'], [10, 'coin'], [11.25, 'buzz'],
+    // 心逐一灭：13.0 / 13.5 / 14.0，各一个 hurt
+    [13, 'hurt'], [13.5, 'hurt'], [14, 'hurt'],
+    [14, 'gameover'],
+    [14.75, 'menu'], [15.25, 'menu'], [15.75, 'menu'], [16.25, 'coin']],
   text: NODES.map(n => n[0]).join('') + MENU.join('') + '我一口气改了五个文件——坏了一处。是哪一处？改得越多，出错时要翻的范围越大把每次出错的范围，控制在一步之内换个打法，一关一关过：这一关是你的：看计划、改计划。我在这儿等你盖章每过一关、验证通过，就 commit 一次也能让我冒险的尝试，开个分支去试把测试当终点线：自己跑测试、但得防着我耍小聪明（下一章）你自己写不出来的代码作业能不能用 AI、用到什么程度——一口气改了五个文件坏了一处，是哪一处？一次改得越多，出错时要翻的范围越大把出错的范围，控制在一步之内推荐的顺序在这一步停下，等你盖章OK多数工具都有计划模式验证通过，就 commit 一次Git 提交 = 存档点SAVE LOAD commit改坏了？直接读档git 记录和检查点，能帮模型在多次会话之间接着干有风险的尝试，开个分支try/jwt先有测试，再改到测试通过我能自己跑测试，自己发现问题但要防着我耍小聪明 → 08 TESTS ✓同一个问题失败三次GAME OVER CONTINUE?还在学基础语法？先别用我自己写不出来的代码，你也看不出我错在哪课程作业能不能用 AI，听老师的',
   draw(cx, tx, L) {
     const b = L.b, t = L.t, step = Math.floor(t * 8) / 8;
@@ -72,19 +76,47 @@ return {
       px(cx, 1512, 520 + wave, 150, 90, P.grn); txt(tx, 'TESTS ✓', 1587, 565 + wave, fnt(400, 22, F.pixel), P.wht, 'center');
       if (b >= 11.25) { const f = Math.floor(t * 8) % 2; px(cx, 1060, 600, 180, 150, f ? P.yel : P.org); txt(tx, '//', 1150, 676, fnt(400, 56, F.pixel), P.blk, 'center'); }
     }
-    // ---------- GAME OVER ----------
-    if (b >= 11.95 && b < 14.4) {
-      for (let i = 0; i < 3; i++) heart(cx, 1440 + i * 70, 150, b < 12 + i * .25);
-      const go = prog(b, 12.75, 12.85);
-      if (go > 0) alpha(tx, 1 - prog(b, 14.25, 14.4), () => {
-        txt(tx, 'GAME OVER', 960, 300, fnt(400, 84, F.pixel), P.red, 'center');
-        if (b >= 13.25) { txt(tx, 'CONTINUE?', 960, 430, fnt(400, 40, F.pixel), P.wht, 'center');
-          const sel = b < 13.5 ? -1 : Math.min(2, Math.floor((b - 13.5) * 4));
-          MENU.forEach((s, i) => { const y = 540 + i * 90, on = i === sel; if (on) txt(tx, '▶', 640, y, fnt(400, 40, F.pixel), P.yel, 'center'); txt(tx, s, 700, y, fnt(900, 48), on ? P.yel : P.wht); }); }
+    // ---------- GAME OVER（扩展：心逐一灭 + 静止 1 拍 + CONTINUE 菜单慢速逐项亮出）----------
+    if (b >= 11.95 && b < 16.5) {
+      // 三颗心：每隔半拍逐一灭掉，各自有碎裂粒子
+      for (let i = 0; i < 3; i++) {
+        const dieAt = 13 + i * .5; // 13.0 / 13.5 / 14.0
+        const alive = b < dieAt;
+        const dying = !alive && b < dieAt + .3;
+        const kd = dying ? prog(b, dieAt, dieAt + .3, E.out) : 0;
+        if (alive || dying) heart(cx, 1440 + i * 70, 150, alive);
+        // 碎裂粒子（心灭时向外弹射，3D 感：粒子从中心向外爆散）
+        if (dying) for (let j = 0; j < 8; j++) {
+          const a = j / 8 * 6.283, r = kd * 60;
+          alpha(cx, 1 - kd, () => px(cx, 1440 + i * 70 + Math.cos(a) * r, 150 + Math.sin(a) * r, 6, 6, P.red));
+        }
+      }
+      // 静止1拍：b=14~14.5 只显示 GAME OVER，不出 CONTINUE
+      const go = prog(b, 14, 14.1);
+      if (go > 0) alpha(tx, 1 - prog(b, 16.35, 16.5), () => {
+        // GAME OVER 文字从深处飞向镜头：用 scaleAt 模拟
+        const zScale = lerp(2.4, 1, prog(b, 14, 14.25, E.out));
+        scaleAt(tx, 960, 300, zScale, () => {
+          alpha(tx, Math.min(1, go * 4), () => txt(tx, 'GAME OVER', 960, 300, fnt(400, 84, F.pixel), P.red, 'center'));
+        });
+        // CONTINUE 菜单从 b=14.5 开始逐项亮出，每项间隔 0.5 拍
+        if (b >= 14.5) {
+          txt(tx, 'CONTINUE?', 960, 430, fnt(400, 40, F.pixel), P.wht, 'center');
+          const sel = b < 14.75 ? -1 : Math.min(2, Math.floor((b - 14.75) * 2)); // 每 0.5 拍亮一项
+          MENU.forEach((s, i) => {
+            const menuK = prog(b, 14.75 + i * .5, 14.85 + i * .5, E.back);
+            if (menuK <= 0) return;
+            const y = 540 + i * 90, on = i === sel;
+            alpha(tx, menuK, () => {
+              if (on) txt(tx, '▶', 640, y, fnt(400, 40, F.pixel), P.yel, 'center');
+              txt(tx, s, 700, y, fnt(900, 48), on ? P.yel : P.wht);
+            });
+          });
+        }
       });
     }
     // ---------- 收尾：Clawd 在地上 ----------
-    if (b >= 14.3) ground(cx, 0, 1920, GY);
+    if (b >= 16.3) ground(cx, 0, 1920, GY);
     // ---------- Clawd ----------
     let st = { x: 940, y: GY, px: 18, col: P.org, hi: P.pch, eyeC: P.blk, hat: 'cap8', hatC: P.red, pose: 'idle', ph: step * 10, blink: (t % 3) < .1, eye: 1 };
     if (b < 1) st.alpha = prog(b, .5, .9);
@@ -107,16 +139,19 @@ return {
       if (b >= 8.4) st.alpha = 1;
       if (b >= 9) { const k = prog(b, 9.05, 9.35, E.io); st.x = lerp(870, 1260, k); st.y = lerp(GY, 420, k) - Math.sin(Math.PI * k) * 60; st.pose = 'idle'; }
     }
-    if (b >= 10 && b < 12) { st.x = lerp(400, 1440, prog(b, 10, 11, E.lin)); st.walk = step * 20; st.px = 14; if (b >= 11) { st.x = 1440; st.walk = -1; st.eye = -1; st.pose = 'pointL'; } if (b >= 11.25) { st.sweat = b; st.eye = 1; } }
-    if (b >= 12 && b < 14.4) { st.x = 960; st.y = 880; st.px = 14; st.eyeShape = b >= 12.75 ? 'x' : null; st.alpha = b >= 12.75 ? .5 : 1; }
-    if (b >= 14.4) { st.x = 1560; st.y = GY; st.px = 16; st.pose = b >= 15.75 && b < 16.4 ? 'up' : 'idle'; }
+    if (b >= 10 && b < 13) { st.x = lerp(400, 1440, prog(b, 10, 11, E.lin)); st.walk = step * 20; st.px = 14; if (b >= 11) { st.x = 1440; st.walk = -1; st.eye = -1; st.pose = 'pointL'; } if (b >= 11.25) { st.sweat = b; st.eye = 1; } }
+    // GAME OVER 期间：Clawd 在中央，叉眼，半透明
+    if (b >= 13 && b < 16.4) { st.x = 960; st.y = 880; st.px = 14; st.eyeShape = b >= 14 ? 'x' : null; st.alpha = b >= 14 ? .5 : 1; }
+    if (b >= 16.4) { st.x = 1560; st.y = GY; st.px = 16; st.pose = b >= 17.75 && b < 18.4 ? 'up' : 'idle'; }
     clawd(cx, st);
     // ---------- 歌词 ----------
     const LX = 110, ink = { col: P.wht, acc: [P.yel, P.pnk] }, p8 = { fam: F.sans, w: 900 };
     lyric(tx, L, { at: 1.2, out: 2.15, text: '我一口气改了‹五个文件›——', x: LX, y: 230, size: 56, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 1.5, out: 2.15, text: '坏了一处。是哪一处？', x: LX, y: 330, size: 48, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 2.25, out: 2.95, text: '改得越多，出错时要翻的范围越大', x: LX, y: 230, size: 40, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 2.6, out: 2.95, text: '把每次出错的范围，控制在‹一步›之内', x: LX, y: 320, size: 52, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 1.5, out: 2.15, text: '坏了一处。', x: LX, y: 330, size: 48, ...p8, ...ink, anim: 'type' });
+    // 停一拍（b=2）：Clawd 站在原地，头顶问号
+    lyric(tx, L, { at: 2.25, out: 2.95, text: '是哪一处？', x: LX, y: 230, size: 56, ...p8, ...ink, anim: 'blur' });
+    lyric(tx, L, { at: 2.25, out: 2.95, text: '改得越多，出错时要翻的范围越大', x: LX, y: 330, size: 40, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 2.6, out: 2.95, text: '把每次出错的范围，控制在‹一步›之内', x: LX, y: 420, size: 52, ...p8, ...ink, anim: 'type' });
     lyric(tx, L, { at: 3, out: 5.9, text: '换个打法，一关一关过：', x: LX, y: 230, size: 52, ...p8, ...ink, anim: 'type' });
     NODES.forEach(([n, x], i) => lyric(tx, L, { at: 3.05 + i * .06, out: 5.9, text: n, x, y: 700, size: 34, ...p8, col: i === 2 ? P.blu : P.wht, align: 'center', anim: 'type' }));
     lyric(tx, L, { at: 3.8, out: 4.9, text: '这一关是«你的»：看计划、改计划。我在这儿等你盖章', x: LX, y: 330, size: 40, ...p8, ...ink, acc: [P.yel, P.blu], anim: 'type' });

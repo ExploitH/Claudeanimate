@@ -364,8 +364,8 @@ return scene({
     Sm.add('drone', 0, 0, 26, B * 4, .35);
     H.each(1, B, b => { const cn = H.PJ[b % 4]; H.WALK[cn].forEach((m, j) => Sm.add('bass', b, j, m, .95, .55, 'upright')); Sm.add('snare', b, 3, 0, 0, .3, 'brush'); });
     Sm.add('riser', Math.floor(t('pkg2')), 0, 0, Math.max(4, (BUILD0 - Math.floor(t('pkg2'))) * 4), .45);
-    Sm.add('impact', Math.floor(BUILD0), (BUILD0 % 1) * 4, 0, 0, .6);
-    Sm.add('impact', Math.floor(DOOR), (DOOR % 1) * 4, 0, 0, .7);
+    Sm.add('impact', Math.floor(BUILD0), (BUILD0 % 1) * 4, 0, 0, .45);
+    Sm.add('impact', Math.floor(DOOR), (DOOR % 1) * 4, 0, 0, .5);
     for (const [bb, bt, m, d] of H.NOIR) if (bb < 4) Sm.add('trumpet', Math.ceil(t('slop')) + bb, Sm.sw(bt), m, d, .55);
   },
 }, S);

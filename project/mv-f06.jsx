@@ -247,7 +247,19 @@ return scene({
       alpha(tx, ka, () => { txt(tx, 'UserService.java', 960, 455, fnt(700, 32, F.mono), WL, 'center'); txt(tx, 'Agent 1 改这里', 560, 380, fnt(900, 34), YE, 'center'); txt(tx, 'Agent 2 改这里', 1360, 380, fnt(900, 34), OR, 'center'); if (tear > .3) txt(tx, '冲突：互相覆盖', 960, 790, fnt(900, 52), RD, 'center'); });
     }
     // ---------- Clawd：线框 ----------
-    let st = { x: CEN[0], y: CEN[1] + 50, px: 9, skin: 'wire', col: YE, pose: 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: 0, alpha: 0 };
+    let st = { x: CEN[0], y: CEN[1] + 50, px: 12, skin: 'wire', col: YE, pose: 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: 0, alpha: 0 };
+    // 每一段给 Clawd 找一个不挡内容的位置：[从哪句开始, x, y, 动作]；换段时跳过去
+    const SPOT = [['cars', 1720, 560, 'pointL'], ['layer', 1700, 820, 'idle'], ['list', 1730, 830, 'pointL'], ['car', 1730, 800, 'pointL'], ['hal0', 330, 720, 'idle'], ['ra0', 1760, 800, 'idle'], ['ra2', 860, 860, 'pointL'], ['spec', 500, 660, 'point'], ['route0', 1620, 780, 'idle']];
+    let sp = null; SPOT.forEach(q => { if (b >= t(q[0])) sp = q; });
+    if (sp && b < t('fight')) {
+      const k = prog(b, t(sp[0]), t(sp[0]) + .35, E.io), prev = SPOT[SPOT.indexOf(sp) - 1] || sp;
+      st = { ...st, alpha: prog(b, t('cars') - .2, t('cars') + .2), x: lerp(prev[1], sp[1], k), y: lerp(prev[2], sp[2], k) - Math.sin(Math.PI * k) * 90, pose: sp[3] };
+      if (sp[0] === 'hal0' && b >= t('h1')) { st.pose = b < t('other') ? 'up' : 'idle'; st.eyeShape = b < t('other') ? 'happy' : null; }
+      if (sp[0] === 'ra0' && b >= t('ra1')) { st.sweat = b; st.eye = -1; }
+      if (sp[0] === 'spec' && b >= t('spec4')) st.pose = 'up';
+      if (sp[0] === 'route0') { st.pose = 'type'; st.ph = tt * 18; }
+      if (sp[0] === 'list' && b < t('car')) { st.ph = tt * 14; }
+    }
         if (b >= t('ladder0') && b < t('ra0')) { let i = -1; RAT.forEach((a, j) => { if (b >= a) i = j; }); const k = i >= 0 ? prog(b, RAT[i], RAT[i] + .4, E.io) : 0; st = { ...st, alpha: 1, px: 10, x: 1170, y: 900 - 110 * Math.max(0, i - 1 + k) - 4, pose: 'up', walk: tt * 12 }; if (b >= t('up2')) { st.sweat = b; st.pose = 'idle'; } }
     if (b >= t('fight')) { const k = prog(b, t('fight') + .3, t('fight') + .7, E.io), tear = prog(b, t('fight') + .8, t('fight') + 1.2, E.out); clawd(cx, { ...st, alpha: 1, px: 16, x: lerp(420, 640, k) - tear * 80, y: 600, pose: 'push', walk: tt * 20, col: YE }); st = { ...st, alpha: 1, px: 16, x: lerp(1500, 1280, k) + tear * 80, y: 600, pose: 'push', walk: tt * 20, col: OR, eye: -1 }; }
     clawd(cx, st);

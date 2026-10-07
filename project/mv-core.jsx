@@ -114,7 +114,8 @@ function lyric(ctx, L, s) {
     if (s.box && blockK > 0) {
       const [pd, bc, rad] = s.box, sh = ctx.shadowBlur; ctx.shadowBlur = 0;
       const kk = anim === 'type' ? 1 : blockK;
-      rr(ctx, x - pd, ly - lh * .46, (lw + pd * 2) * kk, lh * .92, rad ?? 6, bc); ctx.shadowBlur = sh;
+      const ga = ctx.globalAlpha; ctx.globalAlpha *= 1 - outK;
+      rr(ctx, x - pd, ly - lh * .46, (lw + pd * 2) * kk, lh * .92, rad ?? 6, bc); ctx.shadowBlur = sh; ctx.globalAlpha = ga;
     }
     for (const c of ln) {
       const i = gi++, cs = s.at + i * st, e = prog(b, cs, cs + d, E.lin), wch = cw(ctx, c.ch);
@@ -886,11 +887,11 @@ function wrapText(ctx, text, maxW) {
   const out = [];
   for (const para of String(text).split('\n')) {
     let line = '', w = 0, mark = '';
-    const toks = [...para];
+    const toks = para.match(/[A-Za-z0-9_.@#%$'+\-\/]+|[\s\S]/gu) || []; // 英文词、数字整体不拆
     for (let i = 0; i < toks.length; i++) {
       const ch = toks[i];
       if ('‹›«»'.includes(ch)) { line += ch; mark = ch === '‹' || ch === '«' ? ch : ''; continue; }
-      const cwid = cw(ctx, ch);
+      const cwid = ch.length > 1 ? ctx.measureText(ch).width : cw(ctx, ch);
       if (w + cwid > maxW && line && !PUNCT.test(ch)) {
         const close = mark === '‹' ? '›' : mark === '«' ? '»' : '';
         out.push(line + close); line = mark; w = 0;

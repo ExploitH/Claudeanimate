@@ -15,14 +15,15 @@ function level(b) { // 已经落下的层数（带下落动画）
 return {
   scene: '02 轨道 · AI 在做什么', bars: 16, look: 2,
   enter: { kind: TR.IRIS, a: 2, b: 2, p: [1560 / 1920, 760 / 1080, 0, 0], col: '#9fd8ff' },
-  hud: { num: '02', name: 'AI 写代码时在做什么', world: '轨道', ink: '#e6efff' },
+  hud: { num: '02', name: 'AI 写代码时在做什么', time: '21:10', line: '你还记得吧？', ink: '#e6efff', acc: '#9fd8ff', card: [1180, 400] },
+  you: [[.95, 2.1, '接着上周的代码写，你还记得吧？']],
   src: [[11, 13, 'Chroma, Context Rot, 2025-07']],
   par: L => { const b = L.b, r = (WR / 1080) * prog(b, .2, 1.2, E.out) * (1 - .25 * prog(b, 13, 13.6, E.io)), cx = lerp(WC[0], 560, prog(b, 13, 13.6, E.io)); return [cx / 1920, WC[1] / 1080, r, .06 + .9 * prog(b, 15, 15.8)]; },
   cam: L => [1.03 + .02 * Math.sin(L.t * .3), .015 * Math.sin(L.t * .17), .01 * Math.sin(L.t * .2), 0],
   pulse: L => .6,
   sfx: [[1.25, 'blip', 700], [2.25, 'swish'], [3.25, 'click'], ...KINDS.map((_, i) => [3.5 + i * .25, 'pop']), [5, 'freeze'], [5.75, 'glitch'], [7, 'swish'],
     ...[8, 9, 10, 11].map(b => [b, 'thud']), ...[0, 1, 2, 3, 4, 5].map(i => [11.25 + i * .25, 'stick']), [12, 'tape'], [12.25, 'whoosh'], [13.5, 'chime', 1319], [14, 'chime', 1568], [14.5, 'chime', 1976], [15.5, 'sparkle']],
-  text: KINDS.map(k => k[0]).join('') + NODES.map(n => n[0]).join('') + OUTSIDE.map(o => o[0]).join('') + '我不记得你。我只看得见上下文窗口里的东西它有上限容量上限窗口里装着我的知识停在训练截止那天新版本的库，我可能按老写法写，甚至编一个不存在的方法训练截止oldLogin() loginV2() 不存在的方法我是 Agent自己调用工具，一轮轮干到完成每转一圈，窗口就更满塞得越满，越容易漏看、搞混context rot Chroma 2025 测了 18 个模型：输入越长越不稳满了就压缩，细节跟着丢压缩后的摘要细节你能动手脚的三处给我看什么用哪个模型用什么工具运行我第 圈→ 03 · 04 → 05 → 06',
+  text: KINDS.map(k => k[0]).join('') + NODES.map(n => n[0]).join('') + OUTSIDE.map(o => o[0]).join('') + '我不记得你。我只看得见上下文窗口里的东西。窗口外面，一片黑。我的知识，停在训练截止那天。之后才出的新版本库，我可能照老写法写，甚至编一个不存在的方法。自己调工具，一轮一轮干到完成每转一圈，窗口就满一点。塞得越满，我越容易漏看、搞混。满了就压缩——细节，跟着丢所以你能动手脚的，就三处：它有上限容量上限窗口里装着我的知识停在训练截止那天新版本的库，我可能按老写法写，甚至编一个不存在的方法训练截止oldLogin() loginV2() 不存在的方法我是 Agent自己调用工具，一轮轮干到完成每转一圈，窗口就更满塞得越满，越容易漏看、搞混context rot Chroma 2025 测了 18 个模型：输入越长越不稳满了就压缩，细节跟着丢压缩后的摘要细节你能动手脚的三处给我看什么用哪个模型用什么工具运行我第 圈→ 03 · 04 → 05 → 06',
   draw(cx, tx, L) {
     const b = L.b, t = L.t, wx = lerp(WC[0], 560, prog(b, 13, 13.6, E.io)), wy = WC[1], wr = WR * (1 - .25 * prog(b, 13, 13.6, E.io));
     // 窗口外漂着的东西（着色器只让窗口里的看得见）
@@ -108,19 +109,19 @@ return {
     });
     // ---------- 歌词 ----------
     const RX = 1150;
-    lyric(tx, L, { at: 1.25, out: 2.15, text: '我不记得你。', x: RX, y: 420, size: 110, w: 900, col: '#ffffff', anim: 'blur', outAnim: 'up', glow: [30, 'rgba(120,180,255,.5)'] });
-    lyric(tx, L, { at: 2.25, out: 3.4, text: '我只看得见\n‹上下文窗口›里的东西', x: RX, y: 400, size: 64, w: 900, col: '#ffffff', acc: ['#9fd8ff'], anim: 'rise' });
+    lyric(tx, L, { at: 1.35, out: 2.15, text: '我不记得你。', x: RX, y: 420, size: 110, w: 900, col: '#ffffff', anim: 'blur', outAnim: 'up', glow: [30, 'rgba(120,180,255,.5)'] });
+    lyric(tx, L, { at: 2.25, out: 3.4, text: '我只看得见\n‹上下文窗口›里的东西。\n窗口外面，一片黑。', x: RX, y: 400, size: 58, w: 900, col: '#ffffff', acc: ['#9fd8ff'], anim: 'rise' });
     lyric(tx, L, { at: 3.4, out: 4.9, text: '窗口有上限，里面装着：', x: RX, y: 300, size: 46, w: 700, col: '#dfeaff', anim: 'rise', outAnim: 'up' });
     lyric(tx, L, { at: 3.5, out: 4.9, text: '系统设定 · 你说的话\n读过的文件 · 命令输出', x: RX, y: 420, size: 54, w: 900, col: '#ffffff', anim: 'pop', st: .25, rev: 1, outAnim: 'up' });
-    lyric(tx, L, { at: 5, out: 6.85, text: '我的知识停在‹训练截止›那天', x: RX - 40, y: 300, size: 52, w: 900, col: '#ffffff', acc: ['#9fd8ff'], anim: 'rise' });
-    lyric(tx, L, { at: 5.75, out: 6.85, text: '新版本的库，我可能按老写法写，\n甚至编一个‹不存在的方法›', x: RX - 40, y: 430, size: 40, w: 500, col: '#dfeaff', acc: ['#f07178'], anim: 'rise' });
+    lyric(tx, L, { at: 5, out: 6.85, text: '我的知识，停在‹训练截止›那天。', x: RX - 40, y: 300, size: 52, w: 900, col: '#ffffff', acc: ['#9fd8ff'], anim: 'rise' });
+    lyric(tx, L, { at: 5.75, out: 6.85, text: '之后才出的新版本库，我可能照老写法写，\n甚至编一个‹不存在的方法›。', x: RX - 40, y: 430, size: 40, w: 500, col: '#dfeaff', acc: ['#f07178'], anim: 'rise' });
     lyric(tx, L, { at: 7, out: 8.9, text: '我是 ‹Agent›', x: RX + 40, y: 300, size: 76, w: 900, col: '#ffffff', acc: ['#9fd8ff'], anim: 'drop' });
-    lyric(tx, L, { at: 7.25, out: 8.9, text: '自己调用工具，一轮轮干到完成', x: RX + 40, y: 400, size: 40, w: 500, col: '#dfeaff', anim: 'rise' });
-    lyric(tx, L, { at: 9, out: 10.9, text: '每转一圈，\n窗口就更满', x: RX + 40, y: 360, size: 76, w: 900, col: '#ffffff', anim: 'rise' });
-    lyric(tx, L, { at: 11.1, out: 12.15, text: '塞得越满，\n越容易‹漏看、搞混›', x: RX + 20, y: 340, size: 64, w: 900, col: '#ffffff', acc: ['#f07178'], anim: 'blur' });
+    lyric(tx, L, { at: 7.25, out: 8.9, text: '自己调工具，一轮一轮干到完成', x: RX + 40, y: 400, size: 40, w: 500, col: '#dfeaff', anim: 'rise' });
+    lyric(tx, L, { at: 9, out: 10.9, text: '每转一圈，\n窗口就满一点。', x: RX + 40, y: 360, size: 76, w: 900, col: '#ffffff', anim: 'rise' });
+    lyric(tx, L, { at: 11.1, out: 12.15, text: '塞得越满，\n我越容易‹漏看、搞混›。', x: RX + 20, y: 340, size: 64, w: 900, col: '#ffffff', acc: ['#f07178'], anim: 'blur' });
     lyric(tx, L, { at: 11.3, out: 12.15, text: 'context rot · Chroma 2025 测了 18 个模型\n输入越长，表现越不稳', x: RX + 20, y: 500, size: 28, fam: F.mono, w: 400, col: '#9fb4d8', anim: 'type', rev: .5 });
-    lyric(tx, L, { at: 12.25, out: 12.9, text: '满了就压缩，\n«细节跟着丢»', x: RX + 20, y: 380, size: 70, w: 900, col: '#ffffff', acc: ['#f2a65a', '#f2a65a'], anim: 'stamp', d: .15, outAnim: 'scatter' });
-    lyric(tx, L, { at: 13, out: 15.8, text: '你能动手脚的‹三处›', x: 960, y: 170, size: 56, w: 900, col: '#ffffff', acc: ['#ffe9a8'], align: 'center', anim: 'rise' });
+    lyric(tx, L, { at: 12.25, out: 12.9, text: '满了就压缩——\n«细节，跟着丢»', x: RX + 20, y: 380, size: 70, w: 900, col: '#ffffff', acc: ['#f2a65a', '#f2a65a'], anim: 'stamp', d: .15, outAnim: 'scatter' });
+    lyric(tx, L, { at: 13, out: 15.8, text: '所以你能动手脚的，就‹三处›：', x: 960, y: 170, size: 56, w: 900, col: '#ffffff', acc: ['#ffe9a8'], align: 'center', anim: 'rise' });
     [['给我看什么', '→ 03 · 04', 13.5, 300], ['用哪个模型', '→ 05', 14, 520], ['用什么工具运行我', '→ 06', 14.5, 740]].forEach(([s, to, at, y]) => {
       lyric(tx, L, { at, out: 15.8, text: s, x: 1140, y, size: 58, w: 900, col: '#ffffff', anim: 'slide' });
       lyric(tx, L, { at: at + .1, out: 15.8, text: to, x: 1140, y: y + 64, size: 28, fam: F.mono, w: 400, col: '#ffe9a8', anim: 'type' });

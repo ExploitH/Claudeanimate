@@ -12,7 +12,8 @@ function sheet(ctx, x, y, w, h, col, rot, fn) { // 一张剪纸：白边 + 颜�
 return {
   scene: '04 纸 · 上下文', bars: 18, look: 4,
   enter: { kind: TR.TEAR, a: 1, b: 3 },
-  hud: { num: '04', name: '上下文', world: '纸', ink: NAVY, acc: CORAL },
+  hud: { num: '04', name: '上下文', time: '21:45', line: '怎么又错了', ink: NAVY, acc: CORAL },
+  you: [[.95, 2.15, '怎么又报错了？'], [11.95, 13.3, '再试一次……再试一次……']],
   rule: { n: 3, at: 9.5, len: 3, text: '规则文件自己写，写短' },
   src: [[6.25, 9.4, 'Gloaguen et al., ETH Zurich / ICLR 2026']],
   par: L => [1, .32 + .1 * prog(L.b, 12, 14.5) * (1 - prog(L.b, 14.5, 15)), 0, 0],
@@ -20,7 +21,7 @@ return {
   pulse: L => .4,
   sfx: [[1, 'paper'], [1.6, 'q', 600], ...STACK.map(s => [s[2], 'paper']), [4.5, 'swish'], ...[5, 5.25, 5.5, 5.75].map(b => [b, 'key']), [6.25, 'paper'], [6.75, 'bonk'], [7.5, 'chime', 1568], [9, 'snip'], [9.25, 'snip'],
     [11, 'stamp'], ...[12, 12.25, 12.5, 12.75, 13, 13.25, 13.5].map(b => [b, 'bonk']), [14.5, 'whoosh'], [14.75, 'chime', 1319], [15.75, 'paper'], [16.5, 'click']],
-  text: STACK.map(s => s[0]).join('') + RULES.flat().join('') + FILES.join('') + '提示词写清楚了，我还是出错：不知道项目用 Maven 构建不知道测试怎么跑pom.xml? mvn test?我看到的，不只是提示词提示词只是其中一小块规则文件：AGENTS.md · CLAUDE.md · Qoder 项目规则每次对话，自动带上ETH Zurich · ICLR 2026研究对比了两种规则文件AI 自动生成8 组里 5 组成功率下降成本 +20% 以上开发者手写成功率平均 +4%规则文件你自己写，写短只写我从代码里看不出来的用 @ 指定相关文件比让我满仓库翻，更准、更省同一个对话里失败几次，错误的尝试堆满上下文，我会被带歪✗ 失败别硬撑：新开对话，只带结论过去结论用到新库：把官方文档的相关段落贴给我或者接上能查文档的工具MCP：让 AI 连接外部工具和数据的标准接口官方文档',
+  text: STACK.map(s => s[0]).join('') + RULES.flat().join('') + FILES.join('') + '提示词写清楚了，我还是不知道——项目用 Maven 构建？测试怎么跑？之前的对话、读过的文件、工具输出……提示词只是最上面那一张。垫在最底下的，是有人专门比过两种规则文件：所以：自己写，写短。用 @ 点名相关文件失败一次次堆进对话，我会被这些错误带歪。用到新库？把官方文档的那一段贴给我，或者接一个能查文档的工具。提示词写清楚了，我还是出错：不知道项目用 Maven 构建不知道测试怎么跑pom.xml? mvn test?我看到的，不只是提示词提示词只是其中一小块规则文件：AGENTS.md · CLAUDE.md · Qoder 项目规则每次对话，自动带上ETH Zurich · ICLR 2026研究对比了两种规则文件AI 自动生成8 组里 5 组成功率下降成本 +20% 以上开发者手写成功率平均 +4%规则文件你自己写，写短只写我从代码里看不出来的用 @ 指定相关文件比让我满仓库翻，更准、更省同一个对话里失败几次，错误的尝试堆满上下文，我会被带歪✗ 失败别硬撑：新开对话，只带结论过去结论用到新库：把官方文档的相关段落贴给我或者接上能查文档的工具MCP：让 AI 连接外部工具和数据的标准接口官方文档',
   draw(cx, tx, L) {
     const b = L.b, t = L.t, T12 = Math.floor(t * 12) / 12;
     // ---------- 开场：Clawd 不知道 Maven ----------
@@ -117,23 +118,24 @@ return {
     if (b >= 14.85 && b < 15.65) alpha(cx, prog(b, 14.85, 15) * (1 - prog(b, 15.5, 15.65)), () => sheet(cx, 1300, 560, 200, 90, MUST, -.08 + jit(t, 12, .02), () => txt(cx, '结论', 1400, 605, fnt(900, 40), NAVY, 'center')));
     // ---------- 歌词 ----------
     const LX = 130, ink = { col: NAVY, acc: [CORAL, RED] };
-    lyric(tx, L, { at: 1, out: 2.35, text: '提示词写清楚了，\n我‹还是出错›：', x: LX, y: 250, size: 56, w: 900, ...ink, anim: 'drop' });
-    lyric(tx, L, { at: 1.6, out: 2.35, text: '不知道项目用 Maven 构建\n不知道测试怎么跑', x: LX, y: 470, size: 38, w: 700, ...ink, anim: 'rise' });
-    lyric(tx, L, { at: 2.5, out: 4.3, text: '我看到的，\n‹不只是提示词›', x: LX, y: 300, size: 66, w: 900, ...ink, anim: 'drop' });
-    lyric(tx, L, { at: 3.5, out: 4.3, text: '提示词只是其中一小块', x: LX, y: 470, size: 38, w: 700, ...ink, anim: 'rise' });
-    lyric(tx, L, { at: 4.5, out: 6.1, text: '‹规则文件›', x: LX, y: 300, size: 80, w: 900, ...ink, anim: 'drop' });
+    lyric(tx, L, { at: 1.25, out: 2.35, text: '提示词写清楚了，\n我‹还是不知道›——', x: LX, y: 250, size: 56, w: 900, ...ink, anim: 'drop' });
+    lyric(tx, L, { at: 1.6, out: 2.35, text: '项目用 Maven 构建？\n测试怎么跑？', x: LX, y: 470, size: 38, w: 700, ...ink, anim: 'rise' });
+    lyric(tx, L, { at: 2.5, out: 4.3, text: '我看到的，\n‹不只是提示词›。', x: LX, y: 300, size: 66, w: 900, ...ink, anim: 'drop' });
+    lyric(tx, L, { at: 3.5, out: 4.3, text: '之前的对话、读过的文件、工具输出……\n提示词只是最上面那一张。', x: LX, y: 470, size: 38, w: 700, ...ink, anim: 'rise' });
+    lyric(tx, L, { at: 4.45, out: 6.1, text: '垫在最底下的，是', x: LX, y: 220, size: 40, w: 700, ...ink, anim: 'rise' });
+    lyric(tx, L, { at: 4.55, out: 6.1, text: '‹规则文件›', x: LX, y: 310, size: 80, w: 900, ...ink, anim: 'drop' });
     lyric(tx, L, { at: 4.65, out: 6.1, text: 'AGENTS.md · CLAUDE.md\nQoder 项目规则', x: LX, y: 430, size: 36, fam: F.mono, w: 700, ...ink, anim: 'type' });
     lyric(tx, L, { at: 5, out: 6.1, text: '每次对话，自动带上', x: LX, y: 590, size: 48, w: 900, ...ink, anim: 'rise' });
     lyric(tx, L, { at: 6.25, out: 8.9, text: 'ETH Zurich · ICLR 2026', x: LX, y: 280, size: 32, fam: F.mono, w: 700, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 6.4, out: 8.9, text: '研究对比了\n两种规则文件', x: LX, y: 420, size: 62, w: 900, ...ink, anim: 'drop' });
-    lyric(tx, L, { at: 9, out: 10.85, text: '规则文件\n你‹自己写›，‹写短›', x: LX, y: 340, size: 76, w: 900, ...ink, anim: 'drop', st: .2 });
-    lyric(tx, L, { at: 9.4, out: 10.85, text: '只写我从代码里看不出来的', x: LX, y: 540, size: 40, w: 700, ...ink, anim: 'rise' });
-    lyric(tx, L, { at: 11, out: 11.85, text: '用 ‹@› 指定相关文件', x: LX, y: 340, size: 66, w: 900, ...ink, anim: 'drop' });
+    lyric(tx, L, { at: 6.4, out: 8.9, text: '有人专门比过\n两种规则文件：', x: LX, y: 420, size: 62, w: 900, ...ink, anim: 'drop' });
+    lyric(tx, L, { at: 9, out: 10.85, text: '所以：\n‹自己写›，‹写短›。', x: LX, y: 340, size: 76, w: 900, ...ink, anim: 'drop', st: .2 });
+    lyric(tx, L, { at: 9.4, out: 10.85, text: '只写我从代码里看不出来的。', x: LX, y: 540, size: 40, w: 700, ...ink, anim: 'rise' });
+    lyric(tx, L, { at: 11, out: 11.85, text: '用 ‹@› 点名相关文件', x: LX, y: 340, size: 66, w: 900, ...ink, anim: 'drop' });
     lyric(tx, L, { at: 11.25, out: 11.85, text: '比让我满仓库翻，更准、更省', x: LX, y: 470, size: 38, w: 700, ...ink, anim: 'rise' });
-    lyric(tx, L, { at: 12, out: 14.4, text: '同一个对话里失败几次，\n错误的尝试堆满上下文，\n我会被‹带歪›', x: 980, y: 380, size: 50, w: 900, ...ink, anim: 'rise' });
-    lyric(tx, L, { at: 14.6, out: 15.6, text: '别硬撑：\n‹新开对话›，只带结论过去', x: LX, y: 360, size: 58, w: 900, ...ink, anim: 'drop' });
-    lyric(tx, L, { at: 15.75, out: 17.8, text: '用到新库：\n把‹官方文档›的相关段落贴给我', x: LX, y: 300, size: 48, w: 900, ...ink, anim: 'rise' });
-    lyric(tx, L, { at: 16.5, out: 17.8, text: '或者接上能查文档的工具\n«MCP»：让 AI 连接外部工具和数据的标准接口', x: LX, y: 520, size: 34, w: 700, ...ink, acc: [CORAL, BLUEG], anim: 'rise' });
+    lyric(tx, L, { at: 12.25, out: 14.4, text: '失败一次次堆进对话，\n我会被这些错误‹带歪›。', x: 980, y: 420, size: 50, w: 900, ...ink, anim: 'rise' });
+    lyric(tx, L, { at: 14.6, out: 15.6, text: '别硬撑：\n‹新开对话›，只带结论过去。', x: LX, y: 360, size: 58, w: 900, ...ink, anim: 'drop' });
+    lyric(tx, L, { at: 15.75, out: 17.8, text: '用到新库？\n把‹官方文档›的那一段贴给我，', x: LX, y: 300, size: 48, w: 900, ...ink, anim: 'rise' });
+    lyric(tx, L, { at: 16.5, out: 17.8, text: '或者接一个能查文档的工具。\n«MCP»：让 AI 连接外部工具和数据的标准接口', x: LX, y: 520, size: 34, w: 700, ...ink, acc: [CORAL, BLUEG], anim: 'rise' });
   },
 };
 };

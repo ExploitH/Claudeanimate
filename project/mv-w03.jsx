@@ -13,7 +13,8 @@ const CL = [1640, 880];
 return {
   scene: '03 印刷 · 提示词', bars: 18, look: 3,
   enter: { kind: TR.WIPE, a: 1, b: 3, col: PINK },
-  hud: { num: '03', name: '提示词', world: '印刷', ink: INK, acc: PINK, mv: [.55, .95] },
+  hud: { num: '03', name: '提示词', time: '21:20', line: '帮我写个登录', ink: INK, acc: PINK, mv: [.5, .9] },
+  you: [[.55, 1.6, '帮我写个登录功能']],
   rule: { n: 2, at: 16.5, text: '提示词写清目标、背景、约束、验收标准' },
   src: [[8, 13, 'Anthropic, Prompting best practices'], [15.25, 16.5, 'Anthropic, Prompting best practices']],
   par: L => { const b = L.b, h = Math.max(L.hit(1, .4), L.hit(4, .5), L.hit(16, .4)); return [.5 + 2.2 * h, 1, 0, 0]; },
@@ -22,7 +23,7 @@ return {
   sfx: [[1, 'stamp'], ...QX.map((_, i) => [1.5 + i * .25, 'q', 520 + i * 90]), ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => [2.5 + i * .0625, 'blip', 900 + i * 60]), ...GUESS.map((_, i) => [3 + i * .25, 'pop']),
     [4, 'scratch'], [4, 'stamp'], ...PARTS.map((_, i) => [5 + i * .25, 'stamp']), ...[6.5, 6.75, 7, 7.25].map(b => [b, 'snip']), [8.25, 'stamp'],
     ...SEG_AT.map(b => [b, 'paper']), [13, 'swish'], ...[13.25, 13.5, 13.75, 14].map(b => [b, 'stamp']), [14.25, 'swish'], ...STK.map((_, i) => [15.25 + i * .25, 'stick']), [16, 'whoosh'], [16, 'scratch']],
-  text: QS.flat(2).join('') + PARTS.flat().join('') + SEGS.map(s => s[1]).join('') + STK.map(s => s[0]).join('') + '帮我写个登录功能每个没说的地方，我只能自己挑GARBAGE IN, GARBAGE OUT输入含糊，输出就靠不住写清楚，分五部分12345再顺手写一句为什么官方指南也这么建议：知道原因，我判断得更贴合WHY?同一个需求，写清楚以后：报错的时候，给我四样完整报错和堆栈你做了什么操作你期望的结果实际的结果界面出问题？直接甩截图大任务拆小，一个对话只干一件事没想清楚？先让我提问，或者先出方案这些老套路，用不着了语气太重，我反而用力过猛正常说话就好≠ 你想要的',
+  text: QS.flat(2).join('') + PARTS.flat().join('') + SEGS.map(s => s[1]).join('') + STK.map(s => s[0]).join('') + '帮我写个登录功能重写。一条清楚的提示词，五部分：知道原因，我判断得更准同一个需求，写清楚是这样：界面出问题？直接截图大活拆小没想清楚？先让我问你，或者先出方案每个没说的地方，我只能自己挑GARBAGE IN, GARBAGE OUT输入含糊，输出就靠不住写清楚，分五部分12345再顺手写一句为什么官方指南也这么建议：知道原因，我判断得更贴合WHY?同一个需求，写清楚以后：报错的时候，给我四样完整报错和堆栈你做了什么操作你期望的结果实际的结果界面出问题？直接甩截图大任务拆小，一个对话只干一件事没想清楚？先让我提问，或者先出方案这些老套路，用不着了语气太重，我反而用力过猛正常说话就好≠ 你想要的',
   draw(cx, tx, L) {
     const b = L.b, t = L.t;
     // 背景版线
@@ -112,19 +113,19 @@ return {
     // ---------- 歌词 ----------
     const LX = 140;
     lyric(tx, L, { at: 1, out: 4.75, text: '「帮我写个登录功能」', x: LX, y: 230, size: 120, fam: F.poster, w: 400, col: BLUE, anim: 'stamp', d: .1, outAnim: 'up' });
-    lyric(tx, L, { at: 3, out: 3.95, text: '每个没说的地方，我只能‹自己挑›', x: LX, y: 870, size: 48, w: 900, col: INK, acc: [PINK], anim: 'rise' });
+    lyric(tx, L, { at: 3, out: 3.95, text: '每个没说的地方，我只能‹自己挑›。', x: LX, y: 870, size: 48, w: 900, col: INK, acc: [PINK], anim: 'rise' });
     lyric(tx, L, { at: 4, out: 4.9, text: 'GARBAGE IN,\nGARBAGE OUT', x: 900, y: 520, size: 150, fam: F.poster, w: 400, col: PINK, align: 'center', anim: 'stamp', d: .08, lh: 1.05, outAnim: 'cut' });
     lyric(tx, L, { at: 4.4, out: 4.9, text: '输入含糊，输出就靠不住', x: 900, y: 790, size: 40, w: 900, col: INK, align: 'center', anim: 'fade' });
-    lyric(tx, L, { at: 5, out: 7.9, text: '写清楚，分五部分', x: LX, y: 230, size: 56, w: 900, col: INK, anim: 'slide' });
+    lyric(tx, L, { at: 5, out: 7.9, text: '重写。一条清楚的提示词，五部分：', x: LX, y: 230, size: 52, w: 900, col: INK, anim: 'slide' });
     lyric(tx, L, { at: 8.25, out: 8.9, text: '再顺手写一句：«为什么»', x: LX, y: 440, size: 72, w: 900, col: INK, acc: [PINK, PINK], anim: 'slide' });
-    lyric(tx, L, { at: 8.4, out: 8.9, text: '官方指南也这么建议：\n知道原因，我判断得更贴合', x: LX, y: 600, size: 38, w: 700, col: INK, anim: 'fade' });
-    lyric(tx, L, { at: 9, out: 12.9, text: '同一个需求，写清楚以后：', x: LX, y: 220, size: 40, w: 900, col: INK, anim: 'type' });
+    lyric(tx, L, { at: 8.4, out: 8.9, text: '官方指南也这么建议：\n知道原因，我判断得更准', x: LX, y: 600, size: 38, w: 700, col: INK, anim: 'fade' });
+    lyric(tx, L, { at: 9, out: 12.9, text: '同一个需求，写清楚是这样：', x: LX, y: 220, size: 40, w: 900, col: INK, anim: 'type' });
     lyric(tx, L, { at: 13, out: 14.15, text: '报错的时候，给我‹四样›', x: LX, y: 280, size: 60, w: 900, col: INK, acc: [PINK], anim: 'slide' });
-    lyric(tx, L, { at: 13.6, out: 14.15, text: '界面出问题？直接甩截图', x: LX, y: 820, size: 38, w: 700, col: BLUE, anim: 'fade' });
-    lyric(tx, L, { at: 14.25, out: 15.15, text: '大任务拆小，\n一个对话只干‹一件事›', x: LX, y: 420, size: 72, w: 900, col: INK, acc: [BLUE], anim: 'stamp', d: .1, outAnim: 'up' });
-    lyric(tx, L, { at: 14.6, out: 15.15, text: '没想清楚？先让我提问，或者先出方案', x: LX, y: 620, size: 40, w: 700, col: INK, anim: 'fade' });
+    lyric(tx, L, { at: 13.6, out: 14.15, text: '界面出问题？直接截图', x: LX, y: 820, size: 38, w: 700, col: BLUE, anim: 'fade' });
+    lyric(tx, L, { at: 14.25, out: 15.15, text: '大活拆小，\n一个对话只干‹一件事›', x: LX, y: 420, size: 72, w: 900, col: INK, acc: [BLUE], anim: 'stamp', d: .1, outAnim: 'up' });
+    lyric(tx, L, { at: 14.6, out: 15.15, text: '没想清楚？先让我问你，或者先出方案', x: LX, y: 620, size: 40, w: 700, col: INK, anim: 'fade' });
     lyric(tx, L, { at: 16, out: 17.8, text: '这些老套路，用不着了', x: LX, y: 280, size: 60, w: 900, col: INK, anim: 'slide' });
-    lyric(tx, L, { at: 16.2, out: 17.8, text: '语气太重，我反而用力过猛\n‹正常说话›就好', x: LX, y: 440, size: 48, w: 700, col: INK, acc: [PINK], anim: 'fade' });
+    lyric(tx, L, { at: 16.2, out: 17.8, text: '语气太重，我反而用力过猛。\n‹正常说话›就好', x: LX, y: 440, size: 48, w: 700, col: INK, acc: [PINK], anim: 'fade' });
   },
 };
 };

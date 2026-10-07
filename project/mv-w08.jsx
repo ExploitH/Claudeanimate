@@ -10,7 +10,8 @@ const serif = (w, s) => fnt(w, s, F.serif);
 return {
   scene: '08 黑色电影 · 检查结果', bars: 18, look: 8,
   enter: { kind: TR.IRIS, a: 1, b: 3, p: [.5, .5, 0, 0], col: '#ffffff' },
-  hud: { num: '08', name: '检查结果', world: '黑色电影', ink: WH, acc: RED },
+  hud: { num: '08', name: '检查结果', time: '00:30', line: '全部通过', ink: WH, acc: RED },
+  you: [[1.95, 2.95, '我看看 diff']],
   rule: { n: 7, at: 16.5, text: '看 diff、自己运行、确认依赖真实存在' },
   src: [[6, 7.9, 'Anthropic, Prompting best practices'], [8, 11, 'Churilov via InfoWorld, 2026-04'], [14, 18, 'METR, 2025-07 & 2026-02']],
   par: L => [1, .9, 0, 0],
@@ -19,7 +20,7 @@ return {
   pulse: L => .2,
   sfx: [[1, 'type'], [1.75, 'whistle'], [2.25, 'paper'], [2.6, 'ding'], ...[3.5, 3.75, 4, 4.25, 4.5].map(b => [b, 'camera']), [6, 'type'], [6.75, 'ding'], [8.75, 'type'], [9, 'blip', 300], [9.5, 'stinger'], [10.25, 'type'],
     ...[11.25, 11.75, 12.25].map(b => [b, 'stamp']), [13, 'type'], [14.5, 'whoosh'], [15, 'whoosh'], ...typeSfx(10.3, 'SLOPSQUATTING', .18, 'type')],
-  text: DIFF.map(d => d[1]).join('') + SUS.join('') + FAKE.join('') + CASE.flat().join('') + '「登录功能已完成，测试全部通过。」全部通过 ✓打开 diff：「账号锁定」那条测试，被注释掉了diff：修改前后的逐行对比「看起来做完了」，其实挺常见官方指南专门提醒过：模型可能为了让测试通过而写死数值对，说的就是我们。我还会编出不存在的方法、参数、配置项和依赖包2026 年 4 月的一项研究：5 个主流模型，编出同样的 127 个不存在的包名其中 53 个，当时还没人注册Not found 发布者：??? 恶意代码示意攻击者抢先注册，往里塞恶意代码SLOPSQUATTING我说「完成了」之后，你要做三件事装依赖之前：去 Maven Central、npm 或 PyPI 确认真的存在再看看下载量和发布者METR 2025 对照实验：16 位熟练的开源开发者用 AI 后，实际慢了 19%，自己却觉得快了 20%自我感觉实际测量+20%−19%2026 年 2 月更新测出快了约 18%，但 METR 自己说明：样本有选择偏差，结果不可靠CASE FILE',
+  text: DIFF.map(d => d[1]).join('') + SUS.join('') + FAKE.join('') + CASE.flat().join('') + '被我注释掉了。这种「看起来做完了」，挺常见。五个惯犯：模型可能为了过测试，把数值写死……对，说的就是我们。我还会编：不存在的方法、参数、配置项，还有依赖包编出了同样的假包名所以我说「完成了」，你做三件事：确认它真的存在那用了 AI，到底快没快？也得测。METR 2025：实际慢了自己却觉得快了2026 年 2 月更新测出快约 18%「登录功能已完成，测试全部通过。」全部通过 ✓打开 diff：「账号锁定」那条测试，被注释掉了diff：修改前后的逐行对比「看起来做完了」，其实挺常见官方指南专门提醒过：模型可能为了让测试通过而写死数值对，说的就是我们。我还会编出不存在的方法、参数、配置项和依赖包2026 年 4 月的一项研究：5 个主流模型，编出同样的 127 个不存在的包名其中 53 个，当时还没人注册Not found 发布者：??? 恶意代码示意攻击者抢先注册，往里塞恶意代码SLOPSQUATTING我说「完成了」之后，你要做三件事装依赖之前：去 Maven Central、npm 或 PyPI 确认真的存在再看看下载量和发布者METR 2025 对照实验：16 位熟练的开源开发者用 AI 后，实际慢了 19%，自己却觉得快了 20%自我感觉实际测量+20%−19%2026 年 2 月更新测出快了约 18%，但 METR 自己说明：样本有选择偏差，结果不可靠CASE FILE',
   draw(cx, tx, L) {
     const b = L.b, t = L.t;
     // 墙角和地板线
@@ -111,25 +112,25 @@ return {
     if (ks > 0) alpha(cx, ks, () => { const x = 1300, y = 860 - 8 * 16 - 80; rr(cx, x - 170, y - 70, 340, 120, 6, WH, DK, 3); txt(cx, '全部通过 ✓', x, y - 10, serif(900, 44), DK, 'center'); seg(cx, x, y + 50, x, 860 - 5 * 16, DK, 6); });
     // ---------- 歌词 ----------
     const LX = 130, ink = { col: WH, acc: [RED, ORG] };
-    lyric(tx, L, { at: 1, out: 2.15, text: '「登录功能已完成，\n测试‹全部通过›。」', x: LX, y: 330, size: 60, fam: F.serif, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 2.25, out: 3.15, text: '打开 diff：', x: LX, y: 230, size: 44, fam: F.serif, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 2.5, out: 3.15, text: '「账号锁定」那条测试，\n‹被注释掉了›', x: LX, y: 340, size: 50, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 1, out: 1.95, text: '「登录功能已完成，\n测试‹全部通过›。」', x: LX, y: 330, size: 60, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 2.3, out: 3.15, text: '「账号锁定」那条测试，\n‹被我注释掉了›。', x: LX, y: 300, size: 50, fam: F.serif, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 2.75, out: 3.15, text: 'diff：修改前后的逐行对比', x: 700, y: 850, size: 30, w: 500, col: GR, anim: 'fade' });
-    lyric(tx, L, { at: 3.25, out: 5.85, text: '「看起来做完了」，其实‹挺常见›', x: 960, y: 220, size: 52, fam: F.serif, w: 900, ...ink, align: 'center', anim: 'type' });
-    lyric(tx, L, { at: 6, out: 7.1, text: '官方指南专门提醒过：\n模型可能为了让测试通过而‹写死数值›', x: LX, y: 340, size: 48, fam: F.serif, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 6.75, out: 7.1, text: '对，说的就是我们。', x: LX, y: 520, size: 44, fam: F.serif, w: 900, col: ORG, anim: 'type' });
-    lyric(tx, L, { at: 7.2, out: 7.9, text: '我还会编出‹不存在›的\n方法、参数、配置项和依赖包', x: LX, y: 300, size: 48, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 3.25, out: 5.85, text: '这种「看起来做完了」，挺常见。‹五个惯犯›：', x: 960, y: 220, size: 48, fam: F.serif, w: 900, ...ink, align: 'center', anim: 'type' });
+    lyric(tx, L, { at: 6, out: 7.1, text: '官方指南专门提醒过：\n模型可能为了过测试，把数值‹写死›', x: LX, y: 340, size: 48, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 6.75, out: 7.1, text: '……对，说的就是我们。', x: LX, y: 520, size: 44, fam: F.serif, w: 900, col: ORG, anim: 'type' });
+    lyric(tx, L, { at: 7.2, out: 7.9, text: '我还会编：‹不存在›的方法、参数、\n配置项，还有依赖包', x: LX, y: 300, size: 48, fam: F.serif, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 8, out: 8.7, text: '2026 年 4 月的一项研究：', x: LX, y: 260, size: 40, fam: F.serif, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 8.1, out: 9.4, text: '5 个主流模型，\n编出同样的 ‹127› 个\n不存在的包名', x: LX, y: 440, size: 46, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 8.1, out: 9.4, text: '5 个主流模型，\n编出了同样的 ‹127› 个\n假包名', x: LX, y: 440, size: 46, fam: F.serif, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 8.6, out: 9.4, text: '其中 ‹53› 个，当时还没人注册', x: LX, y: 640, size: 40, fam: F.serif, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 9.75, out: 10.9, text: '攻击者抢先注册，\n往里塞‹恶意代码›', x: LX, y: 340, size: 50, fam: F.serif, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 10.3, out: 10.9, text: 'SLOPSQUATTING', x: LX, y: 560, size: 84, fam: F.type, w: 400, col: RED, anim: 'type', st: .5, rev: .6 });
-    lyric(tx, L, { at: 11, out: 13.85, text: '我说「完成了」之后，你要做‹三件事›', x: 960, y: 260, size: 50, fam: F.serif, w: 900, ...ink, align: 'center', anim: 'type' });
-    lyric(tx, L, { at: 13, out: 13.85, text: '装依赖之前：去 Maven Central、npm 或 PyPI 确认‹真的存在›', x: 960, y: 860, size: 38, fam: F.serif, w: 900, ...ink, align: 'center', anim: 'type' });
+    lyric(tx, L, { at: 11, out: 13.85, text: '所以我说「完成了」，你做‹三件事›：', x: 960, y: 260, size: 50, fam: F.serif, w: 900, ...ink, align: 'center', anim: 'type' });
+    lyric(tx, L, { at: 13, out: 13.85, text: '装依赖之前，去 Maven Central、npm 或 PyPI 确认它‹真的存在›', x: 960, y: 860, size: 38, fam: F.serif, w: 900, ...ink, align: 'center', anim: 'type' });
     lyric(tx, L, { at: 13.3, out: 13.85, text: '再看看下载量和发布者', x: 960, y: 930, size: 30, w: 500, col: GR, align: 'center', anim: 'fade' });
-    lyric(tx, L, { at: 14, out: 17.85, text: 'METR 2025 对照实验：\n16 位熟练的开源开发者', x: LX, y: 260, size: 38, fam: F.serif, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 14.5, out: 17.85, text: '用 AI 后，实际慢了 ‹19%›，\n自己却觉得快了 ‹20%›', x: LX, y: 420, size: 46, fam: F.serif, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 15.5, out: 17.85, text: '2026 年 2 月更新测出快了约 18%，\n但 METR 自己说明：样本有选择偏差，结果不可靠', x: 900, y: 830, size: 28, w: 500, col: GR, anim: 'fade' });
+    lyric(tx, L, { at: 14, out: 14.45, text: '那用了 AI，到底快没快？也得测。', x: LX, y: 260, size: 44, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 14.5, out: 17.85, text: 'METR 2025：16 位熟练的开源开发者', x: LX, y: 260, size: 38, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 14.6, out: 17.85, text: '实际慢了 ‹19%›，\n自己却觉得快了 ‹20%›', x: LX, y: 400, size: 50, fam: F.serif, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 15.5, out: 17.85, text: '2026 年 2 月更新测出快约 18%，\n但 METR 自己说明：样本有选择偏差，结果不可靠', x: 900, y: 830, size: 28, w: 500, col: GR, anim: 'fade' });
   },
 };
 };

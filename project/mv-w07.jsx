@@ -16,7 +16,8 @@ function heart(ctx, x, y, on) { const c = on ? P.red : P.dgy; px(ctx, x, y, 12, 
 return {
   scene: '07 存档 · 工作流程', bars: 18, look: 7,
   enter: { kind: TR.PIXEL, a: 2, b: 2, col: '#ffec27' },
-  hud: { num: '07', name: '工作流程', world: '存档', ink: P.wht, acc: P.yel },
+  hud: { num: '07', name: '工作流程', time: '23:40', line: '一口气改完', ink: P.wht, acc: P.yel },
+  you: [[.95, 2.0, '一口气全改完吧，快点']],
   rule: { n: 6, at: 16.5, text: '先出计划，小步提交' },
   src: [[8.25, 9, 'Anthropic, Prompting best practices']],
   par: L => { const b = L.b, go = b >= 12.75 && b < 14.25; return [go ? 9 : 6, b < 12 ? 1 : 0, 2.5, 0]; },
@@ -25,7 +26,7 @@ return {
   pulse: L => L.b >= 12 && L.b < 14 ? 0 : .7,
   sfx: [[1, 'jump'], [1.5, 'glitch'], [1.75, 'q', 600], [2.5, 'blip', 700], ...HOPS.map(b => [b, 'jump']), [4.75, 'stamp'], [5.5, 'powerup'], ...SAVES.map(s => [s[0], 'save']), [7.5, 'hurt'], [8, 'rewind'],
     [9, 'jump'], [10, 'coin'], [11.25, 'buzz'], [12, 'hurt'], [12.25, 'hurt'], [12.5, 'hurt'], [12.75, 'gameover'], [13.5, 'menu'], [13.75, 'menu'], [14, 'menu'], [14.25, 'coin']],
-  text: NODES.map(n => n[0]).join('') + MENU.join('') + '一口气改了五个文件坏了一处，是哪一处？一次改得越多，出错时要翻的范围越大把出错的范围，控制在一步之内推荐的顺序在这一步停下，等你盖章OK多数工具都有计划模式验证通过，就 commit 一次Git 提交 = 存档点SAVE LOAD commit改坏了？直接读档git 记录和检查点，能帮模型在多次会话之间接着干有风险的尝试，开个分支try/jwt先有测试，再改到测试通过我能自己跑测试，自己发现问题但要防着我耍小聪明 → 08 TESTS ✓同一个问题失败三次GAME OVER CONTINUE?还在学基础语法？先别用我自己写不出来的代码，你也看不出我错在哪课程作业能不能用 AI，听老师的',
+  text: NODES.map(n => n[0]).join('') + MENU.join('') + '我一口气改了五个文件——坏了一处。是哪一处？改得越多，出错时要翻的范围越大把每次出错的范围，控制在一步之内换个打法，一关一关过：这一关是你的：看计划、改计划。我在这儿等你盖章每过一关、验证通过，就 commit 一次也能让我冒险的尝试，开个分支去试把测试当终点线：自己跑测试、但得防着我耍小聪明（下一章）你自己写不出来的代码作业能不能用 AI、用到什么程度——一口气改了五个文件坏了一处，是哪一处？一次改得越多，出错时要翻的范围越大把出错的范围，控制在一步之内推荐的顺序在这一步停下，等你盖章OK多数工具都有计划模式验证通过，就 commit 一次Git 提交 = 存档点SAVE LOAD commit改坏了？直接读档git 记录和检查点，能帮模型在多次会话之间接着干有风险的尝试，开个分支try/jwt先有测试，再改到测试通过我能自己跑测试，自己发现问题但要防着我耍小聪明 → 08 TESTS ✓同一个问题失败三次GAME OVER CONTINUE?还在学基础语法？先别用我自己写不出来的代码，你也看不出我错在哪课程作业能不能用 AI，听老师的',
   draw(cx, tx, L) {
     const b = L.b, t = L.t, step = Math.floor(t * 8) / 8;
     // ---------- 开场跑酷 ----------
@@ -112,26 +113,26 @@ return {
     clawd(cx, st);
     // ---------- 歌词 ----------
     const LX = 110, ink = { col: P.wht, acc: [P.yel, P.pnk] }, p8 = { fam: F.sans, w: 900 };
-    lyric(tx, L, { at: 1, out: 2.15, text: '一口气改了‹五个文件›', x: LX, y: 230, size: 60, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 1.5, out: 2.15, text: '坏了一处，是哪一处？', x: LX, y: 330, size: 48, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 2.25, out: 2.95, text: '一次改得越多，出错时要翻的范围越大', x: LX, y: 230, size: 40, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 2.6, out: 2.95, text: '把出错的范围，控制在‹一步之内›', x: LX, y: 320, size: 52, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 3, out: 5.9, text: '推荐的顺序', x: LX, y: 230, size: 52, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 1.2, out: 2.15, text: '我一口气改了‹五个文件›——', x: LX, y: 230, size: 56, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 1.5, out: 2.15, text: '坏了一处。是哪一处？', x: LX, y: 330, size: 48, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 2.25, out: 2.95, text: '改得越多，出错时要翻的范围越大', x: LX, y: 230, size: 40, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 2.6, out: 2.95, text: '把每次出错的范围，控制在‹一步›之内', x: LX, y: 320, size: 52, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 3, out: 5.9, text: '换个打法，一关一关过：', x: LX, y: 230, size: 52, ...p8, ...ink, anim: 'type' });
     NODES.forEach(([n, x], i) => lyric(tx, L, { at: 3.05 + i * .06, out: 5.9, text: n, x, y: 700, size: 34, ...p8, col: i === 2 ? P.blu : P.wht, align: 'center', anim: 'type' }));
-    lyric(tx, L, { at: 3.8, out: 4.9, text: '在«你看计划»这一步停下，等你盖章', x: LX, y: 330, size: 40, ...p8, ...ink, acc: [P.yel, P.blu], anim: 'type' });
+    lyric(tx, L, { at: 3.8, out: 4.9, text: '这一关是«你的»：看计划、改计划。我在这儿等你盖章', x: LX, y: 330, size: 40, ...p8, ...ink, acc: [P.yel, P.blu], anim: 'type' });
     lyric(tx, L, { at: 5, out: 5.9, text: '多数工具都有‹计划模式›', x: LX, y: 330, size: 44, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 6, out: 7.4, text: '验证通过，就 commit 一次', x: LX, y: 230, size: 52, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 6, out: 7.4, text: '每过一关、验证通过，就 commit 一次', x: LX, y: 230, size: 52, ...p8, ...ink, anim: 'type' });
     lyric(tx, L, { at: 6.25, out: 7.4, text: 'Git 提交 = ‹存档点›', x: LX, y: 330, size: 60, ...p8, ...ink, anim: 'type' });
     lyric(tx, L, { at: 7.5, out: 8.9, text: '改坏了？直接‹读档›', x: LX, y: 230, size: 60, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 8.25, out: 8.9, text: 'git 记录和检查点，能帮模型\n在多次会话之间接着干', x: LX, y: 360, size: 32, ...p8, w: 700, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 9, out: 9.9, text: '有风险的尝试，‹开个分支›', x: LX, y: 230, size: 56, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 10, out: 11.9, text: '先有测试，再改到测试‹通过›', x: LX, y: 230, size: 52, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 10.5, out: 11.9, text: '我能自己跑测试，自己发现问题', x: LX, y: 320, size: 38, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 11.25, out: 11.9, text: '但要防着我«耍小聪明» → 08', x: LX, y: 400, size: 44, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 12, out: 12.7, text: '同一个问题，‹失败三次›', x: LX, y: 230, size: 56, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 8.25, out: 8.9, text: 'git 记录和检查点，也能让我\n在多次会话之间接着干', x: LX, y: 360, size: 32, ...p8, w: 700, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 9, out: 9.9, text: '冒险的尝试，‹开个分支›去试', x: LX, y: 230, size: 56, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 10, out: 11.9, text: '把测试当终点线：先有测试，再改到‹通过›', x: LX, y: 230, size: 52, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 10.5, out: 11.9, text: '我能自己跑测试、自己发现问题——', x: LX, y: 320, size: 38, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 11.25, out: 11.9, text: '但得防着我«耍小聪明»（下一章）', x: LX, y: 400, size: 44, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 12, out: 12.7, text: '同一个问题，‹失败三次›——', x: LX, y: 230, size: 56, ...p8, ...ink, anim: 'type' });
     lyric(tx, L, { at: 14.5, out: 17.8, text: '还在学基础语法？‹先别用我›', x: LX, y: 260, size: 52, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 15, out: 17.8, text: '自己写不出来的代码，你也看不出我错在哪', x: LX, y: 350, size: 36, ...p8, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 15.75, out: 17.8, text: '课程作业能不能用 AI，‹听老师的›', x: LX, y: 460, size: 44, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 15, out: 17.8, text: '你自己写不出来的代码，也看不出我错在哪', x: LX, y: 350, size: 36, ...p8, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 15.75, out: 17.8, text: '作业能不能用 AI、用到什么程度——‹听老师的›', x: LX, y: 460, size: 44, ...p8, ...ink, anim: 'type' });
   },
 };
 };

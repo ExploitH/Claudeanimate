@@ -25,7 +25,8 @@ function dim(ctx, x0, x1, y, col, label, k = 1) { // 尺寸线
 return {
   scene: '06 蓝图 · Harness', bars: 22, look: 6,
   enter: { kind: TR.WIPE, a: 1, b: 3, col: '#9fd8ff' },
-  hud: { num: '06', name: 'Harness', world: '蓝图', ink: WL, acc: YE },
+  hud: { num: '06', name: 'Harness', time: '23:00', line: '室友一次就成', ink: WL, acc: YE },
+  you: [[.95, 2.15, '室友用同一个模型，一次就写完了？？']],
   rule: { n: 5, at: 18, len: 1.9, text: '弄清工具的权限设置和撤销方式' },
   src: [[7.5, 11, 'Princeton HAL / Sayash Kapoor, 2025-12'], [14, 16, 'RedAccess via Security Boulevard, 2026-05']],
   par: L => [.1 + .25 * L.hit(2.25, .6), 0, 0, 0],
@@ -33,7 +34,7 @@ return {
   pulse: L => .5,
   sfx: [[1, 'plot'], [1.5, 'ding'], [1.75, 'glitch'], [2.25, 'plot'], [2.6, 'plot'], ...PARTS.map((_, i) => [3.25 + i * .25, 'click']), [6.5, 'plot'], [8, 'plot'], [8.5, 'plot'], [9, 'plot'], [9.05, 'ding'],
     [14, 'tick'], [14.75, 'alarm'], ...SEVEN.map((_, i) => [16.25 + i * .25, 'click']), [19, 'blip', 900], [19.5, 'blip', 1100], [20, 'blip', 1300], [20.75, 'shatter']],
-  text: PARTS.flat().join('') + RUNG.flat().join('') + SEVEN.join('') + '同一个模型：这个工具里顺利写完，换个工具就半路出错✓ 顺利写完✗ 半路出错模型差别在模型外面那一层HARNESS模型之外的全部，都算 harness模型是发动机，harness 是整辆车Princeton HAL · 2025-12同一个 Claude Opus 4.5 · CORE-Bench通用框架Claude Code修正评分错误后42%78%95%换成其他模型，差距小得多有的在通用框架里反而更好模型和 harness，放在一起看自主程度：从低到高亲眼看的代码需要的检查和隔离越往上，你亲眼看的代码越少越得靠流程兜底RedAccess · 2026-05扫了约 38 万个 Lovable、Base44、Replit 等平台生成的公开应用约 5000 个暴露了病历、银行记录原因：默认公开，用户没改成私有选工具，看这七项这门课的建议先用 IDEA 里的 Qoder熟悉 Git 和命令行后，再试命令行 Agent应用生成平台，只拿来做原型别让几个 Agent 同时改同一批文件UserService.java冲突',
+  text: PARTS.flat().join('') + RUNG.flat().join('') + SEVEN.join('') + '同一个模型，换个工具，结果就不一样。模型之外的一切，都叫 harness：同一套 CORE-Bench：换成别的模型工具按自主程度，有六级：越要靠流程兜底病历、银行记录就摆在外面原因：默认公开，没人改成私有这门课的路线还有：同一个模型：这个工具里顺利写完，换个工具就半路出错✓ 顺利写完✗ 半路出错模型差别在模型外面那一层HARNESS模型之外的全部，都算 harness模型是发动机，harness 是整辆车Princeton HAL · 2025-12同一个 Claude Opus 4.5 · CORE-Bench通用框架Claude Code修正评分错误后42%78%95%换成其他模型，差距小得多有的在通用框架里反而更好模型和 harness，放在一起看自主程度：从低到高亲眼看的代码需要的检查和隔离越往上，你亲眼看的代码越少越得靠流程兜底RedAccess · 2026-05扫了约 38 万个 Lovable、Base44、Replit 等平台生成的公开应用约 5000 个暴露了病历、银行记录原因：默认公开，用户没改成私有选工具，看这七项这门课的建议先用 IDEA 里的 Qoder熟悉 Git 和命令行后，再试命令行 Agent应用生成平台，只拿来做原型别让几个 Agent 同时改同一批文件UserService.java冲突',
   draw(cx, tx, L) {
     const b = L.b, t = L.t;
     // ---------- 两辆车，同一台发动机 ----------
@@ -146,24 +147,24 @@ return {
     clawd(cx, st);
     // ---------- 歌词 ----------
     const LX = 110, ink = { col: WL, acc: [YE, OR] };
-    lyric(tx, L, { at: 1, out: 2.15, text: '‹同一个模型›', x: LX, y: 330, size: 66, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 1.25, out: 2.15, text: '这个工具里顺利写完，\n换个工具就半路出错', x: LX, y: 470, size: 40, w: 700, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 1.25, out: 2.15, text: '‹同一个模型›，', x: LX, y: 330, size: 66, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 1.45, out: 2.15, text: '换个工具，\n结果就不一样。', x: LX, y: 470, size: 44, w: 700, ...ink, anim: 'type' });
     lyric(tx, L, { at: 2.25, out: 2.95, text: '差别在模型外面那一层', x: 960, y: 520, size: 52, w: 900, ...ink, align: 'center', anim: 'type' });
-    lyric(tx, L, { at: 3.1, out: 6.4, text: '模型之外的全部，\n都算 ‹harness›', x: LX, y: 230, size: 46, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 3.1, out: 6.4, text: '模型之外的一切，\n都叫 ‹harness›：', x: LX, y: 230, size: 46, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 6.5, out: 7.4, text: '模型是‹发动机›，\nharness 是‹整辆车›', x: LX, y: 230, size: 56, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 7.5, out: 10.85, text: 'Princeton HAL · 2025-12', x: LX, y: 230, size: 30, fam: F.mono, w: 700, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 7.6, out: 10.85, text: '同一个 Claude Opus 4.5\nCORE-Bench', x: LX, y: 320, size: 40, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 10, out: 10.85, text: '换成其他模型，差距小得多，\n有的在通用框架里反而更好', x: LX, y: 940, size: 34, w: 700, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 7.6, out: 10.85, text: '同一个 Claude Opus 4.5\n同一套 CORE-Bench：', x: LX, y: 320, size: 40, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 10, out: 10.85, text: '换成别的模型，差距小得多，\n有的在通用框架里反而更好', x: LX, y: 940, size: 34, w: 700, ...ink, anim: 'type' });
     lyric(tx, L, { at: 10.4, out: 10.85, text: '→ 模型和 harness，‹放在一起看›', x: 1100, y: 960, size: 40, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 11, out: 13.85, text: '自主程度：\n从低到高', x: LX, y: 260, size: 48, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 12.5, out: 13.85, text: '越往上，\n你亲眼看的代码越少，\n越得靠‹流程›兜底', x: LX, y: 560, size: 40, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 11, out: 13.85, text: '工具按自主程度，\n有‹六级›：', x: LX, y: 260, size: 48, w: 900, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 12.5, out: 13.85, text: '越往上，\n你亲眼看的代码越少，\n越要靠‹流程›兜底', x: LX, y: 560, size: 40, w: 900, ...ink, anim: 'type' });
     lyric(tx, L, { at: 14, out: 15.85, text: 'RedAccess · 2026-05', x: LX, y: 260, size: 30, fam: F.mono, w: 700, ...ink, anim: 'type' });
     lyric(tx, L, { at: 14.1, out: 15.85, text: '扫了约 ‹38 万›个\nLovable、Base44、Replit 等\n平台生成的公开应用', x: LX, y: 400, size: 36, w: 900, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 14.75, out: 15.85, text: '约 «5000» 个\n暴露了病历、银行记录', x: LX, y: 610, size: 44, w: 900, ...ink, acc: [YE, RD], anim: 'type' });
-    lyric(tx, L, { at: 15.25, out: 15.85, text: '原因：默认公开，用户没改成私有', x: LX, y: 780, size: 32, w: 700, ...ink, anim: 'type' });
-    lyric(tx, L, { at: 19, out: 21.85, text: '这门课的建议', x: LX, y: 220, size: 34, w: 700, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 14.75, out: 15.85, text: '约 «5000» 个，\n病历、银行记录就摆在外面', x: LX, y: 610, size: 44, w: 900, ...ink, acc: [YE, RD], anim: 'type' });
+    lyric(tx, L, { at: 15.25, out: 15.85, text: '原因：默认公开，没人改成私有', x: LX, y: 780, size: 32, w: 700, ...ink, anim: 'type' });
+    lyric(tx, L, { at: 19, out: 21.85, text: '这门课的路线', x: LX, y: 220, size: 34, w: 700, ...ink, anim: 'type' });
     [['先用 IDEA 里的 ‹Qoder›', 19], ['熟悉 Git 和命令行后，\n再试‹命令行 Agent›', 19.5], ['应用生成平台，只拿来做‹原型›', 20]].forEach(([s, at], i) => lyric(tx, L, { at, out: 21.85, text: (i + 1) + '  ' + s, x: LX, y: 320 + i * 120 + (i === 2 ? 30 : 0), size: 38, w: 900, ...ink, anim: 'type' }));
-    lyric(tx, L, { at: 20.5, out: 21.85, text: '别让几个 Agent\n同时改‹同一批文件›', x: 1000, y: 330, size: 44, w: 900, ...ink, acc: [RD], anim: 'type' });
+    lyric(tx, L, { at: 20.5, out: 21.85, text: '还有：别让几个 Agent\n同时改‹同一批文件›', x: 1000, y: 330, size: 44, w: 900, ...ink, acc: [RD], anim: 'type' });
   },
 };
 };

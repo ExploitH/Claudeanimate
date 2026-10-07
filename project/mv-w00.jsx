@@ -1,6 +1,6 @@
 // 00 开机：全黑、心跳光标，打出 vibe coding（每个字母落在音乐盒的音上），标题碎成像素聚成 Clawd
 (window.MV_W = window.MV_W || {}).w00 = K => {
-const { F, C, E, prog, lerp, bump, hash, rgba, fnt, lyric, clawd, clawdCells } = K;
+const { F, C, E, prog, lerp, bump, hash, rgba, fnt, lyric, clawd, clawdCells, typeSfx } = K;
 const TITLE = 'vibe coding';
 // 每个字母的出现时间（小节）：对齐音乐盒主旋律的音符
 const AT = [2, 2.375, 2.5, 2.75, 2.86, 2.875, 3, 3.5, 3.625, 3.75, 4];
@@ -24,8 +24,8 @@ return {
   pulse: L => L.b >= 5.5 ? 1 : 0,
   hud: { ink: C.ink },
   noInv: true,
-  sfx: [...AT.filter((_, i) => TITLE[i] !== ' ').map(b => [b, 'key']), [3, 'sparkle'], [4.6, 'whoosh'], [5.1, 'pop'], [5.35, 'blip'], [5.6, 'jump']],
-  text: TITLE + '需要注意的细节导演剪辑版 DIRECTOR\'S CUT 信息截至 2026 年 10 月',
+  sfx: [...typeSfx(.5, '周五晚上九点。作业，周一交。', .15), ...AT.filter((_, i) => TITLE[i] !== ' ').map(b => [b, 'key']), [3, 'sparkle'], [4.6, 'whoosh'], [5.1, 'pop'], [5.35, 'blip'], [5.6, 'jump']],
+  text: TITLE + '需要注意的细节导演剪辑版 DIRECTOR\'S CUT 信息截至 2026 年 10 月周五晚上九点。作业，周一交。',
   draw(cx, tx, L) {
     const b = L.b, shown = AT.filter(a => b >= a).length;
     const boom = prog(b, 4.6, 5.15, E.in);
@@ -67,6 +67,7 @@ return {
     }
     // 字幕层：副标题
     const out = 4.55;
+    lyric(tx, L, { at: .5, out: 1.85, text: '周五晚上九点。作业，周一交。', x: 960, y: 640, size: 34, fam: F.sans, w: 500, align: 'center', anim: 'type', rev: .6, col: rgba('#ffffff', .7) });
     lyric(tx, L, { at: 3, out, text: '需要注意的细节', x: 960, y: 640, size: 60, fam: F.serif, w: 700, align: 'center', anim: 'blur', st: .3, d: .25, col: '#efeae0', outAnim: 'blur' });
     lyric(tx, L, { at: 3.75, out, text: '导演剪辑版  ·  DIRECTOR\'S CUT', x: 960, y: 730, size: 26, fam: F.mono, w: 400, align: 'center', anim: 'fade', st: .06, col: C.clawd, ls: .12 });
     lyric(tx, L, { at: 4, out, text: '信息截至 2026 年 10 月', x: 960, y: 790, size: 22, fam: F.mono, w: 400, align: 'center', anim: 'type', st: .1, col: rgba('#ffffff', .45) });

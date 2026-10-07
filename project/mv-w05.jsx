@@ -1,6 +1,6 @@
 // 05 选模型和费用 · 霓虹：额度表报警；每轮重发、包裹越来越大；副歌里两辆霓虹车赛跑，便宜的多绕几圈总价反超；三块招牌分档；击掌
 (window.MV_W = window.MV_W || {}).w05 = K => {
-const { F, C, E, TR, prog, lerp, bump, hash, rgba, mixC, fnt, rr, circ, seg, txt, tw, scaleAt, rotAt, alpha, lyric, clawd } = K;
+const { F, C, E, TR, prog, lerp, bump, hash, rgba, mixC, fnt, rr, circ, seg, txt, tw, scaleAt, rotAt, alpha, lyric, clawd, sing } = K;
 const PK = '#ff4fb8', CY = '#3ef0ff', PU = '#b45cff', YE = '#ffe45c', GR = '#4dff9e', RD = '#ff3b5c', WH = '#fff4fc';
 const TIERS = [['旗舰', PK, '最强，也最慢最贵', ['架构设计', '难查的 bug', '长时间自主跑的任务']], ['主力', CY, '日常主力', ['日常写功能']], ['轻量', GR, '又快又便宜', ['补全代码', '改格式', '简单重命名']]];
 const MODELS = ['通义千问', '智谱 GLM', 'Kimi', 'DeepSeek'];
@@ -14,16 +14,17 @@ const lapsA = b => 6 * prog(b, RACE[0], RACE[1], E.lin), lapsB = b => 2 * prog(b
 return {
   scene: '05 霓虹 · 选模型和费用', bars: 20, look: 5,
   enter: { kind: TR.FLASH, a: .5, b: .5, flash: 1 },
-  hud: { num: '05', name: '选模型和费用', world: '霓虹', ink: '#ffe7ff', acc: PK },
+  hud: { num: '05', name: '选模型和费用', time: '22:30', line: '额度没了？', ink: '#ffe7ff', acc: PK },
+  you: [[.3, 1.4, '欸？额度怎么没了']],
   rule: { n: 4, at: 18, text: '按任务选模型，按任务算费用' },
   src: [],
-  par: L => { const b = L.b, sx = b < 1.4 ? .28 : b < 4 ? .3 : b < 8 ? .5 : b < 14 ? .5 : .78; return [b < 4 ? .6 : b < 8 ? .45 : b < 14 ? .12 : .5, b >= 4 && b < 8 ? 1.2 : .35, .55, sx]; },
+  par: L => { const b = L.b, sx = b < 1.4 ? .5 : b < 4 ? .3 : b < 8 ? .5 : b < 14 ? .5 : .78; return [b < 1.4 ? .22 : b < 4 ? .6 : b < 8 ? .45 : b < 14 ? .12 : .5, b >= 4 && b < 8 ? 1.2 : .35, .55, sx]; },
   cam: L => { const b = L.b, race = b >= 4 && b < 8; return [race ? 1.04 : 1.0, race ? .01 * Math.sin(L.t * 1.5) : 0, 0, 0]; },
   lb: L => .45 * prog(L.b, 3.9, 4.2) * (1 - prog(L.b, 7.9, 8.2)),
   pulse: L => L.b >= 4 && L.b < 12 ? 1 : .6,
   sfx: [[0, 'alarm'], [1.5, 'whoosh'], [2, 'whoosh'], [2.5, 'whoosh'], [3, 'whoosh'], [4.25, 'zap'], ...[1, 2, 3, 4, 5].map(i => [4.25 + i * 3.75 / 6, 'coin']), [5.25, 'coin'], [6.25, 'coin'], [7.5, 'stamp'],
     [8, 'buzz'], [8.5, 'buzz'], [9, 'buzz'], [10.25, 'blip', 1500], [10.75, 'blip', 500], [12, 'ding'], [13, 'glitch'], [14, 'buzz'], [16.5, 'pop'], [16.5, 'sparkle'], [17, 'swish']],
-  text: TIERS.flatMap(t => [t[0], t[2], ...t[3]]).join('') + MODELS.join('') + '登录功能写到一半，额度见底了钱都花哪儿了？本月额度每一轮，之前的内容都重新发一遍对话越长，每轮越贵第 1 轮第 2 轮第 3 轮第 4 轮模型1k3k6k10k tokens便宜的模型多绕几圈总价反而更高单价低单价高A 总价B 总价A 反超算完成一个任务花多少，别只盯单价token：模型计费的单位，约一个词或一两个汉字FINISH LAP思考强度：难题调高，机械活调低思考强度难题机械活订阅有用量上限；按量付费的 API，记得设预算提醒预算提醒排行榜看看就好分数受测试工具影响，公开题目也可能混进训练数据拿你自己的真实任务，试两三个模型排行榜国内能直接用，都有面向编程的套餐卡住了？换个模型再问一遍放心，我不会介意免费版可能拿你的数据去训练：看清设置课程练习一般没关系；实习和公司代码，按公司规定',
+  text: TIERS.flatMap(t => [t[0], t[2], ...t[3]]).join('') + MODELS.join('') + '登录才写一半，这个月的额度见底了钱花哪儿了？每一轮，前面所有内容都要重新发一遍选模型，看活儿分数受测试用的工具影响，公开题目也可能混进了训练数据国内能直接用的，都有编程套餐：我不介意。免费版可能拿你的代码去训练——看清设置课程练习一般没事；实习和公司的代码，按公司规定登录功能写到一半，额度见底了钱都花哪儿了？本月额度每一轮，之前的内容都重新发一遍对话越长，每轮越贵第 1 轮第 2 轮第 3 轮第 4 轮模型1k3k6k10k tokens便宜的模型多绕几圈总价反而更高单价低单价高A 总价B 总价A 反超算完成一个任务花多少，别只盯单价token：模型计费的单位，约一个词或一两个汉字FINISH LAP思考强度：难题调高，机械活调低思考强度难题机械活订阅有用量上限；按量付费的 API，记得设预算提醒预算提醒排行榜看看就好分数受测试工具影响，公开题目也可能混进训练数据拿你自己的真实任务，试两三个模型排行榜国内能直接用，都有面向编程的套餐卡住了？换个模型再问一遍放心，我不会介意免费版可能拿你的数据去训练：看清设置课程练习一般没关系；实习和公司代码，按公司规定',
   draw(cx, tx, L) {
     const b = L.b, t = L.t;
     // ---------- 额度表 ----------
@@ -62,7 +63,7 @@ return {
         ntxt(cx, lab, x, y - 40, fnt(900, 24), col, 'center');
       };
       car(lapsA(b), 25, CY, 'A'); car(lapsB(b), -25, PK, 'B');
-      if (b >= 6.25) ntxt(cx, 'B 到终点', ox + 160, oy + ry + 80, fnt(900, 28), PK, 'center');
+      if (b >= 6.25) ntxt(cx, 'B 到终点', ox + 120, oy + ry + 40, fnt(900, 28), PK, 'left');
       // 总价条
       const x0 = 1120, uw = 110, cA = Math.floor(lapsA(b) + 1e-6) * 1, cB = Math.floor(lapsB(b) + 1e-6) * 2.4;
       [['A · 单价低', CY, cA, 430, '绕 ' + Math.floor(lapsA(b) + 1e-6) + ' 圈'], ['B · 单价高', PK, cB, 610, '绕 ' + Math.floor(lapsB(b) + 1e-6) + ' 圈']].forEach(([n, col, c, y, laps]) => {
@@ -79,7 +80,7 @@ return {
       const up = prog(b, 10, 10.3, E.io);
       TIERS.forEach(([n, col, sub, tasks], i) => {
         const f = flick(b, 8 + i * .5); if (f <= 0) return;
-        const x = 400 + i * 560, y = lerp(400, 300, up);
+        const x = 400 + i * 560, y = lerp(450, 400, up);
         alpha(cx, f, () => { nbox(cx, x - 230, y - 140, 460, 230, col, 6, 22); ntxt(cx, n, x, y - 50, fnt(900, 96), col, 'center'); ntxt(cx, sub, x, y + 50, fnt(700, 30), WH, 'center'); });
         alpha(cx, f * (1 - up), () => tasks.forEach((s, j) => ntxt(cx, s, x, y + 160 + j * 52, fnt(700, 34), mixC(col, '#ffffff', .4), 'center')));
       });
@@ -118,24 +119,27 @@ return {
       if (b >= 16.5) { const s = prog(b, 16.5, 16.8); alpha(cx, 1 - s, () => glow(cx, YE, 30, () => { for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283; seg(cx, 960 + Math.cos(a) * 40 * (1 + s * 3), 590 + Math.sin(a) * 40 * (1 + s * 3), 960 + Math.cos(a) * 70 * (1 + s * 3), 590 + Math.sin(a) * 70 * (1 + s * 3), YE, 5); } })); } }
     // ---------- 歌词 ----------
     const G = c => [8, c], LX = 120;
-    lyric(tx, L, { at: .5, out: 1.35, text: '登录功能写到一半，\n额度‹见底›了', x: 900, y: 560, size: 60, w: 900, col: WH, acc: [RD], anim: 'flicker', glow: G(PK) });
-    lyric(tx, L, { at: 1, out: 1.35, text: '钱都花哪儿了？', x: 900, y: 720, size: 44, w: 700, col: YE, anim: 'flicker', glow: G(YE) });
-    lyric(tx, L, { at: 1.5, out: 3.9, text: '每一轮，之前的内容\n都‹重新发一遍›', x: LX, y: 230, size: 56, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(PK) });
+    lyric(tx, L, { at: .6, out: 1.35, text: '登录才写一半，\n这个月的额度‹见底›了', x: 900, y: 560, size: 56, w: 900, col: WH, acc: [RD], anim: 'flicker', glow: G(PK) });
+    lyric(tx, L, { at: 1, out: 1.35, text: '钱花哪儿了？', x: 900, y: 720, size: 44, w: 700, col: YE, anim: 'flicker', glow: G(YE) });
+    lyric(tx, L, { at: 1.5, out: 3.9, text: '每一轮，前面所有内容\n都要‹重新发一遍›', x: LX, y: 230, size: 56, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(PK) });
     lyric(tx, L, { at: 3, out: 3.9, text: '对话越长，每轮越贵', x: LX, y: 900, size: 44, w: 900, col: PK, anim: 'flicker', glow: G(PK) });
-    lyric(tx, L, { at: 4.25, out: 5.9, text: '便宜的模型，多绕几圈', x: 960, y: 190, size: 64, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(CY) });
-    lyric(tx, L, { at: 6, out: 7.25, text: '‹总价›反而更高', x: 960, y: 190, size: 72, w: 900, col: WH, acc: [YE], align: 'center', anim: 'flicker', glow: G(YE) });
-    lyric(tx, L, { at: 7.5, out: 7.95, text: '算完成一个任务花多少，别只盯单价', x: 960, y: 190, size: 52, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(PK) });
-    lyric(tx, L, { at: 6.5, out: 7.95, text: 'token：模型计费的单位，约一个词或一两个汉字', x: 960, y: 950, size: 28, fam: F.mono, w: 700, col: CY, align: 'center', anim: 'type', glow: G(CY) });
+    // 副歌：主旋律上逐字点亮
+    sing(tx, L, { at: 4, x: 960, y: 165, size: 62, col: WH, dim: 'rgba(255,220,250,.22)', glow: PK, hold: 8.15 });
+    lyric(tx, L, { at: 5, out: 6.4, text: '便宜的模型，多绕几圈', x: 960, y: 905, size: 44, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(CY) });
+    lyric(tx, L, { at: 6.5, out: 7.15, text: '‹总价›反而更高', x: 960, y: 905, size: 52, w: 900, col: WH, acc: [YE], align: 'center', anim: 'flicker', glow: G(YE) });
+    lyric(tx, L, { at: 7.25, out: 7.95, text: '算完成一个任务花多少，别只盯单价', x: 960, y: 905, size: 44, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(PK) });
+    lyric(tx, L, { at: 7.35, out: 7.95, text: 'token：模型计费的单位，约一个词或一两个汉字', x: 960, y: 975, size: 26, fam: F.mono, w: 700, col: CY, align: 'center', anim: 'type', glow: G(CY) });
+    lyric(tx, L, { at: 8.25, out: 9.95, text: '选模型，看活儿', x: 960, y: 960, size: 40, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(PK) });
     lyric(tx, L, { at: 10.1, out: 11.85, text: '思考强度：难题调高，机械活调低', x: 960, y: 960, size: 40, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(YE) });
-    lyric(tx, L, { at: 12.1, out: 12.9, text: '订阅有用量上限；\n按量付费的 API，记得设‹预算提醒›', x: LX, y: 640, size: 50, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(PK) });
+    lyric(tx, L, { at: 12.1, out: 12.9, text: '订阅有上限；\n按量付费的 API，记得设‹预算提醒›', x: LX, y: 640, size: 50, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(PK) });
     lyric(tx, L, { at: 13, out: 13.9, text: '排行榜看看就好', x: LX, y: 330, size: 64, w: 900, col: WH, anim: 'flicker', glow: G(CY) });
-    lyric(tx, L, { at: 13.15, out: 13.9, text: '分数受测试工具影响，\n公开题目也可能混进训练数据', x: LX, y: 480, size: 34, w: 700, col: mixC(CY, '#ffffff', .4), anim: 'fade' });
+    lyric(tx, L, { at: 13.15, out: 13.9, text: '分数受测试用的工具影响，\n公开题目也可能混进了训练数据', x: LX, y: 480, size: 34, w: 700, col: mixC(CY, '#ffffff', .4), anim: 'fade' });
     lyric(tx, L, { at: 13.5, out: 13.9, text: '拿‹你自己的真实任务›，试两三个模型', x: LX, y: 650, size: 42, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(YE) });
-    lyric(tx, L, { at: 14, out: 15.9, text: '国内能直接用，都有面向编程的套餐', x: 960, y: 300, size: 50, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(PK) });
+    lyric(tx, L, { at: 14, out: 15.9, text: '国内能直接用的，都有编程套餐：', x: 960, y: 300, size: 50, w: 900, col: WH, align: 'center', anim: 'flicker', glow: G(PK) });
     lyric(tx, L, { at: 16, out: 16.95, text: '卡住了？‹换个模型›再问一遍', x: 960, y: 300, size: 60, w: 900, col: WH, acc: [CY], align: 'center', anim: 'flicker', glow: G(CY) });
-    lyric(tx, L, { at: 16.5, out: 16.95, text: '放心，我不会介意', x: 960, y: 400, size: 40, w: 700, col: PK, align: 'center', anim: 'fade' });
-    lyric(tx, L, { at: 17, out: 19.8, text: '免费版可能拿你的数据去训练：\n‹看清设置›', x: LX, y: 380, size: 56, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(PK) });
-    lyric(tx, L, { at: 17.4, out: 19.8, text: '课程练习一般没关系；\n实习和公司代码，按公司规定', x: LX, y: 600, size: 38, w: 700, col: mixC(PK, '#ffffff', .5), anim: 'fade' });
+    lyric(tx, L, { at: 16.5, out: 16.95, text: '我不介意。', x: 960, y: 400, size: 40, w: 700, col: PK, align: 'center', anim: 'fade' });
+    lyric(tx, L, { at: 17, out: 19.8, text: '免费版可能拿你的代码去训练——\n‹看清设置›', x: LX, y: 380, size: 56, w: 900, col: WH, acc: [YE], anim: 'flicker', glow: G(PK) });
+    lyric(tx, L, { at: 17.4, out: 19.8, text: '课程练习一般没事；\n实习和公司的代码，按公司规定', x: LX, y: 600, size: 38, w: 700, col: mixC(PK, '#ffffff', .5), anim: 'fade' });
   },
 };
 };

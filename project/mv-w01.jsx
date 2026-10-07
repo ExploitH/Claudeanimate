@@ -25,7 +25,8 @@ function iris(ctx, x, y, r, a, t) { // 肥皂泡
 return {
   scene: '01 梦 · 什么是 vibe coding', bars: 18, look: 1,
   enter: { kind: TR.INK, a: 1, b: 3, p: [960 / 1920, 690 / 1080, 0, 0] },
-  hud: { num: '01', name: '什么是 vibe coding', world: '梦', ink: '#f3eefc' },
+  hud: { num: '01', name: '什么是 vibe coding', time: '21:03', line: '先 vibe 一下', ink: '#f3eefc', acc: '#ffb3e6' },
+  you: [[1, 2.25, '今晚先 vibe 一下，能跑就行']],
   rule: { n: 1, at: 16.5, text: '先判断这个项目在轴的哪一端' },
   src: [[1.3, 6.7, 'Karpathy, 2025-02'], [10.75, 12, 'Collins Dictionary, 2025-11'], [12, 14.4, 'Simon Willison']],
   par: L => { const b = L.b, cr = crystal(b); return [Math.max(0, (1 + 1.6 * melt(b)) * (1 - cr) * (b > 10.5 && b < 12 ? .45 : 1)), cr, .7 * (1 - cr * .6), 0]; },
@@ -35,7 +36,7 @@ return {
   sfx: [[1.3, 'swish'], [2.5, 'chime', 1175], [3.5, 'swish'], [4.5, 'chime', 1568], [4.75, 'whoosh'], [6.75, 'swish'], [8.85, 'bubble'], [9.1, 'bubble'],
     ...BUB.map(b => [b[2], 'pop']), [10.75, 'paper'], [11, 'stamp'], [12, 'freeze'], [12.5, 'chime', 1319], [13, 'chime', 1568], [13.5, 'chime', 1976], [14, 'ding'],
     [14.55, 'whoosh'], [15.25, 'blip', 900], [15.5, 'blip', 1100], [15.75, 'glitch'], [16, 'swish'], [16.3, 'whoosh'], [16.5, 'stamp']],
-  text: CODE.join('') + QUOTE.flat().join('') + BUB.map(b => b[0]).join('') + '2025 年 2 月Andrej Karpathy 发了一条帖子只用大白话告诉 AI 要什么，代码长什么样，都不管了。他自己也说：适合用完就扔的周末小项目同年 11 月柯林斯词典年度词Collins English Dictionary WORD OF THE YEAR 2025 vibe coding noun Simon Willison 的界线审过测过能讲清&&= 正常写程序不算 vibe coding关键：用多久？给谁用？越往右，越不能光凭感觉用完就扔的小玩具作业给别人用上线贯穿任务给图书管理系统加登录功能',
+  text: CODE.join('') + QUOTE.flat().join('') + BUB.map(b => b[0]).join('') + '2025 年 2 月这个词，出自 Andrej Karpathy 的一条帖子听起来像魔法——你只管说，代码我来，看都不用看。可他在同一条帖子里就写了：后来，这个词火进了词典2025 年度词程序员 Simon Willison 划了一条线所以先问一句：能跑就行？这是作业，在右边。适合用完就扔的周末小项目同年 11 月柯林斯词典年度词Collins English Dictionary WORD OF THE YEAR 2025 vibe coding noun Simon Willison 的界线审过测过能讲清&&= 正常写程序不算 vibe coding关键：用多久？给谁用？越往右，越不能光凭感觉用完就扔的小玩具作业给别人用上线贯穿任务给图书管理系统加登录功能',
   draw(cx, tx, L) {
     const b = L.b, t = L.t, cr = crystal(b), m = melt(b);
     // ---------- 背景里的代码碎片：融化、冻结 ----------
@@ -125,19 +126,19 @@ return {
     // ---------- 歌词 ----------
     const LX = 140;
     lyric(tx, L, { at: 1.3, out: 2.35, text: '2025 年 2 月', x: LX, y: 330, size: 30, fam: F.mono, w: 400, col: '#d9c8ff', anim: 'type', st: .2 });
-    lyric(tx, L, { at: 1.45, out: 2.35, text: 'Andrej Karpathy 发了一条帖子', x: LX, y: 400, size: 56, w: 700, col: '#fff6ff', anim: 'blur', st: .15, outAnim: 'blur' });
+    lyric(tx, L, { at: 1.45, out: 2.35, text: '这个词，出自 Andrej Karpathy 的一条帖子', x: LX, y: 400, size: 52, w: 700, col: '#fff6ff', anim: 'blur', st: .15, outAnim: 'blur' });
     QUOTE.forEach(([en, zh], i) => {
       const at = 2.5 + i, out = i < 2 ? at + .95 : 6.6, big = i === 2;
       lyric(tx, L, { at, out, text: en, x: LX, y: 440, size: big ? 70 : 84, fam: F.serif, w: 700, col: '#fff8ff', acc: ['#ffd38a', '#ffd38a'], anim: 'blur', st: .14, d: .3, wave: .025, outAnim: 'blur', glow: [24, 'rgba(255,170,230,.55)'] });
       lyric(tx, L, { at: at + .1, out, text: zh, x: LX, y: 560, size: 40, w: 500, col: '#e8dcff', anim: 'fade', st: .2, outAnim: 'fade' });
     });
-    lyric(tx, L, { at: 6.75, out: 8.6, text: '只用大白话告诉 AI 要什么，\n代码长什么样，‹都不管了›。', x: LX, y: 440, size: 66, w: 900, col: '#fff6ff', acc: ['#ffd38a'], anim: 'rise', st: .12, wave: .02, outAnim: 'blur' });
-    lyric(tx, L, { at: 8.75, out: 10.6, text: '他自己也说：', x: LX, y: 250, size: 40, w: 500, col: '#e8dcff', anim: 'fade' });
+    lyric(tx, L, { at: 6.75, out: 8.6, text: '听起来像魔法——\n你只管说，代码我来，‹看都不用看›。', x: LX, y: 440, size: 66, w: 900, col: '#fff6ff', acc: ['#ffd38a'], anim: 'rise', st: .12, wave: .02, outAnim: 'blur' });
+    lyric(tx, L, { at: 8.75, out: 10.6, text: '可他在同一条帖子里就写了：', x: LX, y: 250, size: 40, w: 500, col: '#e8dcff', anim: 'fade' });
     lyric(tx, L, { at: 9, out: 10.6, text: '适合«用完就扔»的周末小项目', x: LX, y: 330, size: 66, w: 900, col: '#fff6ff', acc: [C.num, '#ffd38a'], anim: 'rise', st: .12, outAnim: 'up' });
-    lyric(tx, L, { at: 10.75, out: 11.9, text: '同年 11 月', x: LX, y: 410, size: 40, w: 500, col: '#e8dcff', anim: 'fade' });
-    lyric(tx, L, { at: 10.85, out: 11.9, text: '柯林斯词典\n年度词', x: LX, y: 530, size: 84, w: 900, col: '#fff6ff', anim: 'drop', st: .1, outAnim: 'blur' });
+    lyric(tx, L, { at: 10.75, out: 11.9, text: '后来，这个词火进了词典', x: LX, y: 410, size: 40, w: 500, col: '#e8dcff', anim: 'fade' });
+    lyric(tx, L, { at: 10.85, out: 11.9, text: '柯林斯词典\n2025 年度词', x: LX, y: 530, size: 84, w: 900, col: '#fff6ff', anim: 'drop', st: .1, outAnim: 'blur' });
     // 晶体段：三个勾
-    lyric(tx, L, { at: 12, out: 14.4, text: 'Simon Willison 的界线', x: 960, y: 260, size: 40, w: 500, col: '#cfe3ff', align: 'center', anim: 'type', st: .08 });
+    lyric(tx, L, { at: 12, out: 14.4, text: '程序员 Simon Willison 划了一条线', x: 960, y: 260, size: 40, w: 500, col: '#cfe3ff', align: 'center', anim: 'type', st: .08 });
     const W3 = [['审过', 12.5, 560], ['测过', 13, 960], ['能讲清', 13.5, 1360]];
     W3.forEach(([w, at, x], i) => {
       lyric(tx, L, { at, out: 14.4, text: w, x, y: 470, size: 110, w: 900, col: '#ffffff', align: 'center', anim: 'stamp', d: .12, outAnim: 'up', glow: [20, 'rgba(150,200,255,.6)'] });
@@ -148,8 +149,9 @@ return {
     lyric(tx, L, { at: 14, out: 14.4, text: '= ‹正常写程序›', x: 960, y: 630, size: 72, w: 900, col: '#ffffff', acc: ['#a5f0a0'], align: 'center', anim: 'stamp', d: .12, outAnim: 'up' });
     lyric(tx, L, { at: 14.1, out: 14.4, text: '不算 vibe coding', x: 960, y: 715, size: 34, w: 500, col: '#a9c4e8', align: 'center', anim: 'fade' });
     // 项目轴段
-    lyric(tx, L, { at: 14.55, out: 16.15, text: '关键：«用多久？给谁用？»', x: LX, y: 290, size: 64, w: 900, col: '#ffffff', acc: [C.num, '#ffd38a'], anim: 'rise', st: .1, outAnim: 'up' });
+    lyric(tx, L, { at: 14.55, out: 16.15, text: '所以先问一句：«用多久？给谁用？»', x: LX, y: 290, size: 64, w: 900, col: '#ffffff', acc: [C.num, '#ffd38a'], anim: 'rise', st: .1, outAnim: 'up' });
     lyric(tx, L, { at: 15.25, out: 16.15, text: '越往右，越不能光凭感觉', x: LX, y: 400, size: 48, w: 700, col: '#d9e8ff', anim: 'rise', st: .08, outAnim: 'up' });
+    lyric(tx, L, { at: 16.3, out: 17.85, text: '能跑就行？\n这是作业，在‹右边›。', x: LX, y: 300, size: 64, w: 900, col: '#ffffff', acc: ['#9fd8ff'], anim: 'rise', st: .1 });
   },
 };
 };

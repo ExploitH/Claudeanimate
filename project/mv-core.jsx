@@ -162,6 +162,36 @@ function lyric(ctx, L, s) {
   }
   return box;
 }
+const youType = text => Math.min(.5, text.length * .028); // 你的气泡：整句打字用时（小节）
+// 副歌：主旋律 8 小节，每个字落在一个音符上
+const SING = [[[0, '顺着感觉走'], [-1, '，'], [1, '别闭眼'], [-1, '；']], [[2, '说清要啥'], [-1, '，'], [3, '再按回车'], [-1, '。']], [[4, '我会犯错的'], [-1, '，'], [5, '别全信'], [-1, '；']], [[6, '小步存档'], [-1, '——'], [7, '走']]];
+const HOOK_ON = [[0, 1.5, 2, 3, 3.5], [0, 2, 3], [0, 1.5, 2, 3], [0, 2, 2.5, 3], [0, 1, 1.5, 2, 3], [0, 2, 3], [0, 1.5, 2, 3], [0]];
+// s: {at(主旋律第 0 小节所在的世界小节), x, y, size, fam, w, col(颜色或按小节取色的函数), dim, glow, align, hold, stroke}
+function sing(ctx, L, s) {
+  const hb = L.b - s.at, hold = s.hold ?? 8.3;
+  if (hb < -.2 || hb >= hold) return;
+  const ci = Math.max(0, Math.min(3, Math.floor((hb + .15) / 2))), size = s.size || 72;
+  ctx.font = fnt(s.w || 900, size, s.fam || F.sans); ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  const chars = []; let last = ci * 2;
+  for (const [bar, str] of SING[ci]) {
+    if (bar < 0) { for (const ch of str) chars.push({ ch, t: last }); continue; }
+    [...str].forEach((ch, k) => { const t = bar + HOOK_ON[bar][Math.min(k, HOOK_ON[bar].length - 1)] / 4; chars.push({ ch, t }); last = t; });
+  }
+  const wid = chars.map(c => cw(ctx, c.ch)), total = wid.reduce((a, b) => a + b, 0);
+  let x = s.align === 'left' ? s.x : s.x - total / 2;
+  const end = ci < 3 ? ci * 2 + 2 : hold, kin = prog(hb, ci * 2 - .18, ci * 2 - .02, E.out), kout = prog(hb, end - .12, end, E.in);
+  const col = typeof s.col === 'function' ? s.col(Math.floor(hb)) : s.col || '#ffffff';
+  ctx.save(); ctx.globalAlpha *= kin * (1 - kout);
+  chars.forEach((c, i) => {
+    const on = hb >= c.t, k = on ? prog(hb, c.t, c.t + .1, E.out) : 0;
+    ctx.save(); ctx.translate(x + wid[i] / 2, s.y - (on ? (1 - k) * size * .12 : 0)); const sc = on ? lerp(1.28, 1, k) : 1; ctx.scale(sc, sc);
+    if (on && s.glow) { ctx.shadowColor = typeof s.glow === 'function' ? s.glow(Math.floor(hb)) : s.glow; ctx.shadowBlur = 16; }
+    if (s.stroke) { ctx.lineJoin = 'round'; ctx.lineWidth = s.stroke[0]; ctx.strokeStyle = s.stroke[1]; ctx.strokeText(c.ch, -wid[i] / 2, 0); }
+    ctx.fillStyle = on ? col : (s.dim || rgba(col.startsWith('#') ? col : '#ffffff', .3)); ctx.fillText(c.ch, -wid[i] / 2, 0);
+    ctx.restore(); x += wid[i];
+  });
+  ctx.restore();
+}
 function typeSfx(at, text, st = .12, kind = 'key') { const ev = []; let i = 0; for (const c of marks(text)) { if (c.ch !== ' ' && c.ch !== '\n') ev.push([at + i * st / 4, kind]); i++; } return ev; }
 
 // ---------- Clawd：像素小人，十种打扮 ----------
@@ -592,8 +622,23 @@ function worldU(w, T, tw) {
 function drawHud(ctx, T, P, cur, k) {
   const w = cur, m = w.m, L = local(w, T), h = m.hud || {};
   const ink = (typeof h.ink === 'function' ? h.ink(L) : h.ink) || C.ink, dim = h.dim || rgba(ink, .55);
-  // 章节号：开场大字，随后缩到左上角
-  if (h.num) {
+  // 章节卡：开场是「时间 + 你的一句话」，随后换成左上角的章节号和时间
+  if (h.num && h.time) {
+    const mv = h.mv || [.7, 1.05], kin = h.small ? 1 : prog(L.b, 0, .3), kmv = h.small ? 1 : prog(L.b, mv[0], mv[1], E.io), kout = prog(T, w.end - .6, w.end - .1);
+    const a = (1 - kout) * (1 - k), acc = h.acc || C.clawd;
+    if (kmv < 1 && kin > 0) alpha(ctx, a * kin * (1 - kmv), () => {
+      const [cx0, cy0] = h.card || [150, 400], y0 = cy0 - kmv * 40;
+      txt(ctx, h.time, cx0, y0, fnt(700, 140, F.mono), acc);
+      if (h.line) txt(ctx, '「' + h.line + '」', cx0 - 12, y0 + 128, fnt(900, 70, F.sans), ink);
+      txt(ctx, h.num + ' · ' + h.name, cx0 + 4, y0 + 214, fnt(400, 30, F.sans), dim);
+    });
+    if (kmv > 0) alpha(ctx, a * kmv, () => {
+      txt(ctx, h.num, 70, 66, fnt(700, 24, F.mono), acc);
+      const nx = 70 + tw(ctx, h.num, fnt(700, 24, F.mono)) + 14;
+      txt(ctx, h.name, nx, 66, fnt(500, 26, F.sans), ink);
+      txt(ctx, h.time, nx + tw(ctx, h.name, fnt(500, 26, F.sans)) + 18, 67, fnt(400, 22, F.mono), dim);
+    });
+  } else if (h.num) {
     const mv = h.mv || [.7, 1.05], kin = h.small ? 1 : prog(L.b, 0, .35), kmv = h.small ? 1 : prog(L.b, mv[0], mv[1], E.io), kout = prog(T, w.end - .6, w.end - .1);
     const a = kin * (1 - kout) * (1 - k);
     if (a > 0) alpha(ctx, a, () => {
@@ -604,6 +649,19 @@ function drawHud(ctx, T, P, cur, k) {
       txt(ctx, h.name, nx, y + lerp(-s1 * .16, 0, kmv), fnt(lerp(700, 500, kmv), s2, F.sans), ink);
       if (h.world && kmv < 1) alpha(ctx, 1 - kmv, () => txt(ctx, '「' + h.world + '」', nx, y + s1 * .42, fnt(400, 30, F.sans), dim));
     });
+  }
+  // 你：右上角的对话气泡（所有世界样式不变）
+  for (const [at, out, text] of m.you || []) {
+    if (L.b < at - .02 || L.b > out + .2) continue;
+    const kin = prog(L.b, at, at + .1, E.out), kout = prog(L.b, out, out + .15, E.in), nt = youType(text), n = Math.floor(prog(L.b, at + .06, at + .06 + nt, E.lin) * text.length + 1e-6);
+    ctx.save(); ctx.globalAlpha *= kin * (1 - kout) * (1 - k * .8);
+    ctx.font = fnt(500, 34, F.sans); const tw0 = ctx.measureText(text).width, hh = 76, bw = tw0 + 150, x = 1850 - bw, y = 118 - (1 - kin) * 16 - kout * 20;
+    rr(ctx, x, y, bw, hh, 22, 'rgba(16,17,22,.95)', 'rgba(255,255,255,.22)', 2);
+    ctx.fillStyle = 'rgba(16,17,22,.95)'; ctx.beginPath(); ctx.moveTo(x + bw - 50, y + hh - 1.5); ctx.lineTo(x + bw - 14, y + hh + 20); ctx.lineTo(x + bw - 26, y + hh - 1.5); ctx.fill();
+    rr(ctx, x + 18, y + 18, 54, 40, 10, C.clawd); txt(ctx, '你', x + 45, y + 39, fnt(900, 26, F.sans), '#1a0f0a', 'center');
+    txt(ctx, text.slice(0, n), x + 92, y + hh / 2 + 1, fnt(500, 34, F.sans), '#f4f1ea');
+    if (n < text.length || Math.floor(L.bt * 2) % 2 === 0) { ctx.font = fnt(500, 34, F.sans); ctx.fillStyle = C.clawd; ctx.fillRect(x + 96 + ctx.measureText(text.slice(0, n)).width, y + 20, 4, 36); }
+    ctx.restore();
   }
   // 来源
   for (const [b0, b1, s] of m.src || []) {
@@ -677,6 +735,7 @@ function Frame({ T, P, tw, fv }) {
 function sfxList(P) {
   const ev = [];
   for (const w of P.ws) for (const s of w.m.sfx || []) ev.push([w.start + s[0] * BAR, ...s.slice(1)]);
+  for (const w of P.ws) for (const [at, , text] of w.m.you || []) { const nt = youType(text); [...text].forEach((ch, i) => { if (ch !== ' ') ev.push([w.start + (at + .06 + (i + .5) * nt / text.length) * BAR, 'key', .8]); }); ev.push([w.start + at * BAR, 'blip', 660]); }
   for (const r of P.rules) ev.push([r.t, 'rule']);
   return ev;
 }
@@ -749,7 +808,7 @@ function AudioTrack({ P, T0, dur, opt }) {
 
 // ---------- 工具包：传给世界模块 ----------
 const K = { W, H, BPM, BEAT, BAR, F, C, E, LOOK, TR, clamp01, prog, lerp, bump, hash, hex, mixC, rgba, fnt, cw, rr, circ, seg, arrow, txt, tw, scaleAt, rotAt, alpha,
-  lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt };
+  lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt, sing };
 window.MV_K = K;
 
 function Piece({ tw }) {
@@ -761,7 +820,7 @@ function Piece({ tw }) {
   const [fv, setFv] = useState(0);
   const opt = useMemo(() => ({ sfx: tw.sfx !== false, bgm: tw.bgm !== false, vol: tw.bgmVol ?? .8 }), [tw.sfx, tw.bgm, tw.bgmVol]);
   useEffect(() => {
-    const text = P.ws.map(w => (w.m.text || '') + (w.m.hud ? w.m.hud.name + (w.m.hud.world || '') : '') + (w.m.rule ? w.m.rule.text : '')).join('') + '来源：规则清单 0123456789/%+-.';
+    const text = P.ws.map(w => (w.m.text || '') + (w.m.hud ? w.m.hud.name + (w.m.hud.world || '') + (w.m.hud.line || '') + (w.m.hud.time || '') : '') + (w.m.rule ? w.m.rule.text : '') + (w.m.you || []).map(y => y[2]).join('')).join('') + '来源：规则清单你 0123456789/%+-.:「」' + SING.flat().map(x => x[1]).join('');
     const loads = [];
     for (const [fam, ws] of FONT_LOADS) for (const wt of ws) loads.push(document.fonts.load(fnt(wt, 40, fam), text).catch(() => {}));
     Promise.all(loads).then(() => document.fonts.ready).then(() => { CWC.clear(); setFv(v => v + 1); });

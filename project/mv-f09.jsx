@@ -91,6 +91,8 @@ return scene({
     // ---------- 密码卡片 + 光纤 ----------
     const card = k3.label(T, PW, { font: '"JetBrains Mono",monospace', size: 40, bg: '#1a1d24', border: AM, col: '#fff3dc', h: 30 });
     const cardL = new T.PointLight(k3.col(T, AM), 2.2, 600, 2); sc.add(card, cardL);
+    // Clawd 骑在密码卡片上一起飞过去，落地后站在卡片上
+    const me = k3.clawd(T, { px: 4 }); sc.add(me.g);
     const curve = new T.CatmullRomCurve3([[0, 200, 0], [60, 420, -900], [-120, 1500, -1900], [40, 1750, -2900], [0, 1100, -3800], [0, H0 + 26, CITY[2]]].map(p => new T.Vector3(...p)));
     const fiber = new T.Mesh(new T.TubeGeometry(curve, 200, 3, 6), new T.MeshBasicMaterial({ color: k3.col(T, AM), transparent: true, opacity: .35, depthWrite: false })); sc.add(fiber);
     // ---------- GitHub 城：楼群，窗户贴图 ----------
@@ -143,6 +145,8 @@ return scene({
         cam.near = 5; cam.far = 20000; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
       } else camF(b, tt, cam);
       card.lookAt(cam.position);
+      me.set({ pose: b >= HIT && b < t('gg0') ? 'cover' : b < LAND ? 'up' : 'idle', walk: -1, ph: tt * 8, eye: 0, blink: (tt % 2.8) < .1, sweat: b >= HIT ? tt : 0 });
+      me.g.position.copy(card.position).add(V.set(0, 15, 0)); me.g.rotation.y = Math.atan2(cam.position.x - me.g.position.x, cam.position.z - me.g.position.z);
       fiber.visible = on('fly', b); fiber.material.opacity = .35 * (1 - prog(b, LAND, LAND + 1));
       const city = on('fly', b) || on('gg', b);
       towers.visible = mine.visible = repo.visible = city;
@@ -377,6 +381,9 @@ return scene({
     const goldL = k3.label(T, 'notes/old-deploy.txt', { font: '"JetBrains Mono",monospace', size: 30, col: '#ffe0a0', h: 16 }); goldL.position.set(100, 230, -190); SH.add(goldL);
     // Agent：蓝色体素小人（不是 Clawd）
     const ag = k3.clawd(T, { px: 7, col: '#4f7fe0', hi: '#8fb4ff' }); sc.add(ag.g);
+    // Clawd：事故之后进场，逐条站到四个原因旁边
+    const me = k3.clawd(T, { px: 8 }); sc.add(me.g);
+    const SPOT = [['why', 150, 260, 0], ['c0', 220, 60, 0], ['c1', -10, -215, 113], ['c2', 300, 40, 0], ['c3', 860, 60, 0], ['end', 260, 260, 0]];
     const kk = k3.key(T, AM, 1.3, { glow: true, ei: .8 }); sc.add(kk); const kL = new T.PointLight(k3.col(T, AM), 0, 300, 2); sc.add(kL);
     // 数据库：两摞圆柱，坐在同一块存储卷上
     const slab = new T.Mesh(new T.BoxGeometry(520, 30, 260), k3.mat(T, '#1c222c', { m: .6, r: .35 })); slab.position.set(SLAB[0], 15, SLAB[1]); slab.castShadow = slab.receiveShadow = true; sc.add(slab);
@@ -421,6 +428,10 @@ return scene({
       const [x, walk, pose, ry] = ax(b), hl = b >= t('c1') && b < t('c2') + .02 || b >= t('c2') && b < t('c3');
       ag.set({ pose, walk: walk ? tt * 9 : -1, ph: tt * 8, eye: 0, blink: (tt % 2.7) < .1 });
       ag.g.position.set(x, walk ? Math.abs(Math.sin(tt * 9)) * 4 : 0, -40); ag.g.rotation.y = ry;
+      { let i = -1; SPOT.forEach((q, j) => { if (b >= t(q[0])) i = j; }); const vis = i >= 0;
+        const q = SPOT[Math.max(0, i)], p0 = SPOT[Math.max(0, i - 1)], k = vis ? U.prog(b, t(q[0]), t(q[0]) + .4) : 0, mx = lerp(p0[1], q[1], k), mz = lerp(p0[2], q[2], k);
+        me.set({ pose: k >= 1 ? 'point' : 'idle', walk: k > 0 && k < 1 ? tt * 10 : -1, ph: tt * 8, eye: 0, blink: (tt % 3.1) < .1, alpha: vis ? U.prog(b, t('why'), t('why') + .3) : 0 });
+        me.g.position.set(mx, lerp(p0[3], q[3], k) + Math.sin(Math.PI * k) * 60, mz); me.g.rotation.y = Math.atan2(c.position.x - mx, c.position.z - mz); }
       // 金色文件 + 钥匙
       const g1 = U.prog(b, t('p2') + 1.4, PICK - .4), gc1 = b >= t('c1') && b < t('c2');
       gold.material.emissiveIntensity = (b < t('p4') ? g1 * (1.2 + .5 * Math.sin(tt * 6)) : .4) + (gc1 ? 1.5 + Math.sin(tt * 8) : 0);
@@ -645,7 +656,7 @@ return scene({
     });
     // ---------- Clawd ----------
     let st = { x: 1640, y: 900, px: 14, pose: 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: -1 };
-    if (b < t('late0')) { st.x = 1720; st.y = 900; st.alpha = b >= t('env') - .3 ? 0 : 1; }
+    if (b < t('late0')) { st.x = b >= t('env') - .3 ? 220 : 1720; st.y = 900; st.eye = b >= t('env') - .3 ? 1 : -1; st.pose = b >= t('env') ? 'point' : 'idle'; }
     else if (b < t('auto')) { st.x = 200; st.y = 900; st.eye = 1; st.pose = b >= t('late1') ? 'point' : 'idle'; }
     else if (b < t('dg')) { st.x = 1500; st.y = 680; st.eye = -1; }
     else if (b < t('box')) { st.x = 1580; st.y = 860; st.px = 16; st.pose = b >= t('dg') + 1.4 ? 'up' : 'idle'; st.eye = -1; }

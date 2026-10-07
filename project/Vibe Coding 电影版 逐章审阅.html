@@ -5154,8 +5154,8 @@ function pulseWave(A, duty) {
   for (let k = 1; k < n; k++) re[k] = 2 / (k * Math.PI) * Math.sin(k * Math.PI * duty);
   return m[duty] = A.createPeriodicWave(re, im);
 }
-function renderChunk(ev, cs, ce, opt) {
-  const len = ce - cs + TAIL,
+function renderChunk(ev, cs, ce, opt, x = {}) {
+  const len = ce - cs + (x.tail ?? TAIL),
     A = new OfflineAudioContext(2, Math.ceil(len * SR), SR);
   const nb = A.createBuffer(1, SR * 2, SR);
   nb.copyToChannel(noiseData(), 0);
@@ -6114,6 +6114,10 @@ function renderChunk(ev, cs, ce, opt) {
     if (I[e.i]) I[e.i](e, t);else if (['saw', 'flute', 'chip', 'trumpet', 'bell', 'whistle', 'square', 'box'].includes(e.i)) I.lead(e, t, e.i);else if (['tri', 'arp', 'kalimba', 'chiparp', 'marimba'].includes(e.i)) I.pluck(e, t, e.i);
   };
   // 离线渲染会处理图里的每个节点（哪怕还没开始发声），所以按 2 秒分桶，到点前才创建声部
+  if (x.all) {
+    for (const e of ev) if (e.t >= cs && e.t < ce) spawn(e);
+    return A.startRendering();
+  }
   const STEP = 2,
     buckets = [];
   for (const e of ev) {
@@ -6134,7 +6138,13 @@ function renderChunk(ev, cs, ce, opt) {
   return A.startRendering();
 }
 
-// ---------- 分块任务 ----------
+// ---------- 分段任务 ----------
+// 每场戏切成 SEG 秒一段，每段单独离线渲染：从段首往前多渲 PRE 秒（让刚响过的音和混响尾巴带进这一段），
+// 只取这一段的声音，段与段之间留 XF 秒线性交叉淡化。很早就开始的长音（雨、持续音、长和声）
+// 截到段首前 PRE 秒再起音，起音落在被丢掉的预渲染里。渲染顺序跟着播放头走：先渲当前位置，再往后。
+const SEG = 8,
+  PRE = 3.5,
+  XF = .03;
 const SONG = new Map(),
   CHUNKS = new Map();
 function compose(P) {
@@ -6164,16 +6174,87 @@ function spans(P, T0, dur) {
   for (const w of P.ws) {
     const a = Math.max(w.start, T0),
       b = Math.min(w.end, T0 + dur);
-    if (b - a > .01) out.push([a, b]);
+    if (b - a > .01) out.push([a, b, w.start, w.end]);
   }
   return out;
+}
+function slices(P, T0, dur) {
+  const out = [];
+  // 每场戏第一段只有 3 秒：点章节跳过去时最快出声
+  for (const [a, b, ws, we] of spans(P, T0, dur)) for (let s = a; s < b - .01;) {
+    const e = Math.min(b, s + (s === a ? 3 : SEG));
+    out.push({
+      a: s,
+      b: b - e < 1 ? b : e,
+      ws,
+      we,
+      first: s === a,
+      last: b - e < 1
+    });
+    if (b - e < 1) break;
+    s = e;
+  }
+  return out;
+}
+function renderSlice(ev, sl, opt) {
+  const {
+      a,
+      b,
+      ws,
+      we
+    } = sl,
+    x0 = sl.first ? a : a - XF,
+    x1 = sl.last ? b + TAIL : b + XF,
+    c0 = Math.max(ws, a - PRE);
+  const sel = [];
+  for (const e of ev) {
+    if (e.t < ws || e.t >= we || e.t >= x1) continue;
+    if (e.i === 'lp' || e.i === 'mute') {
+      sel.push(e);
+      continue;
+    }
+    if (e.t >= c0) {
+      sel.push(e);
+      continue;
+    }
+    // 段首前很早开始、现在还在响的长音：截到 c0 再起音（起音落在预渲染里，会被丢掉）
+    if ((e.d || 0) > PRE && e.t + e.d + 1 > a) sel.push({
+      ...e,
+      t: c0,
+      d: e.d - (c0 - e.t)
+    });
+  }
+  return renderChunk(sel, c0, Math.min(we, x1), opt, {
+    all: true,
+    tail: x1 - Math.min(we, x1) + .05
+  }).then(buf => {
+    const o = Math.round((x0 - c0) * SR),
+      n = Math.round((x1 - x0) * SR),
+      f = Math.round(XF * 2 * SR);
+    const out = new AudioBuffer({
+      length: n,
+      numberOfChannels: 2,
+      sampleRate: SR
+    });
+    for (let k = 0; k < 2; k++) {
+      const src = buf.getChannelData(k),
+        d = new Float32Array(n);
+      for (let i = 0; i < n; i++) d[i] = src[o + i] || 0;
+      if (!sl.first) for (let i = 0; i < f && i < n; i++) d[i] *= i / f;
+      if (!sl.last) for (let i = 0; i < f && i < n; i++) d[n - 1 - i] *= i / f;
+      out.copyToChannel(d, k);
+    }
+    return out;
+  });
 }
 window.MV_MUSIC = {
   _dbg: {
     renderChunk,
-    compose
+    renderSlice,
+    compose,
+    slices
   },
-  count: (P, T0, dur) => spans(P, T0, dur).length,
+  count: (P, T0, dur) => slices(P, T0, dur).length,
   job(P, sfx, T0, dur, opt) {
     const song = compose(P),
       ev = [];
@@ -6185,35 +6266,52 @@ window.MV_MUSIC = {
       sfx: true
     });
     ev.sort((a, b) => a.t - b.t);
-    const key = song.sig + '|' + JSON.stringify(opt) + '|' + sfx.length;
+    const key = song.sig + '|' + JSON.stringify(opt) + '|' + sfx.length,
+      list = slices(P, T0, dur);
     const J = {
       done: [],
       dead: false,
+      at: T0,
       cancel() {
         J.dead = true;
       },
+      focus(t) {
+        J.at = t;
+      },
       async run(cb) {
-        for (const [a, b] of spans(P, T0, dur)) {
-          if (J.dead) return;
-          const k = key + '|' + a + '-' + b;
-          let buf = CHUNKS.get(k);
-          if (!buf) {
-            await new Promise(r => setTimeout(r, 0));
-            if (J.dead) return;
-            try {
-              buf = await renderChunk(ev, a, b, opt);
-            } catch (e) {
-              console.warn('音轨渲染失败：', e);
-              return;
+        const todo = list.slice();
+        // 几段同时渲（离线渲染各占一个线程，按核数定 2~4 路）；每次都挑播放头所在的段，然后往后，后面渲完了再回头补前面
+        const worker = async () => {
+          while (todo.length && !J.dead) {
+            let i = todo.findIndex(s => s.b > J.at + .05);
+            if (i < 0) i = 0;
+            const sl = todo.splice(i, 1)[0],
+              k = key + '|' + sl.a.toFixed(3) + '-' + sl.b.toFixed(3);
+            let buf = CHUNKS.get(k);
+            if (!buf) {
+              await new Promise(r => setTimeout(r, 0));
+              if (J.dead) return;
+              try {
+                buf = await renderSlice(ev, sl, opt);
+              } catch (e) {
+                console.warn('音轨渲染失败：', e);
+                continue;
+              }
+              CHUNKS.set(k, buf);
             }
-            CHUNKS.set(k, buf);
+            if (J.dead) return;
+            J.done.push({
+              t0: sl.first ? sl.a : sl.a - XF,
+              buf,
+              k
+            });
+            cb();
           }
-          J.done.push({
-            t0: a,
-            buf
-          });
-          cb();
-        }
+        };
+        const nw = Math.max(2, Math.min(4, Math.floor((navigator.hardwareConcurrency || 4) / 2)));
+        await Promise.all(Array.from({
+          length: nw
+        }, worker));
       }
     };
     return J;
@@ -9373,15 +9471,17 @@ function toWav(ch, sr) {
     type: 'audio/wav'
   });
 }
-function useMusic(P, T0, dur, opt) {
+function useMusic(P, T0, dur, opt, timeRef) {
   const [chunks, setChunks] = useState([]);
   useEffect(() => {
     let live = true;
     setChunks([]);
     const M = window.MV_MUSIC;
-    if (!M || !(opt.sfx || opt.bgm)) return;
+    if (!M || !(opt.sfx || opt.bgm) || window.__mvNoAudio) return;
     const job = M.job(P, sfxList(P), T0, dur, opt);
-    job.run(c => {
+    job.focus(T0 + (timeRef.current || 0));
+    timeRef.job = job;
+    job.run(() => {
       if (live) setChunks(job.done.slice());
     });
     return () => {
@@ -9391,6 +9491,7 @@ function useMusic(P, T0, dur, opt) {
   }, [P, T0, dur, opt]);
   return chunks;
 }
+// 逐段播放：新渲好的段只追加排进去，不打断正在响的；拖动进度或暂停时才整体重排
 function AudioWeb({
   chunks,
   T0
@@ -9400,10 +9501,10 @@ function AudioWeb({
     playing
   } = useComposition();
   const st = useRef({
-    srcs: [],
+    srcs: new Map(),
     at: 0,
     off: 0,
-    n: 0
+    on: false
   });
   const stop = () => {
     st.current.srcs.forEach(s => {
@@ -9411,19 +9512,24 @@ function AudioWeb({
         s.stop();
       } catch (e) {}
     });
-    st.current.srcs = [];
+    st.current.srcs = new Map();
+    st.current.on = false;
   };
   useEffect(() => {
     const ac = window.__mvAudio,
       s = st.current;
-    if (!ac || !playing || !chunks.length) {
+    if (!ac || !playing) {
       stop();
       return;
     }
     const now = ac.currentTime,
       pos = s.off + (now - s.at);
-    if (s.srcs.length && s.n === chunks.length && Math.abs(pos - time) < .25) return;
-    stop();
+    if (s.on && Math.abs(pos - time) > .25) stop();
+    if (!s.on) Object.assign(s, {
+      at: now + .03,
+      off: time,
+      on: true
+    });
     const out = ac.__mvOut || (ac.__mvOut = (() => {
       const g = ac.createGain(),
         c = ac.createDynamicsCompressor();
@@ -9436,21 +9542,19 @@ function AudioWeb({
       c.connect(ac.destination);
       return g;
     })());
+    const cur = s.off + (Math.max(now, s.at) - s.at);
     for (const c of chunks) {
+      if (s.srcs.has(c.k)) continue;
       const a = c.t0 - T0,
         b = a + c.buf.duration;
-      if (b <= time) continue;
+      if (b <= cur + .02) continue;
       const src = ac.createBufferSource();
       src.buffer = c.buf;
       src.connect(out);
-      if (a >= time) src.start(now + (a - time) + .02);else src.start(now + .02, time - a);
-      s.srcs.push(src);
+      const when = s.at + (a - s.off);
+      if (when >= now + .01) src.start(when);else src.start(now + .01, Math.max(0, now + .01 - when));
+      s.srcs.set(c.k, src);
     }
-    Object.assign(s, {
-      at: now + .02,
-      off: time,
-      n: chunks.length
-    });
   }, [time, playing, chunks]);
   useEffect(() => stop, []);
   return null;
@@ -9521,8 +9625,16 @@ function AudioTrack({
   dur,
   opt
 }) {
-  const chunks = useMusic(P, T0, dur, opt);
-  const total = window.MV_MUSIC ? window.MV_MUSIC.count(P, T0, dur) : 0;
+  const {
+      time
+    } = useComposition(),
+    timeRef = useRef(0);
+  timeRef.current = time;
+  const chunks = useMusic(P, T0, dur, opt, timeRef);
+  useEffect(() => {
+    if (timeRef.job) timeRef.job.focus(T0 + time);
+  }, [Math.floor(time * 2)]);
+  const total = useMemo(() => window.MV_MUSIC ? window.MV_MUSIC.count(P, T0, dur) : 0, [P, T0, dur]);
   return window.__mvAudio ? /*#__PURE__*/React.createElement(AudioWeb, {
     chunks: chunks,
     T0: T0

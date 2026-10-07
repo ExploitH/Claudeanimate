@@ -292,8 +292,8 @@ function pulseWave(A, duty) {
   return (m[duty] = A.createPeriodicWave(re, im));
 }
 
-function renderChunk(ev, cs, ce, opt) {
-  const len = ce - cs + TAIL, A = new OfflineAudioContext(2, Math.ceil(len * SR), SR);
+function renderChunk(ev, cs, ce, opt, x = {}) {
+  const len = ce - cs + (x.tail ?? TAIL), A = new OfflineAudioContext(2, Math.ceil(len * SR), SR);
   const nb = A.createBuffer(1, SR * 2, SR); nb.copyToChannel(noiseData(), 0);
   const irD = irData(), ir = A.createBuffer(2, irD[0].length, SR); ir.copyToChannel(irD[0], 0); ir.copyToChannel(irD[1], 1);
   const lim = A.createWaveShaper(); lim.curve = clipCurve(); lim.connect(A.destination);
@@ -545,6 +545,7 @@ function renderChunk(ev, cs, ce, opt) {
     else if (['tri', 'arp', 'kalimba', 'chiparp', 'marimba'].includes(e.i)) I.pluck(e, t, e.i);
   };
   // 离线渲染会处理图里的每个节点（哪怕还没开始发声），所以按 2 秒分桶，到点前才创建声部
+  if (x.all) { for (const e of ev) if (e.t >= cs && e.t < ce) spawn(e); return A.startRendering(); }
   const STEP = 2, buckets = [];
   for (const e of ev) { if (e.t < cs || e.t >= ce) continue; const k = Math.floor(R(e.t) / STEP); (buckets[k] = buckets[k] || []).push(e); }
   (buckets[0] || []).forEach(spawn);
@@ -556,7 +557,11 @@ function renderChunk(ev, cs, ce, opt) {
   return A.startRendering();
 }
 
-// ---------- 分块任务 ----------
+// ---------- 分段任务 ----------
+// 每场戏切成 SEG 秒一段，每段单独离线渲染：从段首往前多渲 PRE 秒（让刚响过的音和混响尾巴带进这一段），
+// 只取这一段的声音，段与段之间留 XF 秒线性交叉淡化。很早就开始的长音（雨、持续音、长和声）
+// 截到段首前 PRE 秒再起音，起音落在被丢掉的预渲染里。渲染顺序跟着播放头走：先渲当前位置，再往后。
+const SEG = 8, PRE = 3.5, XF = .03;
 const SONG = new Map(), CHUNKS = new Map();
 function compose(P) {
   const sig = P.ws.map(w => w.m.id + '@' + w.start).join('|');
@@ -568,27 +573,63 @@ function compose(P) {
 }
 function spans(P, T0, dur) {
   const out = [];
-  for (const w of P.ws) { const a = Math.max(w.start, T0), b = Math.min(w.end, T0 + dur); if (b - a > .01) out.push([a, b]); }
+  for (const w of P.ws) { const a = Math.max(w.start, T0), b = Math.min(w.end, T0 + dur); if (b - a > .01) out.push([a, b, w.start, w.end]); }
   return out;
 }
+function slices(P, T0, dur) {
+  const out = [];
+  // 每场戏第一段只有 3 秒：点章节跳过去时最快出声
+  for (const [a, b, ws, we] of spans(P, T0, dur)) for (let s = a; s < b - .01;) { const e = Math.min(b, s + (s === a ? 3 : SEG)); out.push({ a: s, b: b - e < 1 ? b : e, ws, we, first: s === a, last: b - e < 1 }); if (b - e < 1) break; s = e; }
+  return out;
+}
+function renderSlice(ev, sl, opt) {
+  const { a, b, ws, we } = sl, x0 = sl.first ? a : a - XF, x1 = sl.last ? b + TAIL : b + XF, c0 = Math.max(ws, a - PRE);
+  const sel = [];
+  for (const e of ev) {
+    if (e.t < ws || e.t >= we || e.t >= x1) continue;
+    if (e.i === 'lp' || e.i === 'mute') { sel.push(e); continue; }
+    if (e.t >= c0) { sel.push(e); continue; }
+    // 段首前很早开始、现在还在响的长音：截到 c0 再起音（起音落在预渲染里，会被丢掉）
+    if ((e.d || 0) > PRE && e.t + e.d + 1 > a) sel.push({ ...e, t: c0, d: e.d - (c0 - e.t) });
+  }
+  return renderChunk(sel, c0, Math.min(we, x1), opt, { all: true, tail: x1 - Math.min(we, x1) + .05 }).then(buf => {
+    const o = Math.round((x0 - c0) * SR), n = Math.round((x1 - x0) * SR), f = Math.round(XF * 2 * SR);
+    const out = new AudioBuffer({ length: n, numberOfChannels: 2, sampleRate: SR });
+    for (let k = 0; k < 2; k++) {
+      const src = buf.getChannelData(k), d = new Float32Array(n);
+      for (let i = 0; i < n; i++) d[i] = src[o + i] || 0;
+      if (!sl.first) for (let i = 0; i < f && i < n; i++) d[i] *= i / f;
+      if (!sl.last) for (let i = 0; i < f && i < n; i++) d[n - 1 - i] *= i / f;
+      out.copyToChannel(d, k);
+    }
+    return out;
+  });
+}
 window.MV_MUSIC = {
-  _dbg: { renderChunk, compose },
-  count: (P, T0, dur) => spans(P, T0, dur).length,
+  _dbg: { renderChunk, renderSlice, compose, slices },
+  count: (P, T0, dur) => slices(P, T0, dur).length,
   job(P, sfx, T0, dur, opt) {
     const song = compose(P), ev = [];
     if (opt.bgm) ev.push(...song.ev); else ev.push(...song.ev.filter(e => e.i === 'mute'));
     if (opt.sfx) for (const [t, i, a] of sfx) ev.push({ t, i, a, sfx: true });
     ev.sort((a, b) => a.t - b.t);
-    const key = song.sig + '|' + JSON.stringify(opt) + '|' + sfx.length;
-    const J = { done: [], dead: false, cancel() { J.dead = true; },
+    const key = song.sig + '|' + JSON.stringify(opt) + '|' + sfx.length, list = slices(P, T0, dur);
+    const J = { done: [], dead: false, at: T0, cancel() { J.dead = true; }, focus(t) { J.at = t; },
       async run(cb) {
-        for (const [a, b] of spans(P, T0, dur)) {
-          if (J.dead) return;
-          const k = key + '|' + a + '-' + b;
-          let buf = CHUNKS.get(k);
-          if (!buf) { await new Promise(r => setTimeout(r, 0)); if (J.dead) return; try { buf = await renderChunk(ev, a, b, opt); } catch (e) { console.warn('音轨渲染失败：', e); return; } CHUNKS.set(k, buf); }
-          J.done.push({ t0: a, buf }); cb();
-        }
+        const todo = list.slice();
+        // 几段同时渲（离线渲染各占一个线程，按核数定 2~4 路）；每次都挑播放头所在的段，然后往后，后面渲完了再回头补前面
+        const worker = async () => {
+          while (todo.length && !J.dead) {
+            let i = todo.findIndex(s => s.b > J.at + .05); if (i < 0) i = 0;
+            const sl = todo.splice(i, 1)[0], k = key + '|' + sl.a.toFixed(3) + '-' + sl.b.toFixed(3);
+            let buf = CHUNKS.get(k);
+            if (!buf) { await new Promise(r => setTimeout(r, 0)); if (J.dead) return; try { buf = await renderSlice(ev, sl, opt); } catch (e) { console.warn('音轨渲染失败：', e); continue; } CHUNKS.set(k, buf); }
+            if (J.dead) return;
+            J.done.push({ t0: sl.first ? sl.a : sl.a - XF, buf, k }); cb();
+          }
+        };
+        const nw = Math.max(2, Math.min(4, Math.floor((navigator.hardwareConcurrency || 4) / 2)));
+        await Promise.all(Array.from({ length: nw }, worker));
       } };
     return J;
   },

@@ -773,36 +773,41 @@ function toWav(ch, sr) {
   for (let i = 0, o = 44; i < n; i++, o += 4) { v.setInt16(o, Math.max(-1, Math.min(1, ch[0][i])) * 32767, true); v.setInt16(o + 2, Math.max(-1, Math.min(1, ch[1][i])) * 32767, true); }
   return new Blob([v.buffer], { type: 'audio/wav' });
 }
-function useMusic(P, T0, dur, opt) {
+function useMusic(P, T0, dur, opt, timeRef) {
   const [chunks, setChunks] = useState([]);
   useEffect(() => {
     let live = true; setChunks([]);
-    const M = window.MV_MUSIC; if (!M || !(opt.sfx || opt.bgm)) return;
+    const M = window.MV_MUSIC; if (!M || !(opt.sfx || opt.bgm) || window.__mvNoAudio) return;
     const job = M.job(P, sfxList(P), T0, dur, opt);
-    job.run(c => { if (live) setChunks(job.done.slice()); });
+    job.focus(T0 + (timeRef.current || 0));
+    timeRef.job = job;
+    job.run(() => { if (live) setChunks(job.done.slice()); });
     return () => { live = false; job.cancel(); };
   }, [P, T0, dur, opt]);
   return chunks;
 }
+// 逐段播放：新渲好的段只追加排进去，不打断正在响的；拖动进度或暂停时才整体重排
 function AudioWeb({ chunks, T0 }) {
   const { time, playing } = useComposition();
-  const st = useRef({ srcs: [], at: 0, off: 0, n: 0 });
-  const stop = () => { st.current.srcs.forEach(s => { try { s.stop(); } catch (e) {} }); st.current.srcs = []; };
+  const st = useRef({ srcs: new Map(), at: 0, off: 0, on: false });
+  const stop = () => { st.current.srcs.forEach(s => { try { s.stop(); } catch (e) {} }); st.current.srcs = new Map(); st.current.on = false; };
   useEffect(() => {
     const ac = window.__mvAudio, s = st.current;
-    if (!ac || !playing || !chunks.length) { stop(); return; }
+    if (!ac || !playing) { stop(); return; }
     const now = ac.currentTime, pos = s.off + (now - s.at);
-    if (s.srcs.length && s.n === chunks.length && Math.abs(pos - time) < .25) return;
-    stop();
+    if (s.on && Math.abs(pos - time) > .25) stop();
+    if (!s.on) Object.assign(s, { at: now + .03, off: time, on: true });
     const out = ac.__mvOut || (ac.__mvOut = (() => { const g = ac.createGain(), c = ac.createDynamicsCompressor(); c.threshold.value = -4; c.knee.value = 4; c.ratio.value = 12; c.attack.value = .002; c.release.value = .2; g.connect(c); c.connect(ac.destination); return g; })());
+    const cur = s.off + (Math.max(now, s.at) - s.at);
     for (const c of chunks) {
+      if (s.srcs.has(c.k)) continue;
       const a = c.t0 - T0, b = a + c.buf.duration;
-      if (b <= time) continue;
+      if (b <= cur + .02) continue;
       const src = ac.createBufferSource(); src.buffer = c.buf; src.connect(out);
-      if (a >= time) src.start(now + (a - time) + .02); else src.start(now + .02, time - a);
-      s.srcs.push(src);
+      const when = s.at + (a - s.off);
+      if (when >= now + .01) src.start(when); else src.start(now + .01, Math.max(0, now + .01 - when));
+      s.srcs.set(c.k, src);
     }
-    Object.assign(s, { at: now + .02, off: time, n: chunks.length });
   }, [time, playing, chunks]);
   useEffect(() => stop, []);
   return null;
@@ -827,8 +832,11 @@ function AudioVideo({ chunks, total, dur, T0 }) {
     style={{ position: 'absolute', left: 0, top: 0, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />;
 }
 function AudioTrack({ P, T0, dur, opt }) {
-  const chunks = useMusic(P, T0, dur, opt);
-  const total = window.MV_MUSIC ? window.MV_MUSIC.count(P, T0, dur) : 0;
+  const { time } = useComposition(), timeRef = useRef(0);
+  timeRef.current = time;
+  const chunks = useMusic(P, T0, dur, opt, timeRef);
+  useEffect(() => { if (timeRef.job) timeRef.job.focus(T0 + time); }, [Math.floor(time * 2)]);
+  const total = useMemo(() => window.MV_MUSIC ? window.MV_MUSIC.count(P, T0, dur) : 0, [P, T0, dur]);
   return window.__mvAudio ? <AudioWeb chunks={chunks} T0={T0} /> : <AudioVideo chunks={chunks} total={total} dur={dur} T0={T0} />;
 }
 

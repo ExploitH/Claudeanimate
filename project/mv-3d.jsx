@@ -62,6 +62,7 @@
       rd = new T.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true, premultipliedAlpha: true });
       rd.setPixelRatio(1); rd.setClearColor(0x000000, 0);
       rd.outputEncoding = T.sRGBEncoding;
+      rd.shadowMap.enabled = true; rd.shadowMap.type = T.PCFSoftShadowMap;
       cam = new T.PerspectiveCamera(FOV, W / H, 10, 8000);
     }
     const c = rd.domElement;
@@ -74,7 +75,9 @@
     let s;
     try { s = sceneFor(m); } catch (e) { console.warn('3D 场景构建失败', m.id, e); m.three = null; return false; }
     const r = renderer(ctx.canvas.width, ctx.canvas.height);
-    cam.position.set(0, 0, Z0); cam.up.set(0, 1, 0); cam.fov = FOV; cam.zoom = 1; cam.lookAt(0, 0, 0);
+    cam.position.set(0, 0, Z0); cam.up.set(0, 1, 0); cam.fov = FOV; cam.zoom = 1; cam.near = 10; cam.far = 8000; cam.lookAt(0, 0, 0);
+    r.toneMapping = window.THREE.NoToneMapping; r.toneMappingExposure = 1;
+    U.renderer = r;
     const vis = s.update(L, cam, U);
     if (vis === false) return false;
     cam.updateProjectionMatrix();

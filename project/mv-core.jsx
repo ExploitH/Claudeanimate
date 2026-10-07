@@ -36,8 +36,8 @@ const rgba = (h, a) => `rgba(${hex(h).join(',')},${a})`;
 const fnt = (w, s, fam = F.sans) => `${w} ${s}px ${fam}`;
 
 // 画风编号（与着色器一致）
-const LOOK = { VOID: 0, DREAM: 1, ORBIT: 2, RISO: 3, PAPER: 4, NEON: 5, PRINT: 6, PIXEL: 7, NOIR: 8, ALERT: 9, PRISM: 10 };
-const LOOK_NAMES = ['虚空', '梦', '轨道', '印刷', '纸', '霓虹', '蓝图', '存档', '黑色电影', '警报', '回声'];
+const LOOK = { VOID: 0, DREAM: 1, ORBIT: 2, RISO: 3, PAPER: 4, NEON: 5, PRINT: 6, PIXEL: 7, NOIR: 8, ALERT: 9, PRISM: 10, FILM: 11 };
+const LOOK_NAMES = ['虚空', '梦', '轨道', '印刷', '纸', '霓虹', '蓝图', '存档', '黑色电影', '警报', '回声', '电影'];
 // 转场编号
 const TR = { CUT: 0, WIPE: 1, PIXEL: 2, IRIS: 3, TEAR: 4, INK: 5, GLITCH: 6, BURN: 7, FLASH: 8 };
 
@@ -477,11 +477,26 @@ vec3 look(float id,sampler2D C,sampler2D X,vec4 P,vec4 cam,vec4 fo,vec2 uv){
     col=col*(1.-a)+cc*a+mix(ac*lum(bloom(C,gu))*1.4,bloom(C,gu),P.w)*.6*uFx;col*=1.-.5*fk;
     ty=tx(X,uv,0.);vec4 tr=tx(X,uv+vec2(ab*.4,0.),0.);col=col*(1.-ty.a)+vec3(tr.r,ty.g,ty.b);
     col*=.9+.1*sin(uv.y*uRes.y*3.1416);
-  }else{ // 回声：干净深色 + 光谱余晖
+  }else if(id<10.5){ // 回声：干净深色 + 光谱余晖
     col=vec3(.022,.022,.03);
     for(int i=0;i<3;i++){float fi=float(i);col+=pal(uv.x*.45+t*.025+fi*.23)*exp(-pow((uv.y-.15-fi*.07-.06*sin(uv.x*2.6+t*.15+fi*2.))*7.,2.))*.07*P.x;}
     c=cF(C,cu,fk);col=over(col,c)+bloom(C,cu)*.55*uFx;col*=1.-.5*fk;
     ty=tx(X,uv,0.);col=over(col,ty)+tx(X,uv,3.).rgb*.2*uFx;
+  }else{ // 电影：现实里的戏。P.x 曝光 P.y 冷暖（0 冷 1 暖）P.z 暗角 P.w 光晕和颗粒
+    float ca=.0016*uFx*(.4+length(p));vec2 dc=(uv-.5)*ca;
+    c=cF(C,cu,fk);vec3 b0=over(vec3(.006,.008,.012),c);
+    b0.r=over(vec3(.006),cF(C,cu+dc,fk)).r;b0.b=over(vec3(.012),cF(C,cu-dc,fk)).b;
+    float l=lum(b0);
+    vec3 cool=vec3(.80,.97,1.10),warm=vec3(1.12,.98,.80);
+    b0*=mix(cool,warm,clamp(P.y,0.,1.));
+    b0=mix(b0,b0*vec3(.86,1.,1.06)+vec3(.0,.012,.018),smoothstep(.35,0.,l)*.6);
+    b0*=.7+.6*P.x;
+    b0+=bloom(C,cu)*.42*P.w*uFx;
+    b0=b0/(1.+b0*.18);
+    b0*=1.-P.z*smoothstep(.25,1.1,length(p*vec2(.82,1.15)));
+    b0+=(h1(gl_FragCoord.xy*.71+fract(uT*13.)*91.)-.5)*.035*P.w*uFx;
+    col=b0*(1.-.45*fk);
+    ty=tx(X,uv,0.);col=over(col,ty)+tx(X,uv,3.).rgb*.12*uFx;
   }
   return col;
 }
@@ -815,6 +830,131 @@ function AudioTrack({ P, T0, dur, opt }) {
 }
 
 // ---------- 工具包：传给世界模块 ----------
+// ---------- 叙事：按阅读速度排时间 ----------
+// 一场戏的台词写成步骤表，按字数算每句停多久，排出每一步的起止小节；画面按名字取时间（S.t('id')）。
+// 步骤：id；say（Clawd 的字幕）、big（画面大字，可带 sub）、you / me（对话：你 / Clawd）、
+// gloss（词条卡 [词, 英文, 解释]）、src（来源）、rule（规则条 [n, 文字]）、note（只给画面用的标记）；
+// pause（空几小节）、hold（多停几小节）、dur（直接给长度）、with（和上一步同时开始，off 偏移）、
+// gap（之后空多少）、until / untilEnd（显示到某一步开始 / 结束）、slow（阅读时间倍数）。
+const READ = { cps: 4, min: 2.2, pad: 1 };
+const PUNCT = /^[，。、；：！？—…「」“”‘’（）·,.;:!?()《》\-]$/;
+function readLen(s) {
+  let n = 0;
+  for (const m of String(s).replace(/[‹›«»\n]/g, '').matchAll(/[A-Za-z0-9_.+#@/%$']+|[^\s]/g)) {
+    const w = m[0];
+    n += /^[㐀-鿿]$/.test(w) ? 1 : PUNCT.test(w) ? .3 : Math.min(4, 1 + w.length * .12);
+  }
+  return n;
+}
+const readBars = (s, slow = 1) => Math.ceil(Math.max(READ.min, readLen(s) / READ.cps * slow + READ.pad) / BAR * 4) / 4;
+function seq(steps, o = {}) {
+  const at = {}, end = {}, items = [];
+  let c = o.start ?? 0, prev = c;
+  for (const s0 of steps) {
+    const s = typeof s0 === 'string' ? { say: s0 } : s0;
+    if (s.pause !== undefined && !s.say && !s.big) { if (s.id) { at[s.id] = c; end[s.id] = c + s.pause; } c += s.pause; prev = c; continue; }
+    const st = s.with ? prev + (s.off || 0) : s.at ?? c;
+    const t = [s.say, s.big, s.sub, s.you, s.me, s.gloss && s.gloss.slice(1).join(' '), s.rule && s.rule[1]].filter(Boolean).join(' ');
+    let d = s.dur ?? (t ? readBars(t, s.slow) : 1);
+    if (s.you && s.dur === undefined) d += youType(s.you);
+    if (s.me && s.dur === undefined) d += .5; // 「对方正在输入」
+    d += s.hold || 0;
+    const it = { ...s, at: st, out: st + d };
+    items.push(it);
+    if (s.id) { at[s.id] = st; end[s.id] = st + d; }
+    prev = st;
+    if (!s.with) c = Math.max(c, st + d + (s.gap ?? 0)); else if (s.extend) c = Math.max(c, st + d);
+  }
+  const bars = Math.ceil(c + (o.tail ?? .75));
+  for (const it of items) {
+    if (it.until) it.out = at[it.until] ?? it.out;
+    if (it.untilEnd) it.out = end[it.untilEnd] ?? it.out;
+    if (it.keep) it.out = bars + 1;
+    it.srcOut = it.srcUntil ? at[it.srcUntil] ?? it.out : it.out;
+  }
+  // 词条卡：没写 until 就留到下一张词条卡出现（最多 12 小节）
+  const gl = items.filter(i => i.gloss);
+  gl.forEach((g, i) => { if (!g.until && !g.untilEnd && !g.dur) g.out = Math.min(gl[i + 1] ? gl[i + 1].at : bars, g.at + 12); });
+  const text = items.map(i => [i.say, i.big, i.sub, i.you, i.me, i.gloss && i.gloss.join(''), i.rule && i.rule[1], i.src].filter(Boolean).join('')).join('');
+  return { at, end, items, bars, text, t: id => at[id] ?? 0, e: id => end[id] ?? 0 };
+}
+// 把带强调符号的文字按宽度折行（中文按字断，标点不放行首）
+function wrapText(ctx, text, maxW) {
+  const out = [];
+  for (const para of String(text).split('\n')) {
+    let line = '', w = 0, mark = '';
+    const toks = [...para];
+    for (let i = 0; i < toks.length; i++) {
+      const ch = toks[i];
+      if ('‹›«»'.includes(ch)) { line += ch; mark = ch === '‹' || ch === '«' ? ch : ''; continue; }
+      const cwid = cw(ctx, ch);
+      if (w + cwid > maxW && line && !PUNCT.test(ch)) {
+        const close = mark === '‹' ? '›' : mark === '«' ? '»' : '';
+        out.push(line + close); line = mark; w = 0;
+      }
+      line += ch; w += cwid;
+    }
+    out.push(line);
+  }
+  return out.join('\n');
+}
+// 一场戏里的字：字幕（say）、大字（big + sub）、词条卡（gloss）。st 是这个世界的版式
+const SUB0 = { fam: F.sans, size: 44, w: 700, col: '#f6f3ee', acc: [C.num, '#9fd8ff'], y: 972, maxW: 1500, lh: 1.42, shadow: 'rgba(0,0,0,.85)', box: null };
+function narrate(ctx, L, S, st = {}) {
+  const sub = { ...SUB0, ...(st.sub || {}) }, b = L.b;
+  for (const it of S.items) {
+    if (b < it.at - .02 || b > it.out + .6) continue;
+    if (it.say && !it.big) {
+      ctx.font = fnt(sub.w, sub.size, sub.fam);
+      const txt0 = wrapText(ctx, it.say, it.maxW || sub.maxW), n = txt0.split('\n').length, lh = sub.lh * sub.size;
+      const y = (it.y ?? sub.y) - (n - 1) * lh / 2 - (n > 1 ? lh / 2 : 0);
+      ctx.save();
+      if (sub.shadow) { ctx.shadowColor = sub.shadow; ctx.shadowBlur = 14; ctx.shadowOffsetY = 2; }
+      lyric(ctx, L, { at: it.at, out: it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: 'fade', d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
+      ctx.restore();
+    }
+    if (it.big) {
+      const bg = { x: 960, y: 470, size: 96, w: 900, col: '#ffffff', align: 'center', anim: 'rise', st: .1, ...(st.big || {}), ...(it.bigS || {}) };
+      if (it.x !== undefined) bg.x = it.x; if (it.y !== undefined) bg.y = it.y;
+      ctx.font = fnt(bg.w, bg.size, bg.fam || F.sans);
+      const t1 = it.nowrap ? it.big : wrapText(ctx, it.big, bg.maxW || 1600);
+      const box = lyric(ctx, L, { ...bg, at: it.at, out: it.out, text: t1 });
+      if (it.sub) {
+        const sb = { size: 38, w: 500, col: rgba(bg.col.startsWith('#') ? bg.col : '#ffffff', .78), anim: 'fade', ...(st.bigSub || {}) };
+        const nl = t1.split('\n').length;
+        lyric(ctx, L, { ...sb, x: bg.x, align: bg.align, at: it.at + .2, out: it.out, text: it.sub, y: bg.y + bg.size * (bg.lh || 1.28) * (nl / 2) + sb.size * .9 + (it.subGap || 0) });
+      }
+    }
+    if (it.gloss) glossCard(ctx, L, it, st.gloss || {});
+  }
+}
+// 词条卡：左上角滑进来的一张小卡片，词 + 英文 + 一句解释
+function glossCard(ctx, L, it, g) {
+  const [term, en, def] = it.gloss, b = L.b;
+  const k = prog(b, it.at, it.at + .3, E.out), ko = prog(b, it.out - .25, it.out, E.in);
+  if (k <= 0 || ko >= 1) return;
+  const x = (it.gx ?? g.x ?? 80), y = (it.gy ?? g.y ?? 150), wd = g.w || 660, fam = g.fam || F.sans;
+  const bg = g.bg || 'rgba(12,13,18,.82)', ink = g.ink || '#f4f1ea', acc = g.acc || C.clawd, dim = g.dim || rgba(ink, .62);
+  ctx.save(); ctx.globalAlpha *= k * (1 - ko); ctx.translate(-(1 - k) * 40, 0);
+  ctx.font = fnt(500, 30, fam);
+  const lines = wrapText(ctx, def || '', wd - 64).split('\n'), hh = 96 + lines.length * 44;
+  rr(ctx, x, y, wd, hh, 14, bg, g.border || rgba(ink, .16), 2);
+  ctx.fillStyle = acc; ctx.fillRect(x, y + 14, 6, hh - 28);
+  txt(ctx, term, x + 32, y + 46, fnt(900, 40, fam), ink);
+  if (en) txt(ctx, en, x + 40 + tw(ctx, term, fnt(900, 40, fam)), y + 49, fnt(400, 24, F.mono), dim);
+  lines.forEach((l, i) => txt(ctx, l.replace(/[‹›«»]/g, ''), x + 32, y + 104 + i * 44, fnt(500, 30, fam), rgba(ink, .9)));
+  ctx.restore();
+}
+// 一场戏：把步骤表接到模块上（字幕、气泡、规则、来源、字体预载都从这里来）
+function scene(m, S) {
+  const you = S.items.filter(i => i.you && !m.chat).map(i => [i.at, i.out, i.you]);
+  const r = S.items.find(i => i.rule);
+  const src = S.items.filter(i => i.src).map(i => [i.at, i.srcOut, i.src]);
+  return { ...m, bars: m.bars ?? S.bars, S, cue: S.at, you: [...(m.you || []), ...you], src: [...(m.src || []), ...src],
+    rule: r ? { n: r.rule[0], at: r.at, len: r.out - r.at, text: r.rule[1] } : m.rule,
+    text: (m.text || '') + S.text };
+}
+
 // ---------- 时间伸缩：给已有的世界加停顿 ----------
 // knots = [[新小节, 原小节], ...]，分段线性；斜率 0 的一段就是「停住」（画面按原时间冻结在那一刻，背景动态和节拍照常）。
 // 返回包好的模块：draw/画风参数/3D 都按原时间算，音效、来源、气泡、规则按新时间排。
@@ -849,7 +989,7 @@ function warpWorld(m, knots, bars) {
 
 const K = { W, H, BPM, BEAT, BAR, F, C, E, LOOK, TR, clamp01, prog, lerp, bump, hash, hex, mixC, rgba, fnt, cw, rr, circ, seg, arrow, txt, tw, scaleAt, rotAt, alpha,
   lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt, sing,
-  warpWorld,
+  warpWorld, seq, narrate, scene, wrapText, readBars, glossCard, youType,
   three: (ctx, L, o) => { L.did3d = true; return !!window.MV_3D && window.MV_3D.draw(ctx, L.w.m, L, o); } };
 window.MV_K = K;
 

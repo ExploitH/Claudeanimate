@@ -69,6 +69,8 @@ function roll(S, b, from, to, inst = 'snare', kind = 'main', v0 = .2, v1 = .9, s
   for (let bt = from; bt < to - 1e-6; bt += step) S.add(inst, b, bt, 0, 0, lerpM(v0, v1, (bt - from) / (to - from)), kind);
 }
 const lerpM = (a, b, k) => a + (b - a) * k;
+// 世界模块自己写配乐时用的工具（m.music(S, H, w)）
+const MH = { CH, PD, PE, PJ, PA, PR, HOOK, NOIR, WALK, each, hook, pads, roots, arps, four, back, hats, roll, mtof };
 
 // ---------- 各段编曲 ----------
 const ARR = {
@@ -467,6 +469,21 @@ function renderChunk(ev, cs, ce, opt) {
     rev(e, t) { const end = t + e.d, s = A.createBufferSource(); s.buffer = nb; const fl = Fl('highpass', 3000), g = G(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.2 * e.v, end - .02); g.gain.linearRampToValueAtTime(.0001, end); s.connect(fl); fl.connect(g); s.start(t, hsh(t) * .2, e.d + .05); out(g, drums, 0, .4); },
     impact(e, t) { out(tn(t, 70, 1.6, .9 * e.v, 'sine', 28), drums, 0, .3); out(nz(t, 1.4, 'lowpass', 1200, .7, .45 * e.v, 120), drums, 0, .6); out(nz(t, .08, 'highpass', 2000, .7, .3 * e.v), drums); },
     siren(e, t) { const end = t + e.d, o = O('sawtooth', 600, t), l = O('sine', 1.2, t), lg = G(); lg.gain.value = 180; l.connect(lg); lg.connect(o.frequency); const bp = Fl('bandpass', 1200, 2), g = G(); o.connect(bp); bp.connect(g); adsr(g, t, .05 * e.v, .2, .2, .9, end, .3); o.stop(end + .4); l.stop(end + .4); out(g, synth, 0, .4, .2); },
+    // 雨：循环噪声做雨幕，稀疏的高频点做雨滴（现实戏的环境声）
+    rain(e, t) {
+      const end = t + e.d, sv = A.createBufferSource(); sv.buffer = nb; sv.loop = true;
+      const lp = Fl('lowpass', 2800, .4), hp = Fl('highpass', 380, .5), g = G();
+      adsr(g, t, .06 * e.v, 1.2, .4, 1, end, 1.5); sv.connect(lp); lp.connect(hp); hp.connect(g); sv.start(t, hsh(t) * 1.5); sv.stop(end + 1.6); out(g, drums, 0, .25);
+      for (let x = t + .05; x < end; x += .09 + hsh(x * 7.7) * .22) out(nz(x, .012, 'highpass', 3500 + hsh(x) * 3000, .7, (.012 + hsh(x * 2) * .03) * e.v), drums, hsh(x * 3.3) * 1.6 - .8, .3);
+    },
+    // 钢琴：现实戏里的独奏
+    piano(e, t) {
+      for (const m of [].concat(e.m)) {
+        const f = mtof(m), d = Math.max(.6, e.d) + .8;
+        [[1, 1], [2, .32], [3, .12], [4.02, .05]].forEach(([h, a]) => out(tn(t, f * h, d / h ** .3, .07 * e.v * a, 'sine'), synth, (m - 64) / 40, .55, .1));
+        out(nz(t, .02, 'bandpass', f * 4, 2, .02 * e.v), synth, 0, .3);
+      }
+    },
     crackle(e, t) { const end = t + e.d; out(nz(t, e.d, 'bandpass', 4000, .5, .012 * e.v, 0, .5), drums); for (let x = t; x < end; x += .07 + hsh(x * 9.3) * .35) out(nz(x, .004, 'highpass', 2500, .7, (.05 + hsh(x) * .12) * e.v), drums, hsh(x * 3) - .5); },
   };
   // ---------- 音效（世界给出） ----------
@@ -513,6 +530,11 @@ function renderChunk(ev, cs, ce, opt) {
     rule: t => { [1175, 1760, 2349].forEach((f, i) => out(tn(t + i * .07, f, 1.1, .045), sfxB, (i - 1) * .4, .5)); out(tn(t, 587, .6, .05, 'triangle'), sfxB, 0, .3); },
     q: (t, f = 600) => { out(tn(t, f, .08, .06, 'triangle'), sfxB, 0, .2); out(tn(t + .09, f * 1.33, .14, .06, 'triangle'), sfxB, 0, .2); },
     beep: (t, f = 1000) => out(tn(t, f, .12, .05, 'sine'), sfxB, 0, .15),
+    notify: t => { [0, .18].forEach(d => { const o = O('sawtooth', 150, t + d), g = G(), fl = Fl('lowpass', 420, 2); perc(g, t + d, .12, .01, .14); o.connect(fl); fl.connect(g); o.stop(t + d + .2); out(g, sfxB, .25); }); out(tn(t + .02, 1568, .25, .03), sfxB, .25, .3); },
+    enter: t => { out(nz(t, .05, 'bandpass', 1400, 1.2, .3), sfxB, 0, .1); out(tn(t, 95, .07, .12, 'sine', 60), sfxB); },
+    tock: t => { out(tn(t, 1900, .02, .03, 'sine'), sfxB, -.3, .2); out(nz(t, .01, 'bandpass', 3000, 3, .05), sfxB, -.3); },
+    thunder: t => { out(nz(t, 3.5, 'lowpass', 420, .7, .4, 90, .25), sfxB, 0, .5); out(nz(t + .05, .4, 'lowpass', 1600, .6, .18), sfxB, -.3, .4); },
+    swoosh3d: t => { out(nz(t, .9, 'bandpass', 200, .8, .22, 2400, .45), sfxB, -.4, .3); out(nz(t + .3, .7, 'bandpass', 2400, .8, .12, 400, .2), sfxB, .4, .3); },
   };
   const spawn = e => {
     const t = R(e.t); curEnd = t + (e.d || 0) + 3.5;
@@ -540,7 +562,7 @@ function compose(P) {
   const sig = P.ws.map(w => w.m.id + '@' + w.start).join('|');
   if (SONG.has(sig)) return SONG.get(sig);
   const ev = [];
-  for (const w of P.ws) { const f = ARR[w.m.id]; if (f) f(mk(w, ev), w); for (const a of w.m.auto || []) ev.push({ t: w.start + a[1] * 4 * MB, i: a[0], m: a[2], d: (a[3] || 0) * 4 * MB }); }
+  for (const w of P.ws) { const f = ARR[w.m.id] || (w.m.music && ((S, w) => w.m.music(S, MH, w))); if (f) f(mk(w, ev), w); for (const a of w.m.auto || []) ev.push({ t: w.start + a[1] * 4 * MB, i: a[0], m: a[2], d: (a[3] || 0) * 4 * MB }); }
   ev.forEach(e => e.mus = true);
   const r = { ev, sig }; SONG.set(sig, r); return r;
 }

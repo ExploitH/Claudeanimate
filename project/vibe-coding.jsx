@@ -890,6 +890,11 @@ function buildSfx(pl, T0, dur, opt) {
       stick: t => { noise(t, .07, 900, 1, .26); tone(t, 220, .08, .08, 'triangle', 140); },
       buzz: t => { tone(t, 140, .32, .06, 'sawtooth'); tone(t, 147, .32, .05, 'square'); },
       sweep: t => tone(t, 200, 1.2, .03, 'triangle', 700),
+      save: t => { tone(t, 660, .08, .045, 'square'); tone(t + .08, 990, .08, .045, 'square'); tone(t + .16, 1320, .18, .045, 'square'); },
+      whistle: t => { tone(t, 1400, .25, .035, 'sine', 1900); tone(t + .32, 1900, .35, .035, 'sine', 1250); },
+      shatter: t => { noise(t, .7, 2600, .5, .32, 300); for (let i = 0; i < 7; i++) tone(t + i * .045, 2200 - i * 260, .09, .03, 'square'); },
+      lock: t => { noise(t, .03, 3200, 2, .22); tone(t + .05, 520, .07, .06, 'square'); tone(t + .1, 780, .1, .05, 'square'); },
+      rewind: t => { tone(t, 1600, .5, .04, 'sawtooth', 200); noise(t, .5, 3000, 1, .1, 600); },
     };
     fx.pix = t => tone(t, 1500 + rnd() * 900, .07, .025, 'square');
     if (opt.sfx) for (const [t, k] of sfxEvents(pl)) if (t >= Math.max(0, T0 - .6) && t < T0 + dur) fx[k](t);
@@ -940,7 +945,7 @@ function expandCues(C) {
 }
 // 全片段落（作者时长）。主持方编辑器只显示 5 分钟，全片拆成几个分段文件；
 // 分段文件只带自己的段落，其余段落按这张表补齐，画面和音乐按全片时间计算
-const ALL_SCENES = [{"name":"片头","dur":5},{"name":"自我介绍","dur":5},{"name":"帖子","dur":27},{"name":"年度词","dur":7.5},{"name":"界线","dur":11.5},{"name":"项目轴","dur":12},{"name":"贯穿任务","dur":11},{"name":"02 章节卡 · 上下文窗口","dur":26.5},{"name":"02 知识截止 · Agent 循环","dur":29},{"name":"02 塞满","dur":15.5},{"name":"02 压缩 · 三个控制点","dur":17},{"name":"03 章节卡 · 一句话 · 随手挑","dur":28},{"name":"03 五部分 · 为什么","dur":31},{"name":"03 清楚版 · 报错","dur":23},{"name":"03 拆小 · 老套路","dur":27},{"name":"04 章节卡 · 情况","dur":12},{"name":"04 分层","dur":23},{"name":"04 研究 · 手写 · 指定文件","dur":31},{"name":"04 新对话 · 文档","dur":25.5},{"name":"05 章节卡 · 额度 · 重发 · 赛跑","dur":28.5},{"name":"05 算账 · 三档","dur":28.5},{"name":"05 思考强度 · 预算 · 排行榜","dur":27.7},{"name":"05 国内 · 换模型 · 免费版","dur":26.2},{"name":"06 章节卡 · 怪事 · 外层 · 部件","dur":35.5},{"name":"06 发动机 · 成绩 · 其他模型","dur":30},{"name":"06 梯子 · RedAccess","dur":33},{"name":"06 七项 · 建议 · 打架","dur":29}];
+const ALL_SCENES = [{"name":"片头","dur":5},{"name":"自我介绍","dur":5},{"name":"帖子","dur":27},{"name":"年度词","dur":7.5},{"name":"界线","dur":11.5},{"name":"项目轴","dur":12},{"name":"贯穿任务","dur":11},{"name":"02 章节卡 · 上下文窗口","dur":26.5},{"name":"02 知识截止 · Agent 循环","dur":29},{"name":"02 塞满","dur":15.5},{"name":"02 压缩 · 三个控制点","dur":17},{"name":"03 章节卡 · 一句话 · 随手挑","dur":28},{"name":"03 五部分 · 为什么","dur":31},{"name":"03 清楚版 · 报错","dur":23},{"name":"03 拆小 · 老套路","dur":27},{"name":"04 章节卡 · 情况","dur":12},{"name":"04 分层","dur":23},{"name":"04 研究 · 手写 · 指定文件","dur":31},{"name":"04 新对话 · 文档","dur":25.5},{"name":"05 章节卡 · 额度 · 重发 · 赛跑","dur":28.5},{"name":"05 算账 · 三档","dur":28.5},{"name":"05 思考强度 · 预算 · 排行榜","dur":27.7},{"name":"05 国内 · 换模型 · 免费版","dur":26.2},{"name":"06 章节卡 · 怪事 · 外层 · 部件","dur":35.5},{"name":"06 发动机 · 成绩 · 其他模型","dur":30},{"name":"06 梯子 · RedAccess","dur":33},{"name":"06 七项 · 建议 · 打架","dur":29},{"name":"07 章节卡 · 一口气 · 原因","dur":25.5},{"name":"07 流程 · 存档","dur":35},{"name":"07 分支 · 测试","dur":19.5},{"name":"07 三次 · 基础","dur":25},{"name":"08 章节卡 · 全部通过 · diff","dur":21},{"name":"08 假完成 · 写死","dur":24.5},{"name":"08 编造 · 抢注","dur":25.5},{"name":"08 三件事 · 查包 · METR","dur":45.5},{"name":"09 章节卡 · 明文密码 · 泄露","dur":40.5},{"name":"09 不作废 · 代码安全","dur":25.5},{"name":"09 PocketOS","dur":34},{"name":"09 密钥 · 确认 · 注入 · 别发","dur":51},{"name":"片尾 清单","dur":24}];
 function fullCues(C, total) {
   const at = ALL_SCENES.findIndex(s => s.name in C);
   if (at <= 0) return { C, total, off: 0 };

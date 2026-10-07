@@ -102,7 +102,7 @@ return scene({
     const b = L.b, tt = L.t;
     alpha(cx, .5, () => { for (let i = 0; i < 6; i++) seg(cx, 140 + i * 330, 120, 140 + i * 330, 980, rgba(BLUE, .14), 1.5); seg(cx, 140, 140, 1780, 140, rgba(BLUE, .2), 1.5); });
     // ---------- 海报大字 + 问号树 ----------
-    lyric(tx, L, { at: t('poster'), out: t('re') - .1, text: '「帮我写个登录功能」', x: 140, y: 230, size: 110, fam: F.poster, w: 400, col: BLUE, anim: 'stamp', d: .1, outAnim: 'up' });
+    lyric(tx, L, { at: t('poster'), out: t('re') - .1, text: '「帮我写个登录功能」', x: 140, y: 230, size: 100, fam: F.sans, w: 900, col: BLUE, anim: 'stamp', d: .1, outAnim: 'up' });
     const kt = (1 - prog(b, t('re') - .3, t('re'), E.in)) * (1 - .75 * prog(b, t('gigo') - .05, t('gigo') + .05));
     if (b >= t('q0') - .1 && kt > 0) alpha(cx, kt, () => {
       const rx = 560, ry = 300;
@@ -132,7 +132,7 @@ return scene({
       rotAt(cx, x + 150, y + 220, (hash(i * 3) - .5) * .05, () => {
         rr(cx, x, y, 300, 450, 4, col);
         txt(cx, String(i + 1), x + 24, y + 70, fnt(400, 100, F.poster), ink);
-        txt(cx, n, x + 24, y + 190, fnt(400, n.length > 2 ? 54 : 70, F.poster), ink);
+        txt(cx, n, x + 24, y + 190, fnt(900, n.length > 2 ? 48 : 60, F.sans), ink);
         d.split('\n').forEach((l, j) => txt(cx, l, x + 26, y + 270 + j * 38, fnt(700, 27), ink));
         const ke = prog(b, at + .6, at + .9);
         if (ke > 0) alpha(cx, ke, () => { rr(cx, x + 16, y + 360, 268, 70, 6, 'rgba(255,255,255,.25)'); txt(cx, '例：' + ex, x + 28, y + 395, fnt(700, ex.length > 10 ? 20 : 23), ink); });
@@ -166,7 +166,7 @@ return scene({
       ERR.forEach((s, i) => {
         const at = t('err') + i * .4, k = prog(b, at, at + .25, E.back); if (k <= 0) return;
         const x = 160 + (i % 2) * 820, y = 380 + Math.floor(i / 2) * 190;
-        scaleAt(cx, x + 360, y + 60, lerp(1.3, 1, Math.min(1, k)), () => rotAt(cx, x + 360, y + 60, (i % 2 ? .03 : -.03), () => { rr(cx, x, y, 720, 130, 6, 'rgba(255,255,255,.3)', [BLUE, PINK, GRN, ORG][i], 6); txt(cx, (i + 1) + '  ' + s, x + 40, y + 66, fnt(900, 48), [BLUE, PINK, GRN, ORG][i]); }));
+        scaleAt(cx, x + 360, y + 60, lerp(1.1, 1, Math.min(1, k)), () => rotAt(cx, x + 360, y + 60, (i % 2 ? .03 : -.03), () => { rr(cx, x, y, 720, 130, 6, 'rgba(255,255,255,.3)', [BLUE, PINK, GRN, ORG][i], 6); txt(cx, (i + 1) + '  ' + s, x + 40, y + 66, fnt(900, 48), [BLUE, PINK, GRN, ORG][i]); }));
       });
       const ks = prog(b, t('shot'), t('shot') + .3, E.back);
       if (ks > 0) scaleAt(cx, 1500, 270, ks, () => { rr(cx, 1340, 200, 320, 140, 8, '#ffffff', INK, 4); rr(cx, 1360, 220, 280, 70, 4, mixC(BLUE, CREAM, .6)); circ(cx, 1500, 255, 22, PINK); txt(cx, '截图', 1500, 318, fnt(900, 26), INK, 'center'); });
@@ -174,9 +174,17 @@ return scene({
     // ---------- 一个对话，一件事 ----------
     const ksm = prog(b, t('small'), t('small') + .3) * (1 - prog(b, t('stk0') - .3, t('stk0')));
     if (ksm > 0) alpha(cx, ksm, () => {
-      [0, 1, 2].forEach(i => { const k = prog(b, t('small') + .3 + i * .3, t('small') + .6 + i * .3, E.back); scaleAt(cx, 400 + i * 420, 420, k, () => { rr(cx, 240 + i * 420, 320, 320, 200, 18, '#ffffff', [BLUE, GRN, ORG][i], 5); txt(cx, '对话 ' + (i + 1), 400 + i * 420, 380, fnt(400, 40, F.poster), [BLUE, GRN, ORG][i], 'center'); txt(cx, ['加 login 方法', '写测试', '修报错'][i], 400 + i * 420, 450, fnt(900, 36), INK, 'center'); }); });
+      [0, 1, 2].forEach(i => { const k = prog(b, t('small') + .3 + i * .3, t('small') + .6 + i * .3, E.back); scaleAt(cx, 400 + i * 420, 420, k, () => { rr(cx, 240 + i * 420, 320, 320, 200, 18, '#ffffff', [BLUE, GRN, ORG][i], 5); txt(cx, '对话 ' + (i + 1), 400 + i * 420, 380, fnt(900, 36, F.sans), [BLUE, GRN, ORG][i], 'center'); txt(cx, ['加 login 方法', '写测试', '修报错'][i], 400 + i * 420, 450, fnt(900, 36), INK, 'center'); }); });
       const kq = prog(b, t('plan'), t('plan') + .3, E.back);
       if (kq > 0) scaleAt(cx, 960, 680, kq, () => { rr(cx, 640, 620, 640, 120, 60, YEL, INK, 4); txt(cx, '先问我 · 先出方案', 960, 680, fnt(900, 46), INK, 'center'); });
+    });
+    // ---------- 语气：喊出来的 vs 正常说的 ----------
+    const kto = prog(b, t('tone'), t('tone') + .3) * (1 - prog(b, t('rule') + 3.2, t('rule') + 3.8));
+    if (kto > 0) alpha(cx, kto, () => {
+      const shake = b < t('normal') ? (hash(Math.floor(tt * 30)) - .5) * 8 : 0, dim = prog(b, t('normal'), t('normal') + .3);
+      alpha(cx, 1 - .6 * dim, () => rotAt(cx, 480 + shake, 360, -.04, () => { rr(cx, 140 + shake, 260, 680, 200, 12, rgba(PINK, .9), INK, 4); txt(cx, '必须！！！绝对不能错！！！', 480 + shake, 330, fnt(900, 40), '#fff6ea', 'center'); txt(cx, '一定要写出完美的登录！！！', 480 + shake, 400, fnt(900, 34), '#fff6ea', 'center'); }));
+      const kc = prog(b, t('tone') + .8, t('tone') + 1.1, E.back);
+      if (kc > 0) scaleAt(cx, 640, 640, kc, () => { rr(cx, 180, 560, 880, 160, 12, '#ffffff', mixC(GRN, INK, .2), 4); txt(cx, '在 UserService 里加一个 login 方法，', 220, 620, fnt(700, 34), INK); txt(cx, '密码用 PasswordUtil.verify() 校验。', 220, 672, fnt(700, 34), INK); if (dim > 0) { circ(cx, 1050, 560, 40 * dim, GRN); txt(cx, '✓', 1050, 562, fnt(900, 44), '#fff6ea', 'center'); } });
     });
     // ---------- Clawd ----------
     let st = { x: CL[0], y: CL[1], px: 14, col: ORG, hi: '#ff9a6a', pose: 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: -1 };
@@ -187,7 +195,7 @@ return scene({
     if (b >= t('snip') && b < t('why')) { st.pose = 'point'; st.ph = tt * 30; st.x = lerp(CL[0], 1520, prog(b, t('snip'), t('snip') + .3)); }
     if (b >= t('full') && b < t('err0')) { st.pose = 'type'; st.ph = tt * 22; st.x = 1720; st.y = 950; st.px = 11; }
     const sx = 1300, sy = 600;
-    if (b >= t('stk0')) { st.x = sx; st.y = sy + 120; st.px = 20; st.eye = 0; if (b >= t('shake') && b < t('shake') + .4) { st.x += (hash(Math.floor(tt * 40)) - .5) * 30; st.squash = 1 + .15 * Math.sin(tt * 60); } if (b >= t('shake') + .4) st.eyeShape = 'happy'; }
+    if (b >= t('stk0')) { st.x = sx; st.y = sy + 120; st.px = 20; st.eye = 0; if (b >= t('shake') && b < t('shake') + .4) { st.x += (hash(Math.floor(tt * 40)) - .5) * 30; st.squash = 1 + .15 * Math.sin(tt * 60); } if (b >= t('shake') + .4) st.eyeShape = 'happy'; if (b >= t('tone') && b < t('normal')) { st.eyeShape = 'x'; st.pose = 'both'; st.ph = tt * 40; st.x += Math.sin(tt * 50) * 6; st.sweat = b; } }
     clawd(cx, st);
     if (b >= t('stk')) STK.forEach(([s, r, dx, dy], i) => {
       const at = t('stk') + .2 + i * .4, k = prog(b, at, at + .15, E.out), f = prog(b, t('shake'), t('shake') + .5, E.in); if (k <= 0) return;

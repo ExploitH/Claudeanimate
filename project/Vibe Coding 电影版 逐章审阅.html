@@ -2351,7 +2351,7 @@ Object.assign(window, {
       me: '好。开始之前——'
     }, {
       id: 'show',
-      me: '我想先带你看看：我们俩一起写代码的时候，屏幕两边到底在发生什么。',
+      me: '我想先带你看看：我们俩一起写代码的时候，到底在发生什么。',
       hold: .5
     }, {
       id: 'push',
@@ -2372,7 +2372,7 @@ Object.assign(window, {
         glow: [30, 'rgba(255,190,140,.35)']
       }
     }],
-    shots: S => [[0, 'street', 0], [.5, 'window', 3.5, 'io'], [S.t('note'), 'note', 1.2], [S.t('phone'), 'phone', 1.2], [S.t('sit'), 'wide', 1.5], [S.t('hi') - .2, 'desk', 1.5], [S.t('show'), 'over', 3], [S.t('push'), 'into', 1.4, 'in'], [S.t('title'), 'into', 0]],
+    shots: S => [[0, 'street', 0], [.5, 'window', 3.5, 'io'], [S.t('note'), 'note', 1.2], [S.t('phone'), 'phone', 1.2], [S.t('sit'), 'wide', 1.5], [S.t('hi') - .2, 'desk', 1.5], [S.t('show'), 'over', 3], [S.t('push'), 'wide', 2.2, 'io'], [S.t('title') - .2, 'street', 0]],
     room: (L, S) => ({
       rain: 1,
       lamp: 1,
@@ -2416,8 +2416,8 @@ Object.assign(window, {
       const k = prog(L.b, S.t('title') - .2, S.t('title') + .5);
       if (k > 0) {
         const g = cx.createRadialGradient(960, 520, 100, 960, 520, 1100);
-        g.addColorStop(0, `rgba(6,6,10,${.9 * k})`);
-        g.addColorStop(1, `rgba(6,6,10,${.6 * k})`);
+        g.addColorStop(0, `rgba(6,6,10,${.55 * k})`);
+        g.addColorStop(1, `rgba(6,6,10,${.3 * k})`);
         cx.fillStyle = g;
         cx.fillRect(0, 0, 1920, 1080);
       }
@@ -3341,7 +3341,7 @@ Object.assign(window, {
       id: 'push',
       pause: 1.6
     }],
-    shots: S => [[0, 'over', 0], [S.t('no'), 'screen', 2.6, 'io'], [S.t('huh'), 'face', 1.2], [S.t('go'), 'over', 1.5], [S.t('push'), 'into', 1.5, 'in']],
+    shots: S => [[0, 'over', 0], [S.t('no') + .4, 'lamp', 2.4, 'io'], [S.t('huh'), 'face', 1.2], [S.t('go'), 'over', 1.5], [S.t('push'), 'into', 1.5, 'in']],
     chatHide: S => S.t('push') + .7,
     room: (L, S) => ({
       rain: 1,
@@ -7036,7 +7036,9 @@ window.MV_MUSIC = {
     const [at, name, dur = 1.5, ease = 'io'] = k0,
       A = shotOf(name),
       Bp = k1 ? shotOf(k1[1]) : A;
-    const kk = dur > 0 ? clamp01((b - at) / dur) : 1,
+    // 屏幕特写是插入镜头：切进去、切出来，不做推拉，免得看着像要进屏幕
+    const cut = k1 && k1[1] === 'screen' && name !== 'into';
+    const kk = dur > 0 && !cut ? clamp01((b - at) / dur) : 1,
       e = ease === 'lin' ? kk : ease === 'in' ? kk * kk * kk : io(kk);
     const P0 = Bp,
       P1 = A;

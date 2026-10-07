@@ -18,7 +18,7 @@ R.f02a = K => window.MV_REAL(K, {
     { id: 'go', me: '我带你进去看看。' },
     { id: 'push', pause: 1.6 },
   ],
-  shots: S => [[0, 'over', 0], [S.t('no'), 'screen', 2.6, 'io'], [S.t('huh'), 'face', 1.2], [S.t('go'), 'over', 1.5], [S.t('push'), 'into', 1.5, 'in']],
+  shots: S => [[0, 'over', 0], [S.t('no') + .4, 'lamp', 2.4, 'io'], [S.t('huh'), 'face', 1.2], [S.t('go'), 'over', 1.5], [S.t('push'), 'into', 1.5, 'in']],
   chatHide: S => S.t('push') + .7,
   room: (L, S) => ({ rain: 1, flicker: K.bump(L.b, S.t('no') + 2.75, .12) }),
   figure: (L, S) => ({ type: L.b >= S.t('ask') && L.b < S.t('ask') + 1 ? 1 : 0, lean: K.prog(L.b, S.t('huh'), S.t('huh') + .3) * .5 * (1 - K.prog(L.b, S.t('go'), S.t('go') + .6)) }),

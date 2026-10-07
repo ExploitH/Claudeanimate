@@ -19,7 +19,7 @@ R.f08a = K => window.MV_REAL(K, {
     { id: 'ok', me: '……好的。', wait: 1.2 },
     { id: 'push', pause: 1.6 },
   ],
-  shots: S => [[0, 'over', 0], [S.t('yes'), 'face', 1.4], [S.t('diff'), 'over', 1.2], [S.t('ok'), 'screen', 1.5], [S.t('push'), 'into', 1.5, 'in']],
+  shots: S => [[0, 'over', 0], [S.t('yes'), 'face', 1.4], [S.t('diff'), 'over', 1.2], [S.t('ok'), 'screen', 0], [S.t('push'), 'into', 1.5, 'in']],
   chatHide: S => S.t('push') + .7,
   room: () => ({ steam: .2, rain: .8 }),
   mood: (L, S) => [.58, .35, .9, .7],

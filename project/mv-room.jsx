@@ -319,7 +319,9 @@ function pose(R, T, L, cfg, chat, cam, S, shots) {
   let k0 = shots[0], k1 = null;
   for (let i = 0; i < shots.length; i++) if (b >= shots[i][0]) { k0 = shots[i]; k1 = shots[i - 1] || null; }
   const [at, name, dur = 1.5, ease = 'io'] = k0, A = shotOf(name), Bp = k1 ? shotOf(k1[1]) : A;
-  const kk = dur > 0 ? clamp01((b - at) / dur) : 1, e = ease === 'lin' ? kk : ease === 'in' ? kk * kk * kk : io(kk);
+  // 屏幕特写是插入镜头：切进去、切出来，不做推拉，免得看着像要进屏幕
+  const cut = k1 && k1[1] === 'screen' && name !== 'into';
+  const kk = dur > 0 && !cut ? clamp01((b - at) / dur) : 1, e = ease === 'lin' ? kk : ease === 'in' ? kk * kk * kk : io(kk);
   const P0 = Bp, P1 = A;
   const pos = [0, 1, 2].map(j => lerp(P0[0][j], P1[0][j], e)), tgt = [0, 1, 2].map(j => lerp(P0[1][j], P1[1][j], e)), fov = lerp(P0[2], P1[2], e);
   // 从过肩推向屏幕时走一条从头顶越过去的弧线，不从人物身上穿过去

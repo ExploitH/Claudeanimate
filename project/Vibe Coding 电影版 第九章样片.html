@@ -2345,7 +2345,7 @@ Object.assign(window, {
       id: 'in',
       pause: 1.6
     }],
-    shots: S => [[0, 'over', 0], [S.t('ok') + .3, 'screen', 1.3], [S.t('push'), 'face', 1.2], [S.t('done'), 'screen', 1.2], [S.t('in'), 'into', 1.5, 'in']],
+    shots: S => [[0, 'over', 0], [S.t('ok') + .3, 'screen', 0], [S.t('push'), 'face', 1.2], [S.t('done'), 'screen', 0], [S.t('in'), 'into', 1.5, 'in']],
     chatHide: S => S.t('in') + .7,
     room: () => ({
       steam: .1,
@@ -7185,7 +7185,9 @@ window.MV_MUSIC = {
     const [at, name, dur = 1.5, ease = 'io'] = k0,
       A = shotOf(name),
       Bp = k1 ? shotOf(k1[1]) : A;
-    const kk = dur > 0 ? clamp01((b - at) / dur) : 1,
+    // 屏幕特写是插入镜头：切进去、切出来，不做推拉，免得看着像要进屏幕
+    const cut = k1 && k1[1] === 'screen' && name !== 'into';
+    const kk = dur > 0 && !cut ? clamp01((b - at) / dur) : 1,
       e = ease === 'lin' ? kk : ease === 'in' ? kk * kk * kk : io(kk);
     const P0 = Bp,
       P1 = A;

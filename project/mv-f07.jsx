@@ -21,7 +21,7 @@ R.f07a = K => window.MV_REAL(K, {
     { id: 'idk', me: '……我也说不上来。', wait: .5 },
     { id: 'push', pause: 1.6 },
   ],
-  shots: S => [[0, 'over', 0], [S.t('edit') - .2, 'screen', 1.3], [S.t('which'), 'face', 1.2], [S.t('idk'), 'over', 1.2], [S.t('push'), 'into', 1.5, 'in']],
+  shots: S => [[0, 'over', 0], [S.t('edit') - .2, 'screen', 0], [S.t('which'), 'face', 1.2], [S.t('idk'), 'over', 1.2], [S.t('push'), 'into', 1.5, 'in']],
   chatHide: S => S.t('push') + .7,
   room: () => ({ steam: .35 }),
   codeOverlay: (x, w, h, L, S) => {

@@ -21,7 +21,7 @@ R.f03a = K => window.MV_REAL(K, {
     { id: 'go', me: '我们回头看看你刚才那句话。' },
     { id: 'push', pause: 1.6 },
   ],
-  shots: S => [[0, 'over', 0], [S.t('code') - .3, 'screen', 1.5], [S.t('huh'), 'desk', 1.4], [S.t('go'), 'over', 1.2], [S.t('push'), 'into', 1.5, 'in']],
+  shots: S => [[0, 'over', 0], [S.t('code') - .3, 'screen', 0], [S.t('huh'), 'desk', 1.4], [S.t('go'), 'over', 1.2], [S.t('push'), 'into', 1.5, 'in']],
   chatHide: S => S.t('push') + .7,
   code: [...BAD, ...BAD],
   codeScroll: (L, S) => Math.min(330, Math.max(0, (L.b - S.t('code')) * 120)),

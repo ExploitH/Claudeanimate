@@ -18,7 +18,7 @@ R.f04a = K => window.MV_REAL(K, {
     { id: 'a2', me: '测试要怎么跑，我也不知道。' },
     { id: 'push', pause: 1.6 },
   ],
-  shots: S => [[0, 'desk', 0], [S.t('err') - .2, 'screen', 1.4], [S.t('why'), 'over', 1.5], [S.t('push'), 'into', 1.5, 'in']],
+  shots: S => [[0, 'desk', 0], [S.t('err') - .2, 'screen', 0], [S.t('why'), 'over', 1.5], [S.t('push'), 'into', 1.5, 'in']],
   chatHide: S => S.t('push') + .7,
   codeOverlay: (x, w, h, L, S) => {
     const k = K.prog(L.b, S.t('err'), S.t('err') + .3); if (k <= 0) return;

@@ -17,11 +17,11 @@ return window.MV_REAL(K, {
     { me: '今晚要做什么？' },
     { id: 'task', you: '作业。给图书管理系统加一个登录功能，周一早上交。' },
     { me: '好。开始之前——' },
-    { id: 'show', me: '我想先带你看看：我们俩一起写代码的时候，屏幕两边到底在发生什么。', hold: .5 },
+    { id: 'show', me: '我想先带你看看：我们俩一起写代码的时候，到底在发生什么。', hold: .5 },
     { id: 'push', pause: 1.5 },
     { id: 'title', big: 'Vibe Coding 需要注意的细节', sub: '一个晚上的故事', dur: 5.5, y: 470, bigS: { size: 92, anim: 'blur', st: .14, d: .4, col: '#f6f1e8', fam: F.serif, glow: [30, 'rgba(255,190,140,.35)'] } },
   ],
-  shots: S => [[0, 'street', 0], [.5, 'window', 3.5, 'io'], [S.t('note'), 'note', 1.2], [S.t('phone'), 'phone', 1.2], [S.t('sit'), 'wide', 1.5], [S.t('hi') - .2, 'desk', 1.5], [S.t('show'), 'over', 3], [S.t('push'), 'into', 1.4, 'in'], [S.t('title'), 'into', 0]],
+  shots: S => [[0, 'street', 0], [.5, 'window', 3.5, 'io'], [S.t('note'), 'note', 1.2], [S.t('phone'), 'phone', 1.2], [S.t('sit'), 'wide', 1.5], [S.t('hi') - .2, 'desk', 1.5], [S.t('show'), 'over', 3], [S.t('push'), 'wide', 2.2, 'io'], [S.t('title') - .2, 'street', 0]],
   room: (L, S) => ({ rain: 1, lamp: 1, screen: prog(L.b, S.t('sit') + .8, S.t('sit') + 1.6) * (1 - .8 * prog(L.b, S.t('title') - .2, S.t('title') + .6)), lidClose: 1 - prog(L.b, S.t('sit') + .2, S.t('sit') + 1.2, E.io), steam: 1 }),
   figure: (L, S) => ({ hide: L.b < S.t('sit'), type: L.b >= S.t('task') && L.b < S.t('task') + 1 ? 1 : 0, lean: 0 }),
   mood: (L, S) => [lerp(.45, .66, prog(L.b, 0, 4)), .5, .85, .8],
@@ -40,7 +40,7 @@ return window.MV_REAL(K, {
   under(cx, tx, L, S) {
     // 片名出现时把屏幕上的字压暗，片名不和代码、对话叠在一起
     const k = prog(L.b, S.t('title') - .2, S.t('title') + .5);
-    if (k > 0) { const g = cx.createRadialGradient(960, 520, 100, 960, 520, 1100); g.addColorStop(0, `rgba(6,6,10,${.9 * k})`); g.addColorStop(1, `rgba(6,6,10,${.6 * k})`); cx.fillStyle = g; cx.fillRect(0, 0, 1920, 1080); }
+    if (k > 0) { const g = cx.createRadialGradient(960, 520, 100, 960, 520, 1100); g.addColorStop(0, `rgba(6,6,10,${.55 * k})`); g.addColorStop(1, `rgba(6,6,10,${.3 * k})`); cx.fillStyle = g; cx.fillRect(0, 0, 1920, 1080); }
   },
   draw(cx, tx, L, S) {
     const b = L.b;

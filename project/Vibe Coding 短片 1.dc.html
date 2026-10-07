@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>html,body{margin:0;height:100%;background:#0b0b0e;overflow:hidden}a{color:#7cb7ff}a:hover{color:#a9cfff}</style>
+<script>window.OM_SCENES = '[{"name":"片头","dur":5,"desc":"CRT 开机，镜头在 3D 网格地面上缓缓推进，光标闪两下，Clawd 由像素块拼出，片名由像素块逐字飞入，最后炸散"},{"name":"自我介绍","dur":5,"desc":"镜头穿过炸散的片名，Clawd 挥手，名牌弹出，点阵章号 01 逐点亮起"},{"name":"帖子","dur":27,"desc":"像素溶解进入，3D 镜头环绕 Karpathy 帖子，原句打字高亮，Clawd 点头，停留约6秒"},{"name":"年度词","dur":7.5,"desc":"词典封面翻开，盖章时故障闪烁、冲击涟漪、镜头震动"},{"name":"界线","dur":11.5,"desc":"流体扭曲转场，Clawd 敲键盘写出界线代码，三个条件打勾，返回值辉光"},{"name":"项目轴","dur":12,"desc":"镜头侧转进入 3D 空间，地面网格出现，Clawd 推滑块往右，越往右越暖、故障越强"},{"name":"贯穿任务","dur":11,"desc":"Clawd 把滑块拉回作业，任务卡片由像素拼出，Clawd 跳起钉卡片，涟漪，最后 CRT 关机"},{"name":"02 章节卡 · 上下文窗口","dur":26.5,"desc":"像素溶解进入，Clawd 跳到左侧，点阵章号 02 逐点亮起，章名打字出现。流体扭曲转场，透明容器画出，Clawd 跳进去；窗外昨天的对话被抹掉，Clawd 打问号；容量上限线出现，四块内容依次落入"},{"name":"02 知识截止 · Agent 循环","dur":29,"desc":"右侧时间线和训练截止旗子，截止之后一片雾；Clawd 敲出老写法和不存在的方法，红色波浪线。镜头侧转，地面网格出现，椭圆跑道画出；Clawd 跳上跑道，四个节点随旁白依次点亮，每跑一圈往容器扔一块"},{"name":"02 塞满","dur":15.5,"desc":"Clawd 越跑越快，容器快满，旧块闪烁乱码，Clawd 冒汗；跑道换成 18 条下滑曲线，context rot 打字出现"},{"name":"02 压缩 · 三个控制点","dur":17,"desc":"镜头推近容器，再落两块撞到上限，红线闪烁；旧块压扁成一条模糊摘要，碎片飞走，鼓点停一下。像素溶解，三张控制点卡片由像素拼出，Clawd 逐个跳到下方指认；卡片之间箭头连上，作为第 3–6 章目录"}]';</script>
+<script>window.OM_PLAYBACK = '{"mode":"loop"}';</script>
+<script>window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "motionEditor": true,
+  "sfx": true,
+  "bgm": true,
+  "bgmVol": 0.6,
+  "quality": "流畅",
+  "fx": 1,
+  "crt": 1,
+  "subtitleSize": 46
+}/*EDITMODE-END*/;</script>
+</helmet>
+<div style="position:fixed;inset:0;background:#0b0b0e">
+<x-import component-from-global-scope="VibeApp" from="./animations-v3.jsx ./tweaks-panel.jsx ./vc-ch02.jsx ./vc-ch03.jsx ./vc-ch04.jsx ./vc-ch05.jsx ./vc-ch06.jsx ./vibe-coding.jsx" hint-size="100%,100%" style="position:absolute;inset:0"></x-import>
+</div>
+</x-dc>
+</body>
+</html>

@@ -561,6 +561,8 @@ const GLR = {
     const c = this.layers[i];
     if (c.width !== res[0]) { c.width = res[0]; c.height = res[1]; }
     const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
+    // 清空后什么都不画的画布，Chromium 上传纹理时会沿用旧内容；点一个几乎透明的像素让它算「画过」
+    x.fillStyle = 'rgba(0,0,0,0.004)'; x.fillRect(0, 0, 1, 1);
     x.setTransform(res[0] / W, 0, 0, res[1] / H, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.shadowBlur = 0; return x;
   },
   render(res, u, used) {
@@ -836,7 +838,7 @@ function AudioTrack({ P, T0, dur, opt }) {
 // gloss（词条卡 [词, 英文, 解释]）、src（来源）、rule（规则条 [n, 文字]）、note（只给画面用的标记）；
 // pause（空几小节）、hold（多停几小节）、dur（直接给长度）、with（和上一步同时开始，off 偏移）、
 // gap（之后空多少）、until / untilEnd（显示到某一步开始 / 结束）、slow（阅读时间倍数）。
-const READ = { cps: 4, min: 2.2, pad: 1 };
+const READ = { cps: 4.3, min: 2.2, pad: .85 };
 const PUNCT = /^[，。、；：！？—…「」“”‘’（）·,.;:!?()《》\-]$/;
 function readLen(s) {
   let n = 0;
@@ -857,7 +859,7 @@ function seq(steps, o = {}) {
     const t = [s.say, s.big, s.sub, s.you, s.me, s.gloss && s.gloss.slice(1).join(' '), s.rule && s.rule[1]].filter(Boolean).join(' ');
     let d = s.dur ?? (t ? readBars(t, s.slow) : 1);
     if (s.you && s.dur === undefined) d += youType(s.you);
-    if (s.me && s.dur === undefined) d += .5; // 「对方正在输入」
+    if (s.me && s.dur === undefined) d += .5 + (s.wait || 0); // 「对方正在输入」
     d += s.hold || 0;
     const it = { ...s, at: st, out: st + d };
     items.push(it);
@@ -867,6 +869,7 @@ function seq(steps, o = {}) {
   }
   const bars = Math.ceil(c + (o.tail ?? .75));
   for (const it of items) {
+    it.sayOut = it.out; // 字幕按阅读时间退场；until 只管词条卡、大字和画面
     if (it.until) it.out = at[it.until] ?? it.out;
     if (it.untilEnd) it.out = end[it.untilEnd] ?? it.out;
     if (it.keep) it.out = bars + 1;
@@ -910,7 +913,7 @@ function narrate(ctx, L, S, st = {}) {
       const y = (it.y ?? sub.y) - (n - 1) * lh / 2 - (n > 1 ? lh / 2 : 0);
       ctx.save();
       if (sub.shadow) { ctx.shadowColor = sub.shadow; ctx.shadowBlur = 14; ctx.shadowOffsetY = 2; }
-      lyric(ctx, L, { at: it.at, out: it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: 'fade', d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
+      lyric(ctx, L, { at: it.at, out: it.sayOut ?? it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: 'fade', d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
       ctx.restore();
     }
     if (it.big) {

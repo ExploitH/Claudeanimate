@@ -95,7 +95,7 @@ function drawScreen(x, w, h, L, cfg, chat, S) {
   const vis = chat.filter(m => L.b >= m.at).slice(-6).reverse();
   for (const m of vis) {
     const me = !!m.me, s = (me ? m.me : m.you).replace(/[‹›«»]/g, ''), n = me ? s.length : Math.min(s.length, Math.floor(clamp01((L.b - m.at - .03) / Math.max(.05, Math.min(.5, s.length * .028))) * s.length + 1e-6));
-    if (me && L.b < m.at + .5) { x.fillStyle = '#2a1d18'; roundR(x, px0 + 14, y - 26, 60, 30, 10); x.fill(); x.fillStyle = '#d97757'; for (let i = 0; i < 3; i++) { x.globalAlpha = .4 + .6 * (Math.floor(t * 6 + i) % 3 === 0); x.beginPath(); x.arc(px0 + 30 + i * 14, y - 11, 3.5, 0, 6.283); x.fill(); } x.globalAlpha = 1; y -= 44; continue; }
+    if (me && L.b < m.at + .5 + (m.wait || 0)) { x.fillStyle = '#2a1d18'; roundR(x, px0 + 14, y - 26, 60, 30, 10); x.fill(); x.fillStyle = '#d97757'; for (let i = 0; i < 3; i++) { x.globalAlpha = .4 + .6 * (Math.floor(t * 6 + i) % 3 === 0); x.beginPath(); x.arc(px0 + 30 + i * 14, y - 11, 3.5, 0, 6.283); x.fill(); } x.globalAlpha = 1; y -= 44; continue; }
     x.font = '500 15px "Noto Sans SC",sans-serif';
     const wrapped = wrapCJK(x, s.slice(0, n), (w - px0) * .78);
     const bh = wrapped.length * 20 + 14, bw = Math.min((w - px0) * .82, Math.max(...wrapped.map(l => x.measureText(l).width)) + 22);
@@ -311,7 +311,7 @@ window.MV_REAL = (K, cfg) => {
   const sfx = [...(typeof cfg.sfx === 'function' ? cfg.sfx(S) : cfg.sfx || [])];
   for (const m of chat) {
     if (m.you) { const n = m.you.replace(/[‹›«»]/g, '').length, d = Math.min(.5, n * .028); for (let i = 0; i < n; i += 2) sfx.push([m.at + .03 + d * i / n, 'key', .7]); if (m.enter !== false) sfx.push([m.at + d + .1, 'enter']); }
-    else sfx.push([m.at + .5, 'pop']);
+    else sfx.push([m.at + .5 + (m.wait || 0), 'pop']);
   }
   const m = scene({
     scene: cfg.scene, desc: cfg.desc, look: LOOK.FILM, chat: true, noBanner: cfg.noBanner, noInv: cfg.noInv ?? true,
@@ -352,7 +352,7 @@ function chatOverlay(ctx, L, chat, side, K) {
   const items = [];
   for (let i = last.length - 1; i >= 0; i--) {
     const m = last[i], me = !!m.me, raw = (me ? m.me : m.you), n0 = raw.replace(/[‹›«»]/g, '').length;
-    const typing = me && b < m.at + .5;
+    const typing = me && b < m.at + .5 + (m.wait || 0);
     let s = raw;
     if (!me) { const d = Math.min(.5, n0 * .028), n = Math.floor(Math.min(1, Math.max(0, (b - m.at - .03) / Math.max(.05, d))) * n0 + 1e-6); s = cut(raw, n); }
     ctx.font = fnt(500, 36, F.sans);

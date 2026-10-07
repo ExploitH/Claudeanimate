@@ -352,10 +352,10 @@ vec3 look(float id,sampler2D C,sampler2D X,vec4 P,vec4 cam,vec4 fo,vec2 uv){
     vec3 deep=mix(vec3(.04,.015,.09),vec3(.09,.02,.14),uv.y);
     col=mix(deep,ir*.5,smoothstep(.35,.92,f)*.75)+vec3(1.,.7,.95)*pow(smoothstep(.62,1.,f),3.)*.25;
     if(P.y>0.){vec3 v=vor(p*9.+vec2(0.,.3));vec3 fc=mix(vec3(.035,.06,.13),vec3(.12,.2,.38),v.y*.85)+vec3(.65,.82,1.)*smoothstep(.03,0.,v.x)*.3;col=mix(col,fc,P.y);}
-    vec2 wp=(vec2(fbm3(cu*3.+vec2(0.,t*.35)),fbm3(cu*3.+vec2(4.1,-t*.3)))-.5)*.07*P.x;
+    vec2 wp=(vec2(fbm3(cu*3.+vec2(0.,t*.35)),fbm3(cu*3.+vec2(4.1,-t*.3)))-.5)*.03*P.x;
     c=cF(C,cu+wp,fk);vec3 cc=mix(c.rgb,c.rgb*(.55+ir*.9),P.z*.55);
     col=col*(1.-c.a)+cc+bloom(C,cu+wp)*.75*uFx;col*=1.-.5*fk;
-    vec2 tw=wp*.1;ty=tx(X,uv+tw,0.);col=over(col,ty)+tx(X,uv+tw,3.).rgb*.25*uFx;
+    vec2 tw=vec2(0.);ty=tx(X,uv+tw,0.);col=over(col,ty)+tx(X,uv+tw,3.).rgb*.25*uFx;
   }else if(id<2.5){ // 轨道：深空 + 上下文光圈，P.xy 圆心 P.z 半径 P.w 圈外可见度
     col=vec3(.006,.008,.02);
     vec2 pp=p+cam.zw*vec2(AR,1.)*.3;
@@ -469,15 +469,15 @@ vec3 look(float id,sampler2D C,sampler2D X,vec4 P,vec4 cam,vec4 fo,vec2 uv){
     col=mix(vec3(.025,.004,.008),vec3(.004,.022,.026),P.z)+ac*.16*P.y*(.5+.5*uBeat)*exp(-length(p)*1.3);
     col+=ac*.05*step(.5,fract(uv.y*60.+t*2.))*(1.-P.z)*.5;
     float bs=floor(t*16.);float rows=mix(10.,44.,h1(vec2(bs,1.)));float row=floor(uv.y*rows);
-    vec2 gu=cu;if(h1(vec2(row,bs))<P.x*.38)gu.x+=(h1(vec2(row,bs+3.))-.5)*.16*P.x;
-    float ab=.0025+.006*P.x;
+    vec2 gu=cu;if(h1(vec2(row,bs))<P.x*.18)gu.x+=(h1(vec2(row,bs+3.))-.5)*.05*P.x;
+    float ab=.0012+.0025*P.x;
     c=cF(C,gu,fk);vec4 cr=tx(C,gu+vec2(ab,0.),0.),cb=tx(C,gu-vec2(ab,0.),0.);
     vec3 rgb=vec3(unp(cr).r,unp(c).g,unp(cb).b);float a=max(c.a,max(cr.a*.8,cb.a*.8));float l=lum(unp(c));
     vec3 duo=mix(ac*l*1.35,vec3(1.,.96,.95),smoothstep(.72,1.,l));
     vec3 cc=mix(duo,rgb,P.w);
     col=col*(1.-a)+cc*a+mix(ac*lum(bloom(C,gu))*1.4,bloom(C,gu),P.w)*.6*uFx;col*=1.-.5*fk;
     ty=tx(X,uv,0.);vec4 tr=tx(X,uv+vec2(ab*.4,0.),0.);col=col*(1.-ty.a)+vec3(tr.r,ty.g,ty.b);
-    col*=.9+.1*sin(uv.y*uRes.y*3.1416);
+    col*=.95+.05*sin(uv.y*uRes.y*3.1416);
   }else if(id<10.5){ // 回声：干净深色 + 光谱余晖
     col=vec3(.022,.022,.03);
     for(int i=0;i<3;i++){float fi=float(i);col+=pal(uv.x*.45+t*.025+fi*.23)*exp(-pow((uv.y-.15-fi*.07-.06*sin(uv.x*2.6+t*.15+fi*2.))*7.,2.))*.07*P.x;}

@@ -212,18 +212,49 @@ function build(T) {
   const clk = canvasTex(T, 256, 256);
   const clockM = new T.Mesh(new T.CircleGeometry(16, 48), new T.MeshStandardMaterial({ map: clk.t, roughness: .5 })); clockM.position.set(-122, 198, WZ + 1); scene.add(clockM);
   const clockR = new T.Mesh(new T.TorusGeometry(16, 1.2, 8, 48), std('#2a2a2e', { metalness: .5 })); clockR.position.copy(clockM.position); scene.add(clockR);
-  // 你：坐在桌前的背影（连帽衫）
+  // 你：坐在桌前的人（连帽衫、长裤、运动鞋）。面朝 -z（书桌），多数镜头只拍背影和侧脸
   const you = new T.Group(); you.position.set(40, 0, -92); scene.add(you);
-  const hood = std('#3a4a6b', { roughness: .95 }), skin = std('#e2b48f', { roughness: .7 }), hair = std('#2b211c', { roughness: .55 });
-  const torso = new T.Mesh(new T.CylinderGeometry(15, 13, 42, 20), hood); torso.position.y = 74; torso.castShadow = true; you.add(torso);
-  const shoulders = new T.Mesh(new T.SphereGeometry(15, 20, 12, 0, 6.283, 0, Math.PI / 2), hood); shoulders.position.y = 95; shoulders.scale.set(1.12, .55, .85); shoulders.castShadow = true; you.add(shoulders);
-  const neck = new T.Mesh(new T.CylinderGeometry(4, 4.5, 6, 12), skin); neck.position.y = 100; you.add(neck);
-  const headG = new T.Group(); headG.position.set(0, 112, 0); you.add(headG);
-  const headM = new T.Mesh(new T.SphereGeometry(9.5, 24, 18), skin); headM.scale.set(1, 1.12, 1.02); headM.castShadow = true; headG.add(headM);
-  const hairM = new T.Mesh(new T.SphereGeometry(10.1, 24, 18, 0, 6.283, 0, Math.PI * .5), hair); hairM.rotation.x = .55; hairM.position.set(0, 1.6, 1.2); headG.add(hairM);
-  [-1, 1].forEach(sd => { const ear = new T.Mesh(new T.SphereGeometry(2.2, 10, 8), skin); ear.scale.set(.5, 1, .8); ear.position.set(sd * 9.4, -.5, .5); headG.add(ear); });
-  const hoodBack = new T.Mesh(new T.TorusGeometry(9, 4, 10, 20, Math.PI), hood); hoodBack.position.set(0, 97, 6); hoodBack.rotation.set(-1.1, 0, 0); you.add(hoodBack);
-  const arms = [-1, 1].map(sd => { const g = new T.Group(); g.position.set(sd * 15, 92, -2); you.add(g); const up = new T.Mesh(new T.CylinderGeometry(4, 3.6, 26, 10), hood); up.position.y = -12; up.castShadow = true; g.add(up); const fore = new T.Group(); fore.position.y = -24; g.add(fore); const lo = new T.Mesh(new T.CylinderGeometry(3.6, 3, 24, 10), hood); lo.position.y = -11; lo.castShadow = true; fore.add(lo); const hand = new T.Mesh(new T.SphereGeometry(3.2, 10, 8), skin); hand.position.y = -24; fore.add(hand); return { g, fore }; });
+  const hood = std('#3a4a6b', { roughness: .95 }), hoodD = std('#2e3c58', { roughness: .95 }), skin = std('#e2b48f', { roughness: .7 }), hair = std('#2b211c', { roughness: .55 });
+  const pants = std('#2a2c33', { roughness: .9 }), shoe = std('#d8d6d0', { roughness: .6 }), sole = std('#3a3a3e', { roughness: .8 }), dark = std('#141210', { roughness: .4 });
+  const cast = m => { m.castShadow = true; return m; };
+  // 腿：大腿往前平放在椅面上，小腿垂下，鞋尖朝前
+  [-1, 1].forEach(sd => {
+    const thigh = cast(new T.Mesh(new T.CylinderGeometry(6.4, 6, 40, 12), pants)); thigh.rotation.x = Math.PI / 2; thigh.position.set(sd * 8, 57, -18); you.add(thigh);
+    const knee = cast(new T.Mesh(new T.SphereGeometry(6.2, 12, 10), pants)); knee.position.set(sd * 8, 57, -38); you.add(knee);
+    const shin = cast(new T.Mesh(new T.CylinderGeometry(5.6, 4.8, 50, 12), pants)); shin.position.set(sd * 8.4, 31, -40); shin.rotation.x = -.06; you.add(shin);
+    const sh = cast(new T.Mesh(new T.BoxGeometry(9.5, 7, 22), shoe)); sh.position.set(sd * 8.6, 4.5, -45); you.add(sh);
+    const so = new T.Mesh(new T.BoxGeometry(10, 2, 23), sole); so.position.set(sd * 8.6, 1, -45); you.add(so);
+  });
+  // 躯干：腰、上身、下摆罗纹、帽子、抽绳
+  const hips = cast(new T.Mesh(new T.CylinderGeometry(14, 14.5, 10, 20), pants)); hips.position.y = 56; you.add(hips);
+  const torso = cast(new T.Mesh(new T.CylinderGeometry(15.5, 14, 40, 24), hood)); torso.position.y = 78; torso.scale.z = .82; you.add(torso);
+  const band = new T.Mesh(new T.TorusGeometry(14.2, 1.6, 8, 28), hoodD); band.rotation.x = Math.PI / 2; band.position.y = 59.5; band.scale.y = .82; you.add(band);
+  const shoulders = cast(new T.Mesh(new T.SphereGeometry(15.5, 24, 14, 0, 6.283, 0, Math.PI / 2), hood)); shoulders.position.y = 97; shoulders.scale.set(1.14, .5, .8); you.add(shoulders);
+  const neck = new T.Mesh(new T.CylinderGeometry(4, 4.6, 7, 14), skin); neck.position.y = 101.5; you.add(neck);
+  const hoodBack = cast(new T.Mesh(new T.TorusGeometry(8.6, 4.2, 12, 24, Math.PI * 1.25), hood)); hoodBack.position.set(0, 99, 4.5); hoodBack.rotation.set(-1.25, 0, -Math.PI * .125); you.add(hoodBack);
+  [-1, 1].forEach(sd => { const str = new T.Mesh(new T.CylinderGeometry(.4, .4, 10, 6), std('#b9c0d0')); str.position.set(sd * 3.2, 93.5, -12.4); str.rotation.x = .12; you.add(str); const tip = new T.Mesh(new T.CylinderGeometry(.7, .7, 1.8, 6), std('#c8c4bc')); tip.position.set(sd * 3.2, 88.4, -11.8); you.add(tip); });
+  // 头：脸朝 -z；头发盖住头顶和后脑，前面留一点刘海；侧脸能看到眼、眉、鼻子
+  const headG = new T.Group(); headG.position.set(0, 113, 0); you.add(headG);
+  const headM = cast(new T.Mesh(new T.SphereGeometry(9.5, 28, 20), skin)); headM.scale.set(.96, 1.12, 1.02); headG.add(headM);
+  const hairM = cast(new T.Mesh(new T.SphereGeometry(10.3, 28, 20, 0, 6.283, 0, Math.PI * .5), hair)); hairM.rotation.x = .42; hairM.position.set(0, 1.4, .4); headG.add(hairM);
+  const hairB = cast(new T.Mesh(new T.SphereGeometry(10, 24, 16), hair)); hairB.scale.set(.94, .9, .82); hairB.position.set(0, -.6, 2.8); headG.add(hairB);
+  [-1, 1].forEach(sd => {
+    const ear = new T.Mesh(new T.SphereGeometry(2.2, 10, 8), skin); ear.scale.set(.5, 1, .8); ear.position.set(sd * 9.5, -.5, -.6); headG.add(ear);
+    const eye = new T.Mesh(new T.SphereGeometry(.85, 10, 8), dark); eye.scale.set(.9, 1.2, .4); eye.position.set(sd * 3.2, .3, -9.05); headG.add(eye);
+  });
+  const nose = new T.Mesh(new T.SphereGeometry(1.3, 10, 8), skin); nose.scale.set(.8, 1, 1.1); nose.position.set(0, -1.8, -10); headG.add(nose);
+  // 手臂：上臂从肩膀往前下方伸，小臂往前搭到键盘上；袖口、手掌和拇指
+  const arms = [-1, 1].map(sd => {
+    const g = new T.Group(); g.position.set(sd * 15.5, 93, -1); you.add(g);
+    const up = cast(new T.Mesh(new T.CylinderGeometry(4.4, 3.9, 26, 12), hood)); up.position.y = -12; g.add(up);
+    const elbow = new T.Mesh(new T.SphereGeometry(3.9, 10, 8), hood); elbow.position.y = -24.5; g.add(elbow);
+    const fore = new T.Group(); fore.position.y = -24.5; g.add(fore);
+    const lo = cast(new T.Mesh(new T.CylinderGeometry(3.9, 3.3, 22, 12), hood)); lo.position.y = -10.5; fore.add(lo);
+    const cuff = new T.Mesh(new T.TorusGeometry(3.1, .9, 8, 16), hoodD); cuff.rotation.x = Math.PI / 2; cuff.position.y = -21.5; fore.add(cuff);
+    const hand = cast(new T.Mesh(new T.SphereGeometry(3.1, 12, 10), skin)); hand.scale.set(1.05, 1.3, .62); hand.position.y = -25.5; fore.add(hand);
+    const thumb = new T.Mesh(new T.CylinderGeometry(.8, .7, 3.6, 6), skin); thumb.position.set(-sd * 2.6, -24, -.6); thumb.rotation.z = sd * .7; fore.add(thumb);
+    return { g, fore };
+  });
   // 灯光
   const amb = new T.HemisphereLight(0x405075, 0x120d0a, .55); scene.add(amb);
   const moon = new T.DirectionalLight(0x8fb0ff, .5); moon.position.set(WX + 40, 260, -420); moon.target.position.set(20, 60, -60); scene.add(moon, moon.target);
@@ -280,8 +311,8 @@ function pose(R, T, L, cfg, chat, cam, S, shots) {
   R.headG.rotation.set(-.1 + lean * .15 + nod * Math.sin(t * 7) * .06, yaw, 0);
   R.arms.forEach(({ g, fore }, i) => {
     const sd = i ? 1 : -1, tp = typing * Math.max(0, Math.sin(t * 14 + i * 2.1)) * .12;
-    if (p.armsUp) { g.rotation.set(-2.6, 0, sd * -.3); fore.rotation.set(-1.4, 0, 0); return; }
-    g.rotation.set(-.95 + lean * .5 + tp, 0, sd * -.08); fore.rotation.set(-.9 - lean * .6 - tp * 1.5, 0, sd * .25);
+    if (p.armsUp) { g.rotation.set(2.7, 0, sd * -.35); fore.rotation.set(.9, 0, 0); return; }
+    g.rotation.set(.95 - lean * .45 - tp, 0, sd * -.1); fore.rotation.set(.62 + lean * .25 + tp * 1.5, 0, sd * .22);
   });
   R.lid.rotation.x = -.22 + (mood.lidClose ?? 0) * 1.72;
   // 相机：在镜头之间按设定移动；加一点手持晃动

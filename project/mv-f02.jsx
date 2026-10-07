@@ -108,7 +108,7 @@ return scene({
   desc: '上下文窗口和圈外的黑暗；窗口里的四样东西；token 和容量上限；训练截止；Agent 的循环；context rot 和压缩；能动手脚的三处。',
   enter: { kind: TR.IRIS, a: 0, b: 2.5, p: [.5, .5, 0, 0], col: '#9fd8ff' },
   hud: { num: '02', name: 'AI 写代码时在做什么', time: '21:10', line: '你还记得吧？', ink: '#e6efff', acc: '#9fd8ff', card: [1180, 400], mv: [2.1, 2.6] },
-  par: L => { const b = L.b, sh = prog(b, SH, SH + .6, E.io), r = (WR / 1080) * prog(b, .4, 1.6, E.out) * (1 - .25 * sh), cx0 = lerp(WC[0], 560, sh); return [cx0 / 1920, WC[1] / 1080, r, .05 + .22 * bump(b, t('out') + 1.2, .9) + .9 * prog(b, t('order'), t('order') + 1)]; },
+  par: L => { const b = L.b, sh = prog(b, SH, SH + .6, E.io), r = (WR / 1080) * prog(b, .4, 1.6, E.out) * (1 - .25 * sh), cx0 = lerp(WC[0], 560, sh); return [cx0 / 1920, WC[1] / 1080, r, .05 + .6 * bump(b, t('out') + 1.5, 1.4)]; },
   cam: L => [1.03 + .02 * Math.sin(L.t * .3), .015 * Math.sin(L.t * .17), .01 * Math.sin(L.t * .2), 0],
   pulse: L => .5,
   sfx: [[t('void'), 'swish'], [t('out'), 'whoosh'], ...KINDS.map((_, i) => [t('k' + (i + 1)) + .1, 'pop']), [t('cap'), 'click'], [t('cut'), 'freeze'], [t('fake') + .4, 'glitch'], [t('ag'), 'swish'],
@@ -191,8 +191,8 @@ return scene({
     cx.restore();
     const fill = bottom - y;
     // 细节四散
-    if (b >= t('lost') - .1 && b < t('lost') + 2) for (let i = 0; i < 18; i++) {
-      const k = prog(b, t('lost') + hash(i) * .25, t('lost') + 1.4 + hash(i) * .3, E.out), a = hash(i * 3.1) * 6.283, dist = 60 + k * 580, dk = .4 + hash(i * 1.3) * .6;
+    if (b >= t('lost') - .1 && b < t('lost') + 2.8) for (let i = 0; i < 18; i++) {
+      const k = prog(b, t('lost') + hash(i) * .25, t('lost') + 2.2 + hash(i) * .3, E.out), a = hash(i * 3.1) * 6.283, dist = 40 + k * 380, dk = .4 + hash(i * 1.3) * .6;
       alpha(cx, (1 - k) * dk, () => { const x = wx + Math.cos(a) * dist, yy = bottom - 60 + Math.sin(a) * dist * .7, sz = (.5 + dk * .7) * (1 + k * dk * .6); cx.save(); cx.translate(x, yy); cx.rotate((hash(i * 5.5) - .5) * k * 4); cx.scale(sz, sz); rr(cx, -34, -12, 68, 24, 6, rgba(['#7cb7ff', '#a5d67a', '#f2d36a'][i % 3], .9)); txt(cx, '细节', 0, 0, fnt(500, 16), '#0b1020', 'center'); cx.restore(); });
     }
     // 轨道节点的字
@@ -208,7 +208,7 @@ return scene({
       if (k <= 0 || ko2 >= 1) return;
       const x0 = 1760, y0 = 200 + i * 200, x1 = wx + [-185, 185, -185, 185][i], y1 = wy + [-170, -170, 10, 10][i];
       const x = lerp(x0, x1, k), yy = lerp(y0, y1, k), sc = lerp(.25, 1, k), lit = bump(k, .72, .12);
-      alpha(cx, (1 - ko2) * Math.min(1, .3 + k), () => scaleAt(cx, x, yy, sc, () => {
+      alpha(cx, (1 - ko2) * Math.min(1, .3 + k) * (1 - .75 * prog(b, t('cut0'), t('cut0') + .4) * (1 - prog(b, t('ag0') - .3, t('ag0')))), () => scaleAt(cx, x, yy, sc, () => {
         if (lit > .05) { const g = cx.createRadialGradient(x, yy, 0, x, yy, 120); g.addColorStop(0, rgba('#ffffff', .8 * lit)); g.addColorStop(1, rgba(col, 0)); cx.fillStyle = g; cx.fillRect(x - 120, yy - 120, 240, 240); }
         rr(cx, x - 110, yy - 40, 220, 80, 14, rgba(col, .92)); txt(cx, s, x, yy - 10, fnt(900, 28), '#0b1020', 'center'); txt(cx, d, x, yy + 22, fnt(500, 19), 'rgba(11,16,32,.75)', 'center');
       }));
@@ -216,9 +216,9 @@ return scene({
     // 编出来的方法名
     const kg = prog(b, t('fake') + .3, t('fake') + .6) * (1 - prog(b, t('ag0') - .3, t('ag0')));
     if (kg > 0) alpha(cx, kg, () => {
-      rr(cx, wx - 280, wy + 60 + Math.sin(tt * 1.2) * 8, 260, 52, 10, 'rgba(10,20,40,.9)', '#f2a65a', 2); txt(cx, 'oldLogin()', wx - 260, wy + 86 + Math.sin(tt * 1.2) * 8, fnt(700, 26, F.mono), '#f2a65a');
-      rr(cx, wx - 280, wy + 130 + Math.sin(tt * 1.2 + 1) * 8, 260, 52, 10, 'rgba(10,20,40,.9)', '#f07178', 2); txt(cx, 'loginMagic()', wx - 260, wy + 156 + Math.sin(tt * 1.2 + 1) * 8, fnt(700, 26, F.mono), '#f07178');
-      txt(cx, '不存在的方法', wx - 150, wy + 212, fnt(700, 22), '#f07178', 'center');
+      rr(cx, wx - 150, wy + 70 + Math.sin(tt * 1.2) * 8, 260, 52, 10, 'rgba(10,20,40,.9)', '#f2a65a', 2); txt(cx, 'oldLogin()', wx - 130, wy + 96 + Math.sin(tt * 1.2) * 8, fnt(700, 26, F.mono), '#f2a65a');
+      rr(cx, wx - 150, wy + 136 + Math.sin(tt * 1.2 + 1) * 8, 260, 52, 10, 'rgba(10,20,40,.9)', '#f07178', 2); txt(cx, 'loginMagic()', wx - 130, wy + 162 + Math.sin(tt * 1.2 + 1) * 8, fnt(700, 26, F.mono), '#f07178');
+      txt(cx, '不存在的方法', wx - 20, wy + 218, fnt(700, 24), '#f07178', 'center');
       if (!has3d) { rr(cx, wx + 60, wy - 230, 190, 120, 12, '#dfefff', '#9fd8ff', 3); txt(cx, '训练截止', wx + 155, wy - 213, fnt(700, 20), '#0b1020', 'center'); }
     });
     const kcal = prog(b, t('cut') + .2, t('cut') + .6) * (1 - prog(b, t('ag0') - .3, t('ag0')));

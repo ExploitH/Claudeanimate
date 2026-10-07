@@ -83,6 +83,9 @@ const S = seq([
 ], { start: 2.8, tail: .5 });
 const t = S.t;
 const SH = t('three');
+const OX = 1330, OY = 600; // 讲循环时轨道的位置（窗口挪到左边，两者不重叠）
+const LPk = b => prog(b, t('loop') - .4, t('loop') + .5, E.io) * (1 - prog(b, t('rot') - .3, t('rot') + .5, E.io));
+const geo = b => { const sh = prog(b, SH, SH + .6, E.io), lp = LPk(b); return { sh, lp, wx: lerp(lerp(WC[0], 480, lp), 560, sh), wr: WR * (1 - .25 * sh) * (1 - .2 * lp) }; };
 const NB = [t('n0'), t('n1'), t('n2'), t('n3')];
 const LAP0 = t('n0'), LAPF = t('again') + .2;
 // 节点：讲解时一个一个亮；「一圈一圈」时一拍一个快速转
@@ -108,7 +111,7 @@ return scene({
   desc: '上下文窗口和圈外的黑暗；窗口里的四样东西；token 和容量上限；训练截止；Agent 的循环；context rot 和压缩；能动手脚的三处。',
   enter: { kind: TR.IRIS, a: 0, b: 2.5, p: [.5, .5, 0, 0], col: '#9fd8ff' },
   hud: { num: '02', name: 'AI 写代码时在做什么', time: '21:10', line: '你还记得吧？', ink: '#e6efff', acc: '#9fd8ff', card: [1180, 400], mv: [2.1, 2.6] },
-  par: L => { const b = L.b, sh = prog(b, SH, SH + .6, E.io), r = (WR / 1080) * prog(b, .4, 1.6, E.out) * (1 - .25 * sh), cx0 = lerp(WC[0], 560, sh); return [cx0 / 1920, WC[1] / 1080, r, .05 + .6 * bump(b, t('out') + 1.5, 1.4)]; },
+  par: L => { const b = L.b, g = geo(b), r = (g.wr / 1080) * prog(b, .4, 1.6, E.out); return [g.wx / 1920, WC[1] / 1080, r, .05 + .6 * bump(b, t('out') + 1.5, 1.4) + .85 * g.lp]; },
   cam: L => [1.03 + .02 * Math.sin(L.t * .3), .015 * Math.sin(L.t * .17), .01 * Math.sin(L.t * .2), 0],
   pulse: L => .5,
   sfx: [[t('void'), 'swish'], [t('out'), 'whoosh'], ...KINDS.map((_, i) => [t('k' + (i + 1)) + .1, 'pop']), [t('cap'), 'click'], [t('cut'), 'freeze'], [t('fake') + .4, 'glitch'], [t('ag'), 'swish'],
@@ -136,7 +139,7 @@ return scene({
     return {
       scene: scene3,
       update(L) {
-        const b = L.b, tt = L.t, sh = prog(b, SH, SH + .6, E.io), wx = lerp(WC[0], 560, sh), wr = WR * (1 - .25 * sh), kw = prog(b, .4, 1.6, E.out);
+        const b = L.b, tt = L.t, g = geo(b), wx = g.wx, wr = g.wr, kw = prog(b, .4, 1.6, E.out);
         win.visible = kw > 0;
         U.at(win, wx, WC[1], 0); win.scale.setScalar(Math.max(1e-3, wr * (.85 + .15 * kw)));
         win.rotation.set(.06 * Math.sin(tt * .3), .05 * Math.sin(tt * .23), 0);
@@ -144,10 +147,10 @@ return scene({
         const hit = Math.max(...KINDS.map((_, i) => L.hit(t('k' + (i + 1)) + .3, .3)), ...LAPS.map(a => L.hit(a, .3)), L.hit(t('cap'), .5));
         ring.material.emissiveIntensity = 1 + 2.5 * hit + 2 * prog(b, t('order'), t('order') + 1);
         const a = tt * 1.3; spark.position.set(Math.cos(a), Math.sin(a), .03); spark.material.opacity = kw;
-        const ko = prog(b, t('loop'), t('loop') + .4) * (1 - prog(b, t('comp'), t('comp') + .5));
+        const ko = prog(b, t('loop'), t('loop') + .5) * (1 - prog(b, t('rot') - .2, t('rot') + .4));
         orb.visible = ko > 0;
         if (orb.visible) {
-          U.at(orb, wx, WC[1] - 30, 20);
+          U.at(orb, OX, OY, 20);
           tube.material.opacity = .28 * ko;
           const on = nodeOn(b);
           nodes.forEach((n, i) => { const ang = NODES[i][1]; n.position.set(Math.cos(ang) * ORB, -Math.sin(ang) * ORB, 0); n.material.opacity = ko; n.material.emissiveIntensity = i === on ? 1.6 : .15; n.scale.setScalar(i === on ? 1.3 : 1); });
@@ -162,13 +165,13 @@ return scene({
     };
   },
   draw(cx, tx, L) {
-    const b = L.b, tt = L.t, sh = prog(b, SH, SH + .6, E.io), wx = lerp(WC[0], 560, sh), wy = WC[1], wr = WR * (1 - .25 * sh), has3d = !!window.THREE;
+    const b = L.b, tt = L.t, g = geo(b), wx = g.wx, wy = WC[1], wr = g.wr, has3d = !!window.THREE;
     // 圈外漂着的东西（着色器只让窗口里看得见；讲「圈外」时短暂显形）
-    OUTSIDE.forEach(([s, x, y], i) => {
+    if (g.lp < .99) alpha(cx, 1 - g.lp, () => OUTSIDE.forEach(([s, x, y], i) => {
       const xx = x + Math.sin(tt * .4 + i) * 40, yy = y + Math.cos(tt * .33 + i * 2) * 30;
       rr(cx, xx - 160, yy - 34, 320, 68, 34, 'rgba(120,150,210,.35)', 'rgba(170,200,255,.7)', 2);
       txt(cx, s, xx, yy, fnt(500, 26), '#e6efff', 'center');
-    });
+    }));
     if (!has3d) { cx.strokeStyle = '#9fd8ff'; cx.lineWidth = 6; cx.beginPath(); cx.arc(wx, wy, wr, 0, 6.283); cx.stroke(); }
     // 容量上限
     const kc = prog(b, t('cap'), t('cap') + .35) * (1 - prog(b, SH, SH + .4));
@@ -195,10 +198,16 @@ return scene({
       const k = prog(b, t('lost') + hash(i) * .25, t('lost') + 2.2 + hash(i) * .3, E.out), a = hash(i * 3.1) * 6.283, dist = 40 + k * 380, dk = .4 + hash(i * 1.3) * .6;
       alpha(cx, (1 - k) * dk, () => { const x = wx + Math.cos(a) * dist, yy = bottom - 60 + Math.sin(a) * dist * .7, sz = (.5 + dk * .7) * (1 + k * dk * .6); cx.save(); cx.translate(x, yy); cx.rotate((hash(i * 5.5) - .5) * k * 4); cx.scale(sz, sz); rr(cx, -34, -12, 68, 24, 6, rgba(['#7cb7ff', '#a5d67a', '#f2d36a'][i % 3], .9)); txt(cx, '细节', 0, 0, fnt(500, 16), '#0b1020', 'center'); cx.restore(); });
     }
+    // 每转完一圈：一块彩条从轨道「看结果」那里飞进左边的窗口
+    LAPS.forEach((at, i) => {
+      const a0 = Math.min(at, t('fill') + .5 + i * .5) - .6, k = prog(b, a0, a0 + .6, E.io); if (k <= 0 || k >= 1) return;
+      const col = ['#c792ea', '#5fd4c8', '#f07178', '#f2a65a'][i], x = lerp(OX - ORB, wx, k), yy = lerp(OY, wy - wr * .2, k) - Math.sin(k * Math.PI) * 120;
+      alpha(tx, Math.min(1, k * 4), () => { rr(tx, x - 70, yy - 18, 140, 36, 8, rgba(col, .92)); txt(tx, `第 ${i + 1} 圈`, x, yy, fnt(700, 20), '#0b1020', 'center'); });
+    });
     // 轨道节点的字
-    const ko = prog(b, t('loop'), t('loop') + .4) * (1 - prog(b, t('comp'), t('comp') + .5));
+    const ko = prog(b, t('loop'), t('loop') + .5) * (1 - prog(b, t('rot') - .2, t('rot') + .4));
     if (ko > 0) alpha(tx, ko, () => NODES.forEach(([n, a], i) => {
-      const x = wx + Math.cos(a) * ORB, yy = wy - 30 + Math.sin(a) * ORB, on = nodeOn(b) === i;
+      const x = OX + Math.cos(a) * ORB, yy = OY + Math.sin(a) * ORB, on = nodeOn(b) === i;
       if (!has3d) circ(cx, x, yy, on ? 15 : 10, mixC('#1a2a48', '#9fd8ff', on ? 1 : .3), '#9fd8ff', 2);
       txt(tx, n, x + (Math.cos(a) > .5 ? 26 : Math.cos(a) < -.5 ? -26 : 0), yy + (Math.sin(a) < -.5 ? -32 : Math.sin(a) > .5 ? 32 : 0), fnt(on ? 900 : 500, 28), on ? '#ffffff' : 'rgba(220,235,255,.6)', Math.cos(a) > .5 ? 'left' : Math.cos(a) < -.5 ? 'right' : 'center');
     }));
@@ -229,7 +238,7 @@ return scene({
     if (b < 1.6) { const k = prog(b, 0, 1.6, E.out); st.x = lerp(wx - 500, wx, k); st.rot = (1 - k) * .6; }
     if (b >= t('out') && b < t('why')) { st.eye = 1; st.q = 1; }
     if (b >= t('fake') && b < t('ag0')) { st.sweat = b; st.eye = 0; }
-    if (lapping) { st.x = wx + Math.cos(ang) * ORB; st.y = wy - 30 + Math.sin(ang) * ORB + 40; st.px = 10; st.rot = 0; st.walk = tt * 16; }
+    if (lapping) { st.x = OX + Math.cos(ang) * ORB; st.y = OY + Math.sin(ang) * ORB + 40; st.px = 10; st.rot = 0; st.walk = tt * 16; }
     if (b >= t('rot')) { st.x = wx; st.px = 13; st.y = Math.max(wy - wr + 120, Math.min(wy + 40, bottom - fill - 10)); st.sweat = b < t('three') ? b : 0; st.eye = 0; }
     if (b >= SH) { st.px = 13; st.y = wy - 40 + Math.sin(tt * 1.4) * 8; st.x = wx; st.pose = b >= SH + .4 ? 'point' : 'idle'; st.eye = 1; st.sweat = 0; }
     clawd(cx, st);

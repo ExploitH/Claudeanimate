@@ -879,6 +879,8 @@ function seq(steps, o = {}) {
   // 词条卡：没写 until 就留到下一张词条卡出现（最多 12 小节）
   const gl = items.filter(i => i.gloss);
   gl.forEach((g, i) => { if (!g.until && !g.untilEnd && !g.dur) g.out = Math.min(gl[i + 1] ? gl[i + 1].at : bars, g.at + 12); });
+  // 同一位置只放一张：下一张出现前，这一张必须已经退场
+  gl.forEach((g, i) => { if (gl[i + 1]) g.out = Math.min(g.out, gl[i + 1].at); });
   const text = items.map(i => [i.say, i.big, i.sub, i.you, i.me, i.gloss && i.gloss.join(''), i.rule && i.rule[1], i.src].filter(Boolean).join('')).join('');
   return { at, end, items, bars, text, t: id => at[id] ?? 0, e: id => end[id] ?? 0 };
 }

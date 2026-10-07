@@ -291,10 +291,16 @@ function pose(R, T, L, cfg, chat, cam, S, shots) {
   const kk = dur > 0 ? clamp01((b - at) / dur) : 1, e = ease === 'lin' ? kk : ease === 'in' ? kk * kk * kk : io(kk);
   const P0 = Bp, P1 = A;
   const pos = [0, 1, 2].map(j => lerp(P0[0][j], P1[0][j], e)), tgt = [0, 1, 2].map(j => lerp(P0[1][j], P1[1][j], e)), fov = lerp(P0[2], P1[2], e);
+  // 从过肩推向屏幕时走一条从头顶越过去的弧线，不从人物身上穿过去
+  if ((name === 'screen' || name === 'into') && k1 && !['screen', 'into'].includes(k1[1])) pos[1] += 26 * Math.sin(Math.PI * e);
   const sway = cfg.steady ? 0 : 1, sw = (a, f) => Math.sin(t * f + a) * sway;
   cam.position.set(pos[0] + sw(1, .37) * .9, pos[1] + sw(2, .29) * .6, pos[2] + sw(3, .23) * .5);
   cam.lookAt(tgt[0] + sw(4, .31) * .3, tgt[1] + sw(5, .27) * .25, tgt[2]);
   cam.fov = fov; cam.near = 1; cam.far = 3000;
+  // 镜头贴近或穿过人物（过肩推到屏幕）时把人物拿掉，避免穿模和挡住画面
+  const c = cam.position, fz = R.you.position.z;
+  const dHead = Math.hypot(c.x - 40, c.y - 112, c.z - fz), dBody = Math.hypot(c.x - 40, c.z - fz);
+  if (dHead < 48 || (c.y > 40 && c.y < 110 && dBody < 28)) R.you.visible = false;
 }
 
 // ---------- 一场现实戏 ----------

@@ -196,6 +196,37 @@ return scene({
         });
       });
     });
+    // ---------- 「听起来像魔法」：星点；「同一条帖子里」：帖子回来，三句压暗，第四行在闪 ----------
+    const kmg = prog(b, t('magic'), t('magic') + .4) * (1 - prog(b, t('but') - .2, t('but') + .2));
+    if (kmg > 0) alpha(tx, kmg, () => { for (let i = 0; i < 40; i++) { const a = hash(i * 3.3) * 6.283, r0 = 160 + hash(i * 1.7) * 420, tw0 = .5 + .5 * Math.sin(tt * (2 + hash(i) * 3) + i); const x = 960 + Math.cos(a + tt * .08) * r0 * 1.5, y = 470 + Math.sin(a + tt * .08) * r0 * .7; alpha(tx, tw0, () => { tx.fillStyle = mixC('#ffd6f5', '#bdf3ff', hash(i * 5)); tx.beginPath(); tx.moveTo(x, y - 9); tx.lineTo(x + 2.5, y - 2.5); tx.lineTo(x + 9, y); tx.lineTo(x + 2.5, y + 2.5); tx.lineTo(x, y + 9); tx.lineTo(x - 2.5, y + 2.5); tx.lineTo(x - 9, y); tx.lineTo(x - 2.5, y - 2.5); tx.fill(); }); } txt(tx, '你只管说', 960, 420, fnt(700, 64, F.serif), '#fff8ff', 'center'); txt(tx, '代码我来，看都不用看', 960, 510, fnt(500, 40, F.serif), '#e8dcff', 'center'); });
+    const kbt = prog(b, t('but'), t('but') + .4, E.out) * (1 - prog(b, t('week') - .1, t('week') + .3));
+    if (kbt > 0) alpha(tx, kbt, () => {
+      const x = 410, y = 230, w = 1100, h = 470;
+      rr(tx, x, y, w, h, 26, 'rgba(24,14,40,.72)', 'rgba(255,214,245,.35)', 2);
+      txt(tx, 'Andrej Karpathy · 2025 年 2 月', x + 50, y + 54, fnt(700, 28), '#cdb4ee');
+      QUOTE.forEach(([en], i) => alpha(tx, .35, () => txt(tx, en, x + 50, y + 130 + i * 70, fnt(700, 40, F.serif), '#fff8ff')));
+      const g = .55 + .45 * Math.sin(tt * 5);
+      rr(tx, x + 50, y + 360, 760, 54, 10, `rgba(255,211,138,${.18 + .2 * g})`, '#ffd38a', 2); txt(tx, '……还有一句', x + 74, y + 388, fnt(700, 30), '#ffd38a');
+    });
+    // ---------- 「火到什么程度」：这个词越冒越多；「问题跟着来」：变成问号 ----------
+    const kfr = prog(b, t('dict0'), t('dict0') + .3) * (1 - prog(b, t('ask0') - .2, t('ask0') + .2));
+    if (kfr > 0) alpha(tx, kfr, () => {
+      const n = Math.floor(6 + 34 * prog(b, t('dict0'), t('dict0') + 3)), q = prog(b, t('prob'), t('prob') + 1, E.io);
+      for (let i = 0; i < n; i++) {
+        const x = 120 + hash(i * 2.7) * 1680, y = 140 + hash(i * 5.1) * 700 + Math.sin(tt * .8 + i) * 12, s = 20 + hash(i * 9.3) * 26;
+        if (b >= t('dict') - .2 && b < t('prob') && x > 540 && x < 1340 && y > 220 && y < 700) continue; // 给词典卡留位置
+        const isQ = hash(i * 13.7) < q;
+        alpha(tx, .25 + .35 * hash(i * 4.4), () => txt(tx, isQ ? '?' : 'vibe coding', x, y, isQ ? fnt(900, s * 1.8, F.serif) : fnt(600, s, F.serif), mixC('#ffd6f5', '#bdf3ff', hash(i * 6.6)), 'center'));
+      }
+    });
+    // ---------- Simon Willison 的人物卡 ----------
+    const ksw = prog(b, t('sw'), t('sw') + .4, E.out) * (1 - prog(b, t('checks') - .2, t('checks') + .1));
+    if (ksw > 0) alpha(tx, ksw, () => {
+      const x = 610, y = 360 + (1 - ksw) * 30;
+      rr(tx, x, y, 700, 200, 24, 'rgba(24,14,40,.72)', 'rgba(255,214,245,.35)', 2);
+      circ(tx, x + 90, y + 100, 46, '#9fd8ff'); txt(tx, 'S', x + 90, y + 102, fnt(900, 44), '#122038', 'center');
+      txt(tx, 'Simon Willison', x + 170, y + 80, fnt(700, 42), '#ffffff'); txt(tx, '程序员 · Django 框架的作者之一', x + 170, y + 132, fnt(500, 28), '#e8dcff');
+    });
     // ---------- 「只说、不看」的循环 ----------
     const kl = prog(b, t('mean'), t('mean') + .4) * (1 - prog(b, t('name') - .3, t('name')));
     if (kl > 0) alpha(cx, kl, () => {

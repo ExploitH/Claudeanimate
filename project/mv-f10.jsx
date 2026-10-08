@@ -195,7 +195,7 @@ R.f10c = K => window.MV_REAL(K, {
     x.fillStyle = '#16a34a'; x.font = '700 34px "Noto Sans SC",sans-serif'; x.fillText('✓ 已提交', 40, 250);
     x.fillStyle = '#6b7280'; x.font = '400 20px "Noto Sans SC",sans-serif'; x.fillText('提交时间：周一 07:52', 40, 292);
   },
-  figure: (L, S) => ({ type: 0, lean: -.25, yaw: .1 }),
+  figure: (L, S) => ({ type: 0, lean: -.25, yaw: .1, hide: true }), // 整场不放人：合盖时手会穿进屏幕和键盘之间，而这一场是连续运镜，没有剪切点可以中途藏人
   sfx: S => [[.3, 'chime', 1319], [S.t('open') + 1, 'scratch'], [S.t('close') + .5, 'thud'], [S.t('out'), 'whoosh']],
   music(S, H, w) {
     const M = w.m.S, B = w.m.bars;

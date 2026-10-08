@@ -24,7 +24,8 @@ R.f03a = K => window.MV_REAL(K, {
   shots: S => [[0, 'over', 0], [S.t('code') - .3, 'screen', 0], [S.t('huh'), 'desk', 1.4], [S.t('go'), 'over', 1.2], [S.t('push'), 'into', 1.5, 'in']],
   chatHide: S => S.t('push') + .7,
   code: [...BAD, ...BAD],
-  codeScroll: (L, S) => Math.min(330, Math.max(0, (L.b - S.t('code')) * 120)),
+  // 代码一个字一个字写出来（2.3 小节写完），写到底自动往上滚；以前是写好的整段直接滚屏，看不出是在写
+  codeTyped: (L, S) => K.prog(L.b, S.t('code') - .1, S.t('code') + 2.2) * [...BAD, ...BAD].join('\n').length,
   figure: (L, S) => ({ type: L.b >= S.t('ask') && L.b < S.t('ask') + .6 ? 1 : 0, lean: K.prog(L.b, S.t('huh'), S.t('huh') + .4) * .4, yaw: 0 }),
   sfx: S => [...Array.from({ length: 18 }, (_, i) => [S.t('code') + i * .13, 'key', .5]), [S.t('push'), 'swoosh3d']],
   music(S, H, w) {
@@ -53,7 +54,7 @@ const S = seq([
   { id: 'q0', say: '密码怎么存？明文，还是加密？' },
   { id: 'q1', say: '要不要做注册？' },
   { id: 'q2', say: '密码输错几次，要锁定账号？' },
-  { id: 'q3', say: '登录状态，用 Session 还是 Token？', gloss: ['Session / Token', '', '两种记住「你已经登录了」的常见做法。'], until: 'pick' },
+  { id: 'q3', say: '登录状态，用 Session 还是 Token？', gloss: ['Session / Token', '', '两种记住「你已经登录了」的常见做法。'], gx: 1180, until: 'pick' }, // 右上角空着；默认的左上角会压住海报大字
   { id: 'pick', say: '每一个没说的地方，我都只能自己挑一种。', hold: .75 },
   { id: 'neq', say: '挑中的，不一定是你想要的。', hold: .5 },
   { id: 'gigo', say: '这就是常说的：垃圾进，垃圾出。', hold: .5 },
@@ -115,7 +116,8 @@ return scene({
           const a2 = at + .45 + j * .2, k2 = prog(b, a2, a2 + .2, E.out); if (k2 <= 0) return;
           const lx = x + (j ? 90 : -90), ly = 700, picked = b >= t('pick') + .3 + i * .3 && GUESS[i] === j;
           seg(cx, x, y + 40, lerp(x, lx, k2), lerp(y + 40, ly - 30, k2), picked ? PINK : INK, picked ? 7 : 3);
-          rr(cx, lx - 84, ly - 30, 168, 60, 30, picked ? rgba(PINK, .85) : rgba(BLUE, .35), picked ? PINK : BLUE, 3);
+          // 没选中的用不透明的浅蓝：半透明会被印刷效果打成网点，字压在点上看不清
+          rr(cx, lx - 84, ly - 30, 168, 60, 30, picked ? rgba(PINK, .85) : mixC(BLUE, '#ffffff', .62), picked ? PINK : BLUE, 3);
           txt(cx, o, lx, ly, fnt(700, o.length > 6 ? 20 : 26), INK, 'center');
           if (!picked) txt(cx, '?', lx + 70, ly - 34, fnt(900, 30, F.poster), PINK, 'center');
         });
@@ -169,7 +171,22 @@ return scene({
         scaleAt(cx, x + 360, y + 60, lerp(1.1, 1, Math.min(1, k)), () => rotAt(cx, x + 360, y + 60, (i % 2 ? .03 : -.03), () => { rr(cx, x, y, 720, 130, 6, 'rgba(255,255,255,.3)', [BLUE, PINK, GRN, ORG][i], 6); txt(cx, (i + 1) + '  ' + s, x + 40, y + 66, fnt(900, 48), [BLUE, PINK, GRN, ORG][i]); }));
       });
       const ks = prog(b, t('shot'), t('shot') + .3, E.back);
-      if (ks > 0) scaleAt(cx, 1500, 270, ks, () => { rr(cx, 1340, 200, 320, 140, 8, '#ffffff', INK, 4); rr(cx, 1360, 220, 280, 70, 4, mixC(BLUE, CREAM, .6)); circ(cx, 1500, 255, 22, PINK); txt(cx, '截图', 1500, 318, fnt(900, 26), INK, 'center'); });
+      // 截下来的界面：小浏览器窗口里一个排版坏掉的登录页，粉圈标出毛病；弹出那一下白光像快门
+      if (ks > 0) scaleAt(cx, 1500, 260, ks, () => rotAt(cx, 1500, 260, .025, () => {
+        const X = 1300, Y = 160, W = 400, H = 196;
+        rr(cx, X, Y, W, H, 8, '#ffffff', INK, 4);
+        rr(cx, X + 2, Y + 2, W - 4, 30, 6, mixC(BLUE, '#ffffff', .75));
+        [PINK, YEL, GRN].forEach((c, i) => circ(cx, X + 20 + i * 18, Y + 17, 6, c));
+        rr(cx, X + 80, Y + 9, 220, 16, 8, '#ffffff'); txt(cx, 'localhost:8080/login', X + 92, Y + 17, fnt(500, 11, F.mono), rgba(INK, .6));
+        txt(cx, '登录', X + 40, Y + 58, fnt(900, 22), INK);
+        rr(cx, X + 40, Y + 76, 200, 26, 4, '#ffffff', rgba(INK, .35), 2); txt(cx, '用户名', X + 50, Y + 89, fnt(500, 14), rgba(INK, .45));
+        rr(cx, X + 40, Y + 110, 200, 26, 4, '#ffffff', rgba(INK, .35), 2);
+        rr(cx, X + 150, Y + 122, 120, 32, 4, BLUE); txt(cx, '登 录', X + 210, Y + 138, fnt(900, 16), '#ffffff', 'center'); // 按钮压在密码框上
+        txt(cx, '密码错误次数过多，请稍后再', X + 40, Y + 172, fnt(700, 15), '#d0312d'); txt(cx, '试…', X + 236, Y + 172, fnt(700, 15), '#d0312d'); // 提示文字溢出边框
+        cx.strokeStyle = PINK; cx.lineWidth = 5; cx.beginPath(); cx.ellipse(X + 215, Y + 132, 80, 34, -.08, 0, Math.PI * 2); cx.stroke();
+        rotAt(cx, X + W - 30, Y - 6, .08, () => { rr(cx, X + W - 76, Y - 26, 92, 40, 6, PINK); txt(cx, '截图', X + W - 30, Y - 6, fnt(900, 24), '#fff6ea', 'center'); });
+        const fl = 1 - prog(b, t('shot'), t('shot') + .25); if (fl > 0) rr(cx, X, Y, W, H, 8, rgba('#ffffff', fl));
+      }));
     });
     // ---------- 一个对话，一件事 ----------
     const ksm = prog(b, t('small'), t('small') + .3) * (1 - prog(b, t('stk0') - .3, t('stk0')));

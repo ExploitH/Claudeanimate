@@ -1,6 +1,6 @@
 // 第五章 · 22:30「额度没了？」：选模型和费用
 // f05a 现实：手机弹出「本月额度已用 94%」
-// f05b 霓虹：用量条；每轮把前面全部重发；2D 霓虹赛道：便宜的多绕几圈总价反超；三档模型；思考强度；预算提醒；排行榜；国内模型；
+// f05b 霓虹：用量条；每轮把前面全部重发；2D 霓虹赛道：便宜的多绕几圈总价反超；三档模型；思考强度；订阅制和按量付费；预算提醒；排行榜；国内模型；
 //      换个模型击掌；免费版的数据设置；规则 4；第一次副歌（主旋律上逐字点亮）
 (() => {
 const R = (window.MV_W = window.MV_W || {});
@@ -23,19 +23,13 @@ R.f05a = K => window.MV_REAL(K, {
     const k = K.prog(L.b, S.t('buzz') + .3, S.t('buzz') + .5); if (k <= 0) return;
     x.globalAlpha = k; x.fillStyle = '#1e2028'; x.fillRect(0, 0, w, h);
     x.fillStyle = '#e8e9ee'; x.font = '300 64px "JetBrains Mono",monospace'; x.textAlign = 'center'; x.fillText('22:30', w / 2, 110); x.textAlign = 'left';
-    x.fillStyle = 'rgba(255,80,110,.25)'; x.beginPath(); x.roundRect(14, 170, w - 28, 130, 18); x.fill();
-    x.fillStyle = '#ffffff'; x.font = '700 22px "Noto Sans SC",sans-serif'; x.fillText('AI 编程助手 · 用量提醒', 30, 205);
-    x.font = '400 20px "Noto Sans SC",sans-serif'; x.fillText('本月额度已用 94%', 30, 245); x.fillStyle = '#ff6b8a'; x.fillRect(30, 268, (w - 60) * .94, 10);
+    K.phoneNote(x, w, { title: 'AI 编程助手 · 用量提醒', body: '本月额度已用 94%', size: 20, bg: 'rgba(255,80,110,.25)', bar: [.94, '#ff6b8a'] }); // 标题太宽会自动缩字号（以前伸出气泡右边）
     x.globalAlpha = 1;
   },
   draw(cx, tx, L, S) {
     const kp = K.prog(L.b, S.t('buzz') + .4, S.t('buzz') + .7, K.E.out) * (1 - K.prog(L.b, S.t('eh') - .3, S.t('eh')));
     if (kp > 0) K.alpha(tx, kp, () => {
-      const x = 560, y = 760 + (1 - kp) * 30;
-      K.rr(tx, x, y, 800, 150, 28, 'rgba(28,30,38,.9)', 'rgba(255,110,140,.5)', 2);
-      K.rr(tx, x + 28, y + 34, 56, 56, 14, '#ff4f7a'); K.txt(tx, '!', x + 56, y + 63, K.fnt(900, 36), '#fff', 'center');
-      K.txt(tx, 'AI 编程助手 · 用量提醒', x + 108, y + 52, K.fnt(700, 30), '#ffffff'); K.txt(tx, '现在', x + 760, y + 52, K.fnt(400, 24), 'rgba(255,255,255,.5)', 'right');
-      K.txt(tx, '本月额度已用 94%', x + 108, y + 104, K.fnt(500, 34), '#ffb3c4');
+      K.noteBar(tx, kp, { icon: '!', iconSize: 36, iconBg: '#ff4f7a', bg: 'rgba(28,30,38,.9)', border: 'rgba(255,110,140,.5)', title: 'AI 编程助手 · 用量提醒', body: '本月额度已用 94%', bodySize: 34, bodyCol: '#ffb3c4' });
     });
   },
   figure: (L, S) => ({ type: L.b >= S.t('eh') && L.b < S.t('eh') + .8 ? 1 : 0, yaw: K.prog(L.b, S.t('buzz') + .2, S.t('buzz') + .6) * -.5 * (1 - K.prog(L.b, S.t('eh') - .4, S.t('eh'))) }),
@@ -81,7 +75,13 @@ const S = seq([
   { id: 't2', say: '轻量：补全代码、改格式、简单重命名。', hold: .5 },
   { id: 'knob', say: '很多模型还能调「思考强度」：难题调高，机械性的修改调低。' },
   { id: 'knob2', say: '省时间，也省钱。', hold: .5 },
-  { id: 'bud', say: '订阅制有用量上限；按量付费的 API，记得设一个预算提醒。', gloss: ['API', '', '程序之间互相调用的接口。按量付费的 API：用多少，付多少。'], until: 'lb0', hold: .5 },
+  // 两种付费方式：订阅制（固定价、有上限）和按量付费的 API（没上限、用多少付多少），再落到预算提醒
+  { id: 'pay0', say: '付钱的方式，常见的有两种。' },
+  { id: 'sub', say: '一种是订阅制：每月固定交一笔钱，但用量有上限；用完了，要么等额度重置，要么被换成更慢的模型。', hold: .5 },
+  { id: 'api', say: '另一种是按量付费的 API：没有上限，用多少，付多少。', gloss: ['API', '', '程序之间互相调用的接口。按量付费的 API：用多少，付多少。'], until: 'lb0' },
+  { id: 'api2', say: 'Agent 一跑起来就是几十上百轮，账单也会跟着一路涨。', hold: .5 },
+  { id: 'pick', say: '写作业、日常练手，订阅制更省心；要接进自己写的程序，才需要 API。', hold: .5 },
+  { id: 'bud', say: '用 API 的话，一定要设一个预算提醒。', hold: .5 },
   { id: 'lb0', say: '排行榜，看看就好。' },
   { id: 'lb1', say: '分数受测试时用的工具影响，公开的题目也可能混进了训练数据。' },
   { id: 'lb2', say: '最靠谱的办法：拿你自己的真实任务，试两三个模型。', hold: .5 },
@@ -119,7 +119,7 @@ function trackAt(cx, X, Y, RX, RY, a1, lapA, lapB, labels, tt) {
 }
 return scene({
   scene: '05 霓虹 · 选模型和费用', look: LOOK.NEON,
-  desc: '用量条；每轮把前面全部重发；霓虹赛道上便宜的模型多绕几圈总价反超；三档模型；思考强度；预算提醒；排行榜；国内模型；换个模型；免费版的数据设置；规则 4；第一次副歌。',
+  desc: '用量条；每轮把前面全部重发；霓虹赛道上便宜的模型多绕几圈总价反超；三档模型；思考强度；订阅制和按量付费；预算提醒；排行榜；国内模型；换个模型；免费版的数据设置；规则 4；第一次副歌。',
   enter: { kind: TR.FLASH, a: 0, b: .75, flash: 1 },
   hud: { num: '05', name: '选模型和费用', time: '22:30', line: '额度没了？', ink: '#ffe7ff', acc: PK, mv: [2.1, 2.6] },
   par: L => { const b = L.b, race = raceOn(b) > .5, ref = b >= R0 && b < R0 + 8; return [b < t('r0') ? .22 : race ? .45 : ref ? .5 : .12, race || ref ? 1.2 : .35, .55, ref ? .5 : .78]; },
@@ -127,7 +127,7 @@ return scene({
   lb: L => .45 * (prog(L.b, R0 - .3, R0) * (1 - prog(L.b, R0 + 8, R0 + 8.3))),
   pulse: L => L.b >= R0 && L.b < R0 + 8 ? 1 : .4,
   sfx: [[t('q'), 'alarm'], [t('r0') + .3, 'blip', 900], [t('r1') + .1, 'buzz'], ...[0, 1, 2, 3].map(i => [t('r1') + .5 + i * .6, 'whoosh']), [RACE[0], 'zap'], ...[1, 2, 3, 4, 5].map(i => [lerp(RACE[0], RACE[1], i / 6), 'coin']), [lerp(RACE[0], RACE[1], 1 / 3), 'ding'], [t('race2') + .2, 'stamp'],
-    ...TIERS.map((_, i) => [t('t' + i), 'buzz']), [t('knob') + .3, 'blip', 1500], [t('knob') + 1, 'blip', 500], [t('bud') + .4, 'ding'], [t('lb0'), 'glitch'], [t('lb1') + .3, 'blip', 700], [t('lb1') + 1.3, 'blip', 700], ...MODELS.map((_, i) => [t('cn') + .3 + i * .4, 'buzz']),
+    ...TIERS.map((_, i) => [t('t' + i), 'buzz']), [t('knob') + .3, 'blip', 1500], [t('knob') + 1, 'blip', 500], [t('sub') + 2.2, 'buzz'], ...[0, 1, 2, 3, 4, 5].map(i => [t('api') + .5 + i * .45, 'coin']), [t('bud') + .4, 'ding'], [t('lb0'), 'glitch'], [t('lb1') + .3, 'blip', 700], [t('lb1') + 1.3, 'blip', 700], ...MODELS.map((_, i) => [t('cn') + .3 + i * .4, 'buzz']),
     [t('hi') + .5, 'swish'], [t('hi2') + .3, 'pop'], [t('hi2') + .3, 'sparkle'], [t('free') + .9, 'click'], [t('free2') + .3, 'ding'], [t('free2') + .9, 'blip', 600], [R0, 'sparkle']],
   text: TIERS.flatMap(x => [x[0], x[2], ...x[3]]).join('') + MODELS.join('') + '本月已用%第 1 轮第 2 轮第 3 轮第 4 轮≈ 1k3k6k10k tokens模型你以为：这一句你说的我回的这一轮新加的数字是示意A · 单价低B · 单价高绕 圈总价单价 1 × 6 圈 = 6.02.4 × 2 圈 = 4.8A 反超B 到终点✓思考强度难题机械活预算提醒排行榜#1#2#3?测试用的工具不同，分数就不同题目可能早被「背」过了你自己的真实任务× 两三个模型不少有包月的编程套餐模型 A模型 B⇄ 换一个设置 · 数据与隐私允许用我的对话改进模型开关课程练习一般没关系实习 / 公司代码按公司规定来',
   draw(cx, tx, L) {
@@ -141,6 +141,35 @@ return scene({
       alpha(cx, (lv > .85 ? (Math.floor(b * 8) % 2 ? .55 : 1) : 1) * .8, () => glow(cx, col, 14, () => rr(cx, x + 10, y + 10, (w - 20) * lv, 60, 8, col)));
       ntxt(cx, Math.round(lv * 100) + '%', x + w + 30, y + 40, fnt(900, 56, F.mono), col);
       if (b >= t('bud')) { const bx = x + w * .8, kb = prog(b, t('bud') + .4, t('bud') + .7); alpha(cx, kb, () => { glow(cx, YE, 16, () => seg(cx, bx, y - 24, bx, y + 104, YE, 5, [10, 8])); ntxt(cx, '预算提醒', bx, y + 150, fnt(900, 40), YE, 'center'); }); }
+    });
+    // ---------- 两种付费方式：订阅制 vs 按量付费 ----------
+    const kpay = prog(b, t('pay0'), t('pay0') + .3) * (1 - prog(b, t('bud') - .3, t('bud')));
+    if (kpay > 0) alpha(cx, kpay, () => { cx.save(); cx.translate(0, 30); TX.save(); TX.translate(0, 30); // 整体下移，让开左上角的 API 词条卡
+      // 左：订阅制。额度条涨满撞到上限，闪红，等重置 / 降速
+      const ks = prog(b, t('sub'), t('sub') + .3, E.out), fill = prog(b, t('sub') + .5, t('sub') + 2.2, E.io), full = fill >= 1;
+      alpha(cx, ks, () => {
+        nbox(cx, 310, 330, 620, 390, CY, 4, 18);
+        ntxt(cx, '订阅制', 620, 395, fnt(900, 52), CY, 'center'); ntxt(cx, '每月固定交一笔钱', 620, 455, fnt(700, 30), WH, 'center');
+        const col = full ? (Math.floor(b * 6) % 2 ? RD : YE) : CY;
+        nbox(cx, 370, 510, 500, 54, col, 3, 10); alpha(cx, .85, () => glow(cx, col, 12, () => rr(cx, 378, 518, 484 * fill, 38, 6, col)));
+        ntxt(cx, '用量上限', 870, 500, fnt(700, 22), GY, 'right');
+        if (full) alpha(cx, prog(b, t('sub') + 2.2, t('sub') + 2.5), () => { ntxt(cx, '额度用完', 620, 610, fnt(900, 36), RD, 'center'); ntxt(cx, '→ 等重置 · 或者降速', 620, 662, fnt(700, 28), YE, 'center'); });
+      });
+      // 右：按量付费。账单一直涨，没有上限；讲 Agent 多轮时涨得更快、变红
+      const ka = prog(b, t('api'), t('api') + .3, E.out), run = prog(b, t('api') + .3, t('pick'), E.in), bill = 3 + 220 * run * run + 40 * run;
+      alpha(cx, ka, () => {
+        nbox(cx, 990, 330, 620, 390, PK, 4, 18);
+        ntxt(cx, '按量付费 API', 1300, 395, fnt(900, 52), PK, 'center'); ntxt(cx, '用多少，付多少', 1300, 455, fnt(700, 30), WH, 'center');
+        const n = Math.min(14, Math.floor(1 + run * 14)), col = mixC(YE, RD, Math.min(1, run * 1.4));
+        for (let i = 0; i < n; i++) { const hgt = 10 + Math.pow(i / 13, 1.6) * 120; alpha(cx, .8, () => glow(cx, col, 10, () => rr(cx, 1040 + i * 26, 640 - hgt, 18, hgt, 3, col))); }
+        ntxt(cx, '本月账单', 1580, 530, fnt(700, 24), GY, 'right'); ntxt(cx, '¥ ' + bill.toFixed(2), 1580, 580, fnt(900, 36, F.mono), col, 'right');
+        ntxt(cx, '没有上限', 1580, 640, fnt(900, 26), RD, 'right');
+      });
+      // 选哪个
+      const kk = prog(b, t('pick'), t('pick') + .3, E.back);
+      if (kk > 0) { scaleAt(cx, 620, 768, kk, () => { nbox(cx, 420, 738, 400, 60, GR, 3, 30); ntxt(cx, '✓ 写作业 · 日常练手', 620, 768, fnt(900, 28), GR, 'center'); });
+        scaleAt(cx, 1300, 768, kk, () => { nbox(cx, 1100, 738, 400, 60, PU, 3, 30); ntxt(cx, '接进自己写的程序', 1300, 768, fnt(900, 28), PU, 'center'); }); }
+      TX.restore(); cx.restore();
     });
     // ---------- 你以为 vs 每轮重发 ----------
     const MX = 1600, MY = 520;
@@ -191,7 +220,7 @@ return scene({
       });
     }
     // ---------- 三档招牌 + 思考强度 ----------
-    const kt = prog(b, t('tier0'), t('tier0') + .2) * (1 - prog(b, t('bud') - .3, t('bud')));
+    const kt = prog(b, t('tier0'), t('tier0') + .2) * (1 - prog(b, t('pay0') - .3, t('pay0')));
     if (kt > 0) alpha(cx, kt, () => {
       const up = prog(b, t('knob'), t('knob') + .3, E.io);
       TIERS.forEach(([n, col, sub, tasks], i) => {
@@ -243,12 +272,13 @@ return scene({
     const hi = t('hi'), h2 = t('hi2');
     let st = { x: 1660, y: 780, px: 14, skin: 'neon', col: PK, glow: PK, pose: 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: -1 };
     if (b < t('r0')) { st.sweat = b; st.x = 1700; st.y = 760; }
-    if (b >= t('r0') && b < t('race0')) { st.x = 1760; st.y = 820; st.px = 11; }
-    if (kc > .3) { st.x = 560; st.y = 450; st.px = 9; st.eye = Math.sin(tt * 3) > 0 ? 1 : -1; }
-    if (b >= t('tier0') && b < t('bud')) st.alpha = 0;
-    if (b >= t('bud') && b < t('lb0')) { st.x = 1700; st.y = 800; }
+    if (b >= t('r0') && b < t('race0')) { st.x = 1760; st.y = 820; st.px = 11; st.alpha = 1 - prog(b, t('race0') - .3, t('race0')); }
+    // 整段比赛都待在赛道上，跟赛道一起淡入淡出（以前按 kc > .3 判断，淡出的尾巴里会闪回右下角）
+    if (b >= t('race0') && b < t('tier0')) { st.x = 560; st.y = 450; st.px = 9; st.eye = Math.sin(tt * 3) > 0 ? 1 : -1; st.alpha = kc; }
+    if (b >= t('tier0') && b < t('pay0')) st.alpha = 0;
+    if (b >= t('pay0') && b < t('lb0')) { st.x = 1700; st.y = 800; }
     if (b >= t('lb0') && b < t('hi')) { st.x = 1780; st.y = 820; st.px = 11; }
-    if (b >= hi && b < t('free')) { const k = prog(b, h2, h2 + .4, E.io); st.x = lerp(1660, 1010, k); st.y = 700; st.px = 18; st.pose = b >= h2 + .3 && b < h2 + .8 ? 'up' : 'idle'; st.eyeShape = b >= h2 + .4 && b < h2 + 1.2 ? 'happy' : null; }
+    if (b >= hi && b < t('free')) { const k = prog(b, h2, h2 + .4, E.io); st.x = lerp(1660, 1010, k); st.y = 700; st.px = 18; st.pose = b >= h2 + .3 && b < h2 + .8 ? 'upL' : 'idle'; /* 在右边，举左手朝向左边的 A */ st.eyeShape = b >= h2 + .4 && b < h2 + 1.2 ? 'happy' : null; }
     if (b >= t('free') && b < t('ref0')) { st.x = 1780; st.y = 840; st.px = 11; }
     if (b >= t('ref0')) { st.x = 960; st.y = 640; st.px = 12; st.alpha = 1 - kref * .0; if (b >= R0) { st.pose = Math.floor(b * 2) % 2 ? 'up' : 'idle'; st.eyeShape = 'happy'; } }
     clawd(cx, st);

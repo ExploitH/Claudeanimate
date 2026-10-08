@@ -36,7 +36,8 @@ const CODE = ['function login(user, pwd) {', 'if (!user) return null;', 'const h
   'catch (e) { /* ??? */ }', '} else {', 'export default App;', 'if (tries > 5) lock();', 'res.json({ ok: true })'];
 const CPOS = CODE.map((_, i) => [120 + hash(i * 3.7) * 1500, 140 + ((i * 83) % 820), .3 + hash(i * 1.3) * .7]);
 const QUOTE = [['“fully give in to the vibes,', '完全顺着感觉走'], ['embrace exponentials,', '拥抱指数级增长——相信 AI 会越来越强'], ['and forget that the code even exists.”', '忘掉代码的存在']];
-const BUB = [['周末 demo', 300], ['小游戏', 620], ['随手脚本', 1300], ['一次性网页', 1620]];
+// 四个泡泡在标题下方均匀排开、高低错开；最右一个让开右下角的 Clawd
+const BUB = [['周末 demo', 390, 640], ['小游戏', 740, 730], ['随手脚本', 1090, 640], ['一次性网页', 1410, 720]];
 const AX = { x0: 220, x1: 1700, y: 760 }, TK = [['作业', .45], ['给别人用', .72], ['上线', 1]];
 const S = seq([
   { id: 'post', say: '2025 年 2 月，有人在网上发了一条帖子。' },
@@ -67,14 +68,17 @@ const S = seq([
   { id: 'left', say: '最左边，是玩完就扔的小玩具。' },
   { id: 'right', say: '往右走：作业、给别人用的程序、上线的服务。', hold: .5 },
   { id: 'cost', say: '越往右，出错的代价越大，越不能光凭感觉。', hold: .5 },
-  { id: 'pin', say: '今晚的任务，在这儿：它是作业，在右边。', hold: .5 },
+  { id: 'pin', say: '今晚的任务，在这儿：它是作业，已经不是随手扔的玩具了。', hold: .5 },
   { id: 'rule', rule: [1, '先判断这个项目在轴的哪一端'], dur: 3.5 },
 ], { start: 2.8, tail: .5 });
 const t = S.t, e = S.e;
 const QAT = [t('q2'), t('q3'), t('q4')];
 const melt = b => prog(b, t('q4') + .4, t('q4') + 2.2, E.in) * (1 - prog(b, t('checks') - .2, t('checks')));
 const CHK = [['审过', 0, 560], ['测过', .9, 960], ['能讲清', 1.8, 1360]].map(([w, d, x]) => [w, t('checks') + .3 + d, x]);
-const crystal = b => b < t('axis') ? prog(b, t('checks'), t('checks') + .5, E.out) : lerp(.15, 1, slider(b));
+// 进项目轴以后冰裂纹只留一点底：轴上的意思改由「摔碎的代价」那四样东西来讲
+const crystal = b => b < t('axis') ? prog(b, t('checks'), t('checks') + .5, E.out) : .15;
+// 项目轴每一档上方吊着的东西：出错时摔碎的是什么、代价多大
+const HANG = [[0, 'bubble', '破了没事', '#ffd6f5'], [.45, 'book', '挨扣分', '#ffcf8a'], [.72, 'glass', '别人用不了', '#ff9a7a'], [1, 'server', '线上事故', '#ff5a6a']];
 function slider(b) { // 滑块：左 → 作业 → 给别人用 → 上线，再退回作业
   const a = t('right'), c = t('pin');
   if (b < a) return 0;
@@ -88,7 +92,7 @@ function slider(b) { // 滑块：左 → 作业 → 给别人用 → 上线，�
 }
 const bubK = (b, i) => prog(b, t('week') + .3 + i * .35, t('week') + 2.2 + i * .3, E.out);
 const bubPop = i => t('pop') + .3 + i * .5;
-function bubPos(b, tt, i) { const [, x] = BUB[i], k = bubK(b, i); return { k, x: x + Math.sin(tt * 1.3 + x) * 14, y: lerp(1200, 560 + (i % 2) * 120, k) + Math.sin(tt * 2 + x) * 10 }; }
+function bubPos(b, tt, i) { const [, x, y] = BUB[i], k = bubK(b, i); return { k, x: x + Math.sin(tt * 1.3 + x) * 14, y: lerp(1200, y, k) + Math.sin(tt * 2 + x) * 10 }; }
 // 晶体簇：冻结时沿四周析出；进项目轴后右后方越长越多
 const XT = [[150, 600, -200, .8, 0], [330, 930, -150, .9, .5], [720, 960, -300, .7, 1], [1180, 950, -250, .8, 1.5], [1790, 520, -250, .8, .2], [1350, 990, -150, .6, 1.2],
   ...Array.from({ length: 8 }, (_, i) => [1180 + i * 95 + hash(i * 3.1) * 40, 420 + hash(i * 1.7) * 220 - i * 12, -900 - hash(i * 2.9) * 600, .9 + i * .1, 0])];
@@ -147,7 +151,8 @@ return scene({
         const s = slider(b);
         xtals.forEach((g, i) => {
           const { x, y, z, d } = g.userData, isW = i < NW;
-          const k = isW ? prog(b, t('checks') + d, t('checks') + d + .4, E.out) * (1 - prog(b, t('axis') - .3, t('axis'))) : prog(b, t('axis'), t('axis') + .5, E.out) * prog(s, (i - NW) / 8 * .9, (i - NW) / 8 * .9 + .15);
+          // 只留「审过、测过、能讲清」时冻出来的那一圈；项目轴后面那团晶体不再长（意思讲不清，改成轴上吊着的四样东西）
+          const k = isW ? prog(b, t('checks') + d, t('checks') + d + .4, E.out) * (1 - prog(b, t('axis') - .3, t('axis'))) : 0;
           g.visible = k > .001; if (!g.visible) return; any = true;
           U.at(g, x, y, z); g.rotation.y = tt * .25 + i; g.rotation.x = .2 * Math.sin(tt * .3 + i);
           g.children.forEach(m => { const kk = U.back(prog(k, m.userData.d, m.userData.d + .7)); m.visible = kk > .01; m.material.opacity = .7 * Math.min(1, kk); });
@@ -210,13 +215,13 @@ return scene({
     });
     // ---------- 「火到什么程度」：这个词越冒越多；「问题跟着来」：变成问号 ----------
     const kfr = prog(b, t('dict0'), t('dict0') + .3) * (1 - prog(b, t('ask0') - .2, t('ask0') + .2));
-    if (kfr > 0) alpha(tx, kfr, () => {
+    // 画在内容层、词典卡之前：卡片出来时直接盖住它们（以前在文字层，只好把卡片区域里的字瞬间藏掉、卡片走了再瞬间放回来）
+    if (kfr > 0) alpha(cx, kfr, () => {
       const n = Math.floor(6 + 34 * prog(b, t('dict0'), t('dict0') + 3)), q = prog(b, t('prob'), t('prob') + 1, E.io);
       for (let i = 0; i < n; i++) {
         const x = 120 + hash(i * 2.7) * 1680, y = 140 + hash(i * 5.1) * 700 + Math.sin(tt * .8 + i) * 12, s = 20 + hash(i * 9.3) * 26;
-        if (b >= t('dict') - .2 && b < t('prob') && x > 540 && x < 1340 && y > 220 && y < 700) continue; // 给词典卡留位置
         const isQ = hash(i * 13.7) < q;
-        alpha(tx, .25 + .35 * hash(i * 4.4), () => txt(tx, isQ ? '?' : 'vibe coding', x, y, isQ ? fnt(900, s * 1.8, F.serif) : fnt(600, s, F.serif), mixC('#ffd6f5', '#bdf3ff', hash(i * 6.6)), 'center'));
+        alpha(cx, .25 + .35 * hash(i * 4.4), () => txt(cx, isQ ? '?' : 'vibe coding', x, y, isQ ? fnt(900, s * 1.8, F.serif) : fnt(600, s, F.serif), mixC('#ffd6f5', '#bdf3ff', hash(i * 6.6)), 'center'));
       }
     });
     // ---------- Simon Willison 的人物卡 ----------
@@ -246,11 +251,13 @@ return scene({
       });
     });
     // ---------- 肥皂泡上的字 ----------
+    // 字画在内容层、而且在 3D 泡泡之后画：梦境滤镜会让内容层轻微漂移，字在文字层就会和泡泡错开（以前偏出泡泡边缘）
+    if (b >= t('week') && b < bubPop(BUB.length - 1) + .5) K.three(cx, L);
     BUB.forEach(([s0], i) => {
       const p = bubPos(b, tt, i), pop = prog(b, bubPop(i), bubPop(i) + .45, E.out);
       if (p.k <= 0 || pop >= 1) return;
       if (!window.THREE) alpha(cx, 1 - pop, () => circ(cx, p.x, p.y, 96, rgba('#ffffff', .06), '#ffb3e6', 4));
-      alpha(tx, Math.min(1, p.k * 2) * (1 - Math.min(1, pop * 2.5)), () => txt(tx, s0, p.x, p.y, fnt(700, 30), '#ffffff', 'center'));
+      alpha(cx, Math.min(1, p.k * 2) * (1 - Math.min(1, pop * 2.5)), () => { cx.save(); cx.shadowColor = 'rgba(30,8,50,.9)'; cx.shadowBlur = 14; txt(cx, s0, p.x, p.y + 4, fnt(800, 30), '#ffffff', 'center'); cx.restore(); });
     });
     // ---------- 柯林斯词典 ----------
     const kd = prog(b, t('dict'), t('dict') + .35, E.back) * (1 - prog(b, t('prob') + .2, t('prob') + .6, E.in));
@@ -289,6 +296,24 @@ return scene({
         TK.forEach(([n, p]) => { const x = AX.x0 + len * p, lit = s >= p - 1e-3, kv = prog(b, t('right'), t('right') + .3); cx.fillStyle = lit ? '#ffffff' : rgba('#ffffff', .35); cx.fillRect(x - 3, AX.y - 18, 6, 36); alpha(cx, kv, () => txt(cx, n, x, AX.y + 58, fnt(lit ? 900 : 500, 32), lit ? '#ffffff' : rgba('#ffffff', .55), 'center')); });
         const kr = prog(b, t('cost'), t('cost') + .4);
         if (kr > 0) alpha(cx, kr, () => { K.arrow(cx, AX.x0 + 200, AX.y - 120, AX.x1 - 80, AX.y - 120, rgba('#9fd8ff', .8), 4, 18); txt(cx, '出错的代价越来越大', (AX.x0 + AX.x1) / 2 + 60, AX.y - 150, fnt(700, 30), '#d9ecff', 'center'); });
+        // 每一档上方吊着一样东西：滑块走到就落下来；滑块停在哪一档，那样东西就晃、发红光（越往右越红）；讲「代价」时下面浮出摔碎的代价
+        const kcost = prog(b, t('cost'), t('cost') + .4), kpin = prog(b, t('pin'), t('pin') + .4);
+        HANG.forEach(([p, kind, cost, col], i) => {
+          const x = AX.x0 + len * p;
+          const kin = i === 0 ? prog(b, t('left'), t('left') + .4, E.back) : prog(s, p - .06, p, E.lin) || (b >= t('pin') ? 1 : 0);
+          if (kin <= 0) return;
+          const here = 1 - Math.min(1, Math.abs(s - p) / .08), heat = here * (.35 + .65 * p), top = 100, cy = lerp(-120, 300, E.back(Math.min(1, kin)));
+          const sw = Math.sin(tt * 1.3 + i * 2) * .025 + here * Math.sin(tt * 7) * (.06 + .1 * p);
+          alpha(cx, 1 - .5 * kpin * (i === 1 ? 0 : 1), () => rotAt(cx, x, top, sw, () => {
+            seg(cx, x, top, x, cy - 52, rgba('#ffffff', .45), 2);
+            if (heat > .02) { const g = cx.createRadialGradient(x, cy, 10, x, cy, 120); g.addColorStop(0, rgba('#ff3d5a', .55 * heat * (.75 + .25 * Math.sin(tt * 8)))); g.addColorStop(1, rgba('#ff3d5a', 0)); cx.fillStyle = g; cx.fillRect(x - 120, cy - 120, 240, 240); }
+            if (kind === 'bubble') { circ(cx, x, cy, 46, rgba('#ffffff', .06), '#ffb3e6', 3); cx.strokeStyle = rgba('#bdf3ff', .8); cx.lineWidth = 4; cx.beginPath(); cx.arc(x, cy, 34, Math.PI * 1.1, Math.PI * 1.45); cx.stroke(); }
+            if (kind === 'book') { [0, 1, 2].forEach(j => rr(cx, x - 52 + j * 4, cy + 22 - j * 22, 104, 20, 3, ['#7ca3ff', '#ffcf8a', '#f07178'][j], '#1a1030', 2)); txt(cx, '作业', x + 8, cy - 12, fnt(900, 14), '#1a1030', 'center'); }
+            if (kind === 'glass') { cx.fillStyle = rgba('#bdf3ff', .18); cx.strokeStyle = '#d9f6ff'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(x - 36, cy - 48); cx.lineTo(x + 36, cy - 48); cx.lineTo(x + 26, cy + 48); cx.lineTo(x - 26, cy + 48); cx.closePath(); cx.fill(); cx.stroke(); cx.fillStyle = rgba('#9fd8ff', .45); cx.beginPath(); cx.moveTo(x - 31, cy - 8); cx.lineTo(x + 31, cy - 8); cx.lineTo(x + 26, cy + 46); cx.lineTo(x - 26, cy + 46); cx.closePath(); cx.fill(); }
+            if (kind === 'server') { rr(cx, x - 44, cy - 52, 88, 104, 6, '#22283a', '#9fb3d9', 3); for (let j = 0; j < 4; j++) { rr(cx, x - 34, cy - 42 + j * 24, 68, 16, 3, '#2f3850'); circ(cx, x + 24, cy - 34 + j * 24, 4, here > .5 && Math.floor(tt * 6 + j) % 2 ? '#ff4a5a' : '#5fe08a'); } }
+            if (kcost > 0) alpha(cx, kcost, () => txt(cx, cost, x, cy + 84, fnt(800, 28), col, 'center'));
+          }));
+        });
         circ(cx, sx, AX.y, 24, '#1a1030'); circ(cx, sx, AX.y, 16, mixC('#ffb3e6', '#9fd8ff', s));
       });
       const kc = prog(b, t('pin'), t('pin') + .4, E.out);

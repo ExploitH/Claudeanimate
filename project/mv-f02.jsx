@@ -29,7 +29,7 @@ R.f02a = K => window.MV_REAL(K, {
     S.add('rain', 0, 0, 0, w.m.bars * 4, 1);
     S.add('pad', 0, 0, H.CH.Dm.pad, 6, .35, 'string');
     S.add('kick', Math.floor(M.t('no')), 0, 0, 0, .5, 'heart'); S.add('kick', Math.floor(M.t('no')) + 1, 0, 0, 0, .5, 'heart');
-    S.add('mute', M.t('no') + 2.3, 0, 0, 1.2);
+    S.add('mute', M.t('no') + 2.3, 0, 0, 1.6); // 一直静到雷声（no + 2.7）落下，雨声和雷一起回来；短了中间会漏 0.2 秒雨声，像掉音
     S.add('piano', M.t('no') + 2.7, 0, [38, 50], 6, .6);
     S.add('pad', Math.ceil(M.t('huh')), 0, H.CH.Bb.pad, 8, .35, 'dark');
     S.add('riser', Math.floor(M.t('push')), 0, 0, 6, .5);
@@ -87,14 +87,16 @@ const OX = 1330, OY = 600; // 讲循环时轨道的位置（窗口挪到左边�
 const LPk = b => prog(b, t('loop') - .4, t('loop') + .5, E.io) * (1 - prog(b, t('rot') - .3, t('rot') + .5, E.io));
 const geo = b => { const sh = prog(b, SH, SH + .6, E.io), lp = LPk(b); return { sh, lp, wx: lerp(lerp(WC[0], 480, lp), 560, sh), wr: WR * (1 - .25 * sh) * (1 - .2 * lp) }; };
 const NB = [t('n0'), t('n1'), t('n2'), t('n3')];
-const LAP0 = t('n0'), LAPF = t('again') + .2;
+// 快速转圈从走到「看结果」之后的第一个小节线开始，跟铃声（每拍一个节点）同时起，不让 Clawd 干站一小节
+const LAP0 = t('n0'), LAPF = Math.ceil(t('n3') + .4);
 // 节点：讲解时一个一个亮；「一圈一圈」时一拍一个快速转
 function nodeOn(b) {
   if (b < LAP0 || b >= t('rot')) return -1;
   if (b < LAPF) { let k = -1; NB.forEach((a, i) => { if (b >= a) k = i; }); return k; }
   return ((Math.floor((b - LAPF) * 4) % 4) + 4) % 4;
 }
-function clawdAng(b) { const q = (b - LAPF) * 4; return -Math.PI / 2 + (Math.floor(q) + prog(q % 1, 0, .5, E.io)) * Math.PI / 2; }
+// 每拍从上一个节点走到当前亮的节点；第一拍从「看结果」接着走到「读文件」（以前这里会直接跳过去）
+function clawdAng(b) { const q = (b - LAPF) * 4; return -Math.PI / 2 + (Math.floor(q) - 1 + prog(q % 1, 0, .5, E.io)) * Math.PI / 2; }
 function angAt(b) { // 讲解阶段：走到当前节点
   if (b >= LAPF) return clawdAng(b);
   const k = nodeOn(b); if (k <= 0) return -Math.PI / 2;
@@ -231,7 +233,11 @@ return scene({
       if (!has3d) { rr(cx, wx + 60, wy - 230, 190, 120, 12, '#dfefff', '#9fd8ff', 3); txt(cx, '训练截止', wx + 155, wy - 213, fnt(700, 20), '#0b1020', 'center'); }
     });
     const kcal = prog(b, t('cut') + .2, t('cut') + .6) * (1 - prog(b, t('ag0') - .3, t('ag0')));
-    if (kcal > 0 && has3d) alpha(tx, kcal, () => { txt(tx, '训练截止', wx + 30, wy - 152, fnt(900, 30), '#0b1020', 'center'); txt(tx, '❄', wx + 30, wy - 105, fnt(400, 40), '#4a7fd0', 'center'); });
+    // 雪花用线条画：以前是 ❄ 字符，40px 浅蓝细笔画压在浅色卡片上几乎看不见，而且看字体
+    const flake = (ctx, x, y, r, col) => { ctx.save(); ctx.translate(x, y); ctx.rotate(tt * .3); ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.lineWidth = r * .16;
+      for (let i = 0; i < 6; i++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -r); for (const [d, s] of [[.45, .3], [.72, .22]]) { ctx.moveTo(0, -r * d); ctx.lineTo(-r * s, -r * d - r * s * .8); ctx.moveTo(0, -r * d); ctx.lineTo(r * s, -r * d - r * s * .8); } ctx.stroke(); }
+      ctx.restore(); };
+    if (kcal > 0 && has3d) alpha(tx, kcal, () => { txt(tx, '训练截止', wx + 30, wy - 152, fnt(900, 30), '#0b1020', 'center'); flake(tx, wx + 30, wy - 98, 24 * Math.max(.01, prog(b, t('cut') + .4, t('cut') + .8, E.back)), '#1f5fd0'); });
     // Clawd：宇航员
     const lapping = b >= t('n0') && b < t('rot'), ang = angAt(b);
     let st = { x: wx, y: wy + 40 + Math.sin(tt * 1.4) * 10, px: 15, hat: 'helmet', pose: 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: 1, rot: Math.sin(tt * .7) * .08 };

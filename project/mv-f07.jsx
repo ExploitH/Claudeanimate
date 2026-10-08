@@ -425,18 +425,20 @@ return scene({
   music(Sm, H, w) {
     const B = w.m.bars, PD = H.PD, CH = H.CH;
     Sm.add('kick', 0, 0, 0, 0, 1, 'chip');
-    const g0 = Math.floor(t('go')), g1 = Math.ceil(t('learn0'));
+    // 冻结（go）那一刻鼓和贝斯停，暂停期间只留铺底，learn0 之后的小节线回来。按音符的实际时间判断，不按整小节：
+    // 以前从 go 所在小节的开头就停、铺底等到 cont 之后的小节线才进，中间两小节多一点什么都没有
+    const go = t('go'), g1 = Math.ceil(t('learn0')), on = (b, bt) => { const at = b + bt / 4; return at < go || at >= g1; };
     H.each(0, B, b => {
-      if (b >= g0 && b < g1) return;
       const c = CH[PD[b % 4]], soft = b >= g1 ? .55 : .8;
-      [0, 2, 2.5].forEach(bt => Sm.add('kick', b, bt, 0, 0, .9 * soft, 'chip'));
-      [1, 3].forEach(bt => Sm.add('snare', b, bt, 0, 0, .9 * soft, 'chip'));
-      for (let j = 0; j < 8; j++) Sm.add('hat', b, j / 2, 0, 0, .45 * soft, 'chip');
-      [0, .5, 1, 1.5, 2, 2.5, 3, 3.5].forEach((bt, j) => Sm.add('bass', b, bt, c.r + 12 + (j % 2 ? 12 : 0), .45, .7 * soft, 'chip'));
-      for (let j = 0; j < 16; j++) Sm.add('chiparp', b, j / 4, c.arp[j % 3] + 12, .22, .55 * soft);
+      [0, 2, 2.5].forEach(bt => on(b, bt) && Sm.add('kick', b, bt, 0, 0, .9 * soft, 'chip'));
+      [1, 3].forEach(bt => on(b, bt) && Sm.add('snare', b, bt, 0, 0, .9 * soft, 'chip'));
+      for (let j = 0; j < 8; j++) on(b, j / 2) && Sm.add('hat', b, j / 2, 0, 0, .45 * soft, 'chip');
+      [0, .5, 1, 1.5, 2, 2.5, 3, 3.5].forEach((bt, j) => on(b, bt) && Sm.add('bass', b, bt, c.r + 12 + (j % 2 ? 12 : 0), .45, .7 * soft, 'chip'));
+      for (let j = 0; j < 16; j++) on(b, j / 4) && Sm.add('chiparp', b, j / 4, c.arp[j % 3] + 12, .22, .55 * soft);
     });
-    // 暂停那几小节：只留一层低低的铺底
-    H.pads(Sm, Math.ceil(t('cont')), g1, PD, 'warm', .4);
+    // 暂停那几小节：只留一层低低的铺底，冻结那一刻就接上（先补上冻结所在小节剩下的部分）
+    const gb = Math.floor(go); Sm.add('pad', gb, (go - gb) * 4, CH[PD[gb % 4]].pad, (gb + 1 - go) * 4, .4, 'warm');
+    H.pads(Sm, gb + 1, g1, PD, 'warm', .4, gb + 1);
     H.hook(Sm, Math.ceil(t('map0')), 'chip', 0, 0, 8, .8);
     H.hook(Sm, g1, 'chip', 0, 0, 4, .45);
   },

@@ -77,13 +77,19 @@ function drawScreen(x, w, h, L, cfg, chat, S) {
   x.font = '500 15px "JetBrains Mono",monospace'; x.fillStyle = '#9aa0ab'; x.fillText('library-system — UserService.java', 90, 22);
   // 左边代码
   const cw = w * .58; x.fillStyle = '#1a1b21'; x.fillRect(0, 34, 46, h - 34);
-  const lines = cfg.code || CODE, scroll = cfg.codeScroll ? cfg.codeScroll(L, S) : 0;
+  const lines = cfg.code || CODE;
+  // codeTyped(L, S) → 已经写出来的字数：代码一个字一个字打出来，末尾带光标，写到屏幕底部就跟着往上滚（不给就整段直接显示）
+  const typed = cfg.codeTyped ? Math.max(0, cfg.codeTyped(L, S)) : Infinity;
+  let cur = -1, curN = 0; { let left = typed; for (let i = 0; i < lines.length; i++) { if (left <= lines[i].length) { cur = i; curN = Math.floor(left); break; } left -= lines[i].length + 1; } }
+  const scroll = cfg.codeScroll ? cfg.codeScroll(L, S) : cur >= 0 ? Math.max(0, 64 + cur * 26 - (h - 60)) : 0;
   x.save(); x.beginPath(); x.rect(0, 34, cw, h - 34); x.clip();
   lines.forEach((l, i) => {
+    if (cur >= 0 && i > cur) return;
     const y = 64 + i * 26 - scroll; if (y < 30 || y > h + 20) return;
     x.fillStyle = '#4a4e5a'; x.font = '400 15px "JetBrains Mono",monospace'; x.fillText(String(i + 1), 12, y);
     x.fillStyle = /\/\//.test(l) ? '#6b7280' : /public|private|return|if|final|class|new/.test(l) ? '#c792ea' : '#d6d9e0';
-    x.font = '400 16px "JetBrains Mono",monospace'; x.fillText(l, 58, y);
+    x.font = '400 16px "JetBrains Mono",monospace'; const s = i === cur ? l.slice(0, curN) : l; x.fillText(s, 58, y);
+    if (i === cur && Math.floor(t * 3) % 2 === 0) { x.fillStyle = '#d6d9e0'; x.fillRect(58 + x.measureText(s).width + 1, y - 14, 9, 18); }
   });
   if (cfg.codeOverlay) cfg.codeOverlay(x, cw, h, L, S);
   x.restore();
@@ -132,10 +138,10 @@ function build(T) {
   box(300 + WX - WW / 2, WH, 12, wallM, (-300 + WX - WW / 2) / 2, WY, WZ - 6, false);
   box(300 - WX - WW / 2, WH, 12, wallM, (300 + WX + WW / 2) / 2, WY, WZ - 6, false);
   box(12, 300, 600, std('#262a34', { roughness: .95 }), -300, 150, 100, false);
-  // 窗框、窗台
+  // 窗框、窗台：每根都比墙洞多伸进去 1 cm、前后比墙多凸出来，不跟墙面共面（共面会 z-fighting，镜头一动就闪）
   const frameM = std('#8d8a84', { roughness: .6 });
-  box(WW + 12, 6, 16, frameM, WX, WY - WH / 2 - 3, WZ - 2); box(WW + 12, 6, 14, frameM, WX, WY + WH / 2 + 3, WZ - 6);
-  box(6, WH, 14, frameM, WX - WW / 2 - 3, WY, WZ - 6); box(6, WH, 14, frameM, WX + WW / 2 + 3, WY, WZ - 6); box(4, WH, 6, frameM, WX, WY, WZ - 6);
+  box(WW + 16, 7, 18, frameM, WX, WY - WH / 2 - 2.5, WZ - 2); box(WW + 16, 8, 16, frameM, WX, WY + WH / 2 + 3, WZ - 6);
+  box(8, WH, 15, frameM, WX - WW / 2 - 3, WY, WZ - 6); box(8, WH, 15, frameM, WX + WW / 2 + 3, WY, WZ - 6); box(4, WH, 6, frameM, WX, WY, WZ - 6);
   // 窗外城市（远处一块大画）
   const city = canvasTex(T, 1024, 512); drawCity(city.x, 1024, 512, 0);
   const cityM = new T.MeshBasicMaterial({ map: city.t, fog: false });

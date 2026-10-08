@@ -31,9 +31,7 @@ return window.MV_REAL(K, {
     if (k <= 0) return;
     x.fillStyle = `rgba(30,32,40,${k})`; x.fillRect(0, 0, w, h);
     x.globalAlpha = k; x.fillStyle = '#e8e9ee'; x.font = '300 64px "JetBrains Mono",monospace'; x.textAlign = 'center'; x.fillText('21:00', w / 2, 110); x.textAlign = 'left';
-    x.fillStyle = 'rgba(255,255,255,.14)'; x.beginPath(); x.roundRect(14, 170, w - 28, 120, 18); x.fill();
-    x.fillStyle = '#ffffff'; x.font = '700 22px "Noto Sans SC",sans-serif'; x.fillText(PHONE_MSG[0], 30, 205);
-    x.font = '400 19px "Noto Sans SC",sans-serif'; x.fillText('听说现在用 AI 写代码，', 30, 240); x.fillText('半小时就能搞定一个功能？', 30, 268);
+    K.phoneNote(x, w, { title: PHONE_MSG[0], body: PHONE_MSG[1] });
     x.globalAlpha = 1;
   },
   sfx: S => [[.3, 'thunder'], [S.t('phone') + .4, 'notify'], [S.t('sit') + .2, 'click'], [S.t('sit') + 1, 'beep', 880], [S.t('title'), 'whoosh']],
@@ -47,11 +45,7 @@ return window.MV_REAL(K, {
     // 手机通知的放大版，方便看清
     const kp = prog(b, S.t('phone') + .5, S.t('phone') + .8, E.out) * (1 - prog(b, S.t('sit') - .3, S.t('sit')));
     if (kp > 0) alpha(tx, kp, () => {
-      const x = 560, y = 760 + (1 - kp) * 30;
-      rr(tx, x, y, 800, 150, 28, 'rgba(28,30,38,.88)', 'rgba(255,255,255,.12)', 2);
-      rr(tx, x + 28, y + 34, 56, 56, 14, '#4f8f6b'); txt(tx, '室', x + 56, y + 63, fnt(900, 30), '#fff', 'center');
-      txt(tx, PHONE_MSG[0], x + 108, y + 52, fnt(700, 30), '#ffffff'); txt(tx, '现在', x + 760, y + 52, fnt(400, 24), 'rgba(255,255,255,.5)', 'right');
-      txt(tx, PHONE_MSG[1], x + 108, y + 104, fnt(500, 32), 'rgba(255,255,255,.92)');
+      K.noteBar(tx, kp, { icon: '室', iconBg: '#4f8f6b', title: PHONE_MSG[0], body: PHONE_MSG[1] });
     });
     // 便利贴的放大字（3D 里也能看见，这里再给一行）
     const kn = prog(b, S.t('note') + .6, S.t('note') + 1) * (1 - prog(b, S.t('phone') - .3, S.t('phone')));

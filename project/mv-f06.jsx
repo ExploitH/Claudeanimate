@@ -27,19 +27,13 @@ R.f06a = K => window.MV_REAL(K, {
     const k = K.prog(L.b, S.t('buzz') + .3, S.t('buzz') + .5); if (k <= 0) return;
     x.globalAlpha = k; x.fillStyle = '#1e2028'; x.fillRect(0, 0, w, h);
     x.fillStyle = '#e8e9ee'; x.font = '300 64px "JetBrains Mono",monospace'; x.textAlign = 'center'; x.fillText('23:00', w / 2, 110); x.textAlign = 'left';
-    x.fillStyle = 'rgba(255,255,255,.14)'; x.beginPath(); x.roundRect(14, 170, w - 28, 130, 18); x.fill();
-    x.fillStyle = '#ffffff'; x.font = '700 22px "Noto Sans SC",sans-serif'; x.fillText('室友', 30, 205);
-    x.font = '400 19px "Noto Sans SC",sans-serif'; x.fillText('我用的同一个模型，', 30, 240); x.fillText('一次就写完了。', 30, 268);
+    K.phoneNote(x, w, { title: '室友', body: '我用的同一个模型，一次就写完了。' });
     x.globalAlpha = 1;
   },
   draw(cx, tx, L, S) {
     const kp = K.prog(L.b, S.t('buzz') + .4, S.t('buzz') + .7, K.E.out) * (1 - K.prog(L.b, S.t('why') - .3, S.t('why')));
     if (kp > 0) K.alpha(tx, kp, () => {
-      const x = 560, y = 760 + (1 - kp) * 30;
-      K.rr(tx, x, y, 800, 150, 28, 'rgba(28,30,38,.88)', 'rgba(255,255,255,.12)', 2);
-      K.rr(tx, x + 28, y + 34, 56, 56, 14, '#4f8f6b'); K.txt(tx, '室', x + 56, y + 63, K.fnt(900, 30), '#fff', 'center');
-      K.txt(tx, '室友', x + 108, y + 52, K.fnt(700, 30), '#ffffff'); K.txt(tx, '现在', x + 760, y + 52, K.fnt(400, 24), 'rgba(255,255,255,.5)', 'right');
-      K.txt(tx, '我用的同一个模型，一次就写完了。', x + 108, y + 104, K.fnt(500, 32), 'rgba(255,255,255,.92)');
+      K.noteBar(tx, kp, { icon: '室', iconBg: '#4f8f6b', title: '室友', body: '我用的同一个模型，一次就写完了。' });
     });
   },
   figure: (L, S) => ({ type: L.b >= S.t('why') && L.b < S.t('why') + .8 ? 1 : 0, lean: K.prog(L.b, S.t('huh'), S.t('huh') + .3) * .4, yaw: K.prog(L.b, S.t('buzz') + .2, S.t('buzz') + .6) * -.5 * (1 - K.prog(L.b, S.t('why') - .4, S.t('why'))) }),
@@ -170,11 +164,20 @@ return scene({
       });
       alpha(tx, k1, () => { txt(tx, '同一个模型', 960, 545, fnt(900, 36), YE, 'center'); arrow(tx, 960, 515, 960, 360, rgba(YE, .7), 3, 12); arrow(tx, 960, 575, 960, 720, rgba(YE, .7), 3, 12); });
     });
-    const kh = prog(b, t('layer') + .3, t('hn') + .5, E.lin);
-    if (kh > 0) { cx.save(); cx.beginPath(); cx.rect(0, 0, 200 + 1600 * kh, 1080); cx.clip(); txt(cx, 'HARNESS', 960, 560, fnt(400, 300, F.display), WL, 'center'); cx.restore(); circ2(cx, 200 + 1600 * kh, 640); }
+    // HARNESS 写完后（留着读词条卡的这几小节）：大字缩到上面，中间亮出发动机 = 模型，再在外面描出整辆车 = harness，接下一场的 3D 拆车
+    const H0 = t('hn') + .5, ks = prog(b, H0 + .25, H0 + .75, E.io);
+    const kh = prog(b, t('layer') + .3, H0, E.lin);
+    if (kh > 0) { cx.save(); cx.beginPath(); cx.rect(0, 0, 200 + 1600 * kh, 1080); cx.clip(); txt(cx, 'HARNESS', 960, lerp(560, 250, ks), fnt(400, lerp(300, 140, ks), F.display), WL, 'center'); cx.restore(); alpha(cx, 1 - ks, () => circ2(cx, 200 + 1600 * kh, 640)); }
     function circ2(ctx, x, y) { K.circ(ctx, Math.min(x, 1800), y, 8, YE); }
+    const ke = prog(b, H0 + .6, H0 + .9, E.out), kc = prog(b, H0 + 1.2, H0 + 2, E.io), kl = prog(b, H0 + 1.9, H0 + 2.2);
+    // 车画完以后发动机在转：轻轻抖，车尾冒尾气，不让画面干停着
+    const run = kl, ey = 620 + run * Math.sin(tt * 40) * 2;
+    if (ke > 0) alpha(cx, ke, () => { K.scaleAt(cx, 960, ey, lerp(.6, 1, ke), () => engine2(K, cx, 960, ey, .8, YE)); alpha(tx, ke, () => txt(tx, '模型', 960, ey, fnt(900, 34), YE, 'center')); });
+    if (kc > 0) { cx.save(); cx.beginPath(); cx.rect(0, 0, 440 + 1040 * kc, 1080); cx.clip(); car2(K, cx, 960, 680 + run * Math.sin(tt * 40 + 1) * 1, 1.6, WL); cx.restore(); }
+    if (run > 0) for (let i = 0; i < 4; i++) { const f = (tt * .8 + i / 4) % 1; alpha(cx, run * (1 - f) * .6, () => K.circ(cx, 470 - f * 160, 720 - f * 30, 10 + f * 26, null, WL, 2)); }
+    if (kl > 0) alpha(tx, kl, () => { txt(tx, '整辆车 = harness', 960, 860, fnt(900, 44), WL, 'center'); txt(tx, '模型之外的一切', 960, 912, fnt(700, 30), DIM, 'center'); });
     const k = prog(b, t('layer'), t('layer') + .35, E.io);
-    clawd(cx, { x: lerp(1720, 1700, k), y: lerp(560, 860, k) - Math.sin(Math.PI * k) * 90, px: 12, skin: 'wire', col: YE, pose: b < t('layer') ? 'pointL' : 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: -1, alpha: prog(b, t('cars') - .2, t('cars') + .2) });
+    clawd(cx, { x: lerp(1720, 1700, k), y: lerp(560, 860, k) - Math.sin(Math.PI * k) * 90, px: 12, skin: 'wire', col: YE, pose: b < t('layer') || kl > 0 ? 'pointL' : 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: -1, alpha: prog(b, t('cars') - .2, t('cars') + .2) });
     narrate(tx, L, S, NARR(K));
   },
   music(Sm, H, w) { Sm.add('crash', 0, 0, 0, 0, .5); groove(Sm, H, w.m.bars, null); },
@@ -424,10 +427,10 @@ return scene({
 R.f06e = K => {
 const { F, C, E, TR, LOOK, prog, lerp, bump, hash, rgba, mixC, fnt, rr, circ, seg, arrow, txt, tw, scaleAt, rotAt, alpha, clawd, clamp01, seq, narrate, scene } = K;
 const S = seq([
-  { id: 'ladder0', say: '市面上的编程工具，按自主程度从低到高，大概有六级：' },
+  { id: 'ladder0', say: '市面上的编程工具，按自主程度从低到高，大概有六级：', hold: 1.75 }, // 等开头四小节的铃声主旋律（hook）走完，第一级正好落在第 4 小节；不然爬梯子的音阶会和主旋律叠在一起
   { id: 'l0', say: '行内补全：你打字的时候，帮你补下一段。' },
   { id: 'l1', say: '对话面板：问答、解释、生成代码片段。' },
-  { id: 'l2', say: 'IDE 里的 Agent：比如 Qoder、Trae、Cursor。', gloss: ['IDE', '集成开发环境', '写代码用的软件，比如 IntelliJ IDEA。'], until: 'up' },
+  { id: 'l2', say: 'IDE 里的 Agent：比如 Qoder、Trae、Cursor。', gloss: ['IDE', '集成开发环境', '写代码用的软件，比如 IntelliJ IDEA。'], gx: 1240, gy: 96, until: 'up' }, // 左上角是两根数值条的标题，放到梯子顶上方
   { id: 'l3', say: '命令行 Agent：比如 Claude Code、Codex CLI。' },
   { id: 'l4', say: '云端后台 Agent：在云上跑完，直接把改动提交给你。' },
   { id: 'l5', say: '应用生成平台：比如 Lovable、Bolt、v0，一句话生成整个应用。' },
@@ -447,6 +450,8 @@ const S = seq([
 ], { start: .75, tail: .5 });
 const t = S.t;
 const RAT = RUNG.map((_, i) => t('l' + i));
+// Clawd 爬到第几级（0–5，爬的过程中是小数）；Clawd 的位置和左边两根数值条都按它走
+function rungAt(b) { let i = -1; RAT.forEach((a, j) => { if (b >= a) i = j; }); const k = i >= 0 ? prog(b, RAT[i], RAT[i] + .4, E.io) : 0; return Math.max(0, i - 1 + k); }
 return scene({
   scene: '06 蓝图 · 选工具', look: LOOK.PRINT,
   desc: '六级工具梯子；RedAccess 点阵和默认公开；选工具七项；规则 5；这门课的路线；两个 Agent 抢一个文件。',
@@ -469,9 +474,10 @@ return scene({
         const c = top ? RD : on ? YE : rgba(WL, .4); seg(cx, lx, y, rx, y, c, on ? 6 : 3);
         alpha(tx, kl * (on ? 1 : .35), () => { txt(tx, n, rx + 40, y - 16, fnt(900, 36), top ? RD : WL); txt(tx, ex, rx + 40, y + 22, fnt(600, 26), on ? YE : DIM); });
       });
-      const lv = clamp01(prog(b, t('up'), t('up2') + 1, E.io));
+      // 两根数值条跟着 Clawd 爬：每上一级，亲眼看的代码少一截，需要的检查和隔离多一截；讲到「越往上」时条子再亮一下
+      const lv = rungAt(b) / 5, hl = bump(b, t('up') + .3, .5);
       [[860, '亲眼看的代码', 1 - lv * .85, OR], [560, '需要的检查和隔离', .15 + lv * .85, GN]].forEach(([x, n, v, col]) => {
-        alpha(cx, prog(b, t('up'), t('up') + .3), () => { cx.strokeStyle = WL; cx.lineWidth = 2; cx.strokeRect(x - 30, 320, 60, 560); cx.fillStyle = rgba(col, .8); cx.fillRect(x - 24, 874 - 548 * v, 48, 548 * v); alpha(tx, kl, () => txt(tx, n, x, 285, fnt(900, 30), col, 'center')); });
+        alpha(cx, prog(b, t('ladder0'), t('ladder0') + .5), () => { cx.strokeStyle = WL; cx.lineWidth = 2; cx.strokeRect(x - 30, 320, 60, 560); cx.fillStyle = rgba(col, .8 + .2 * hl); cx.fillRect(x - 24, 874 - 548 * v, 48, 548 * v); alpha(tx, kl, () => txt(tx, n, x, 285, fnt(900, 30 * (1 + .12 * hl)), col, 'center')); });
       });
     });
     // ---------- RedAccess 点阵 ----------
@@ -521,7 +527,7 @@ return scene({
     let st = { x: 1760, y: 800, px: 12, skin: 'wire', col: YE, pose: 'idle', ph: tt * 10, blink: (tt % 3) < .1, eye: 0, alpha: 1 };
     const SPOT = [['ra0', 1760, 800, 'idle'], ['ra2', 860, 860, 'pointL'], ['spec', 500, 660, 'point'], ['route0', 1620, 780, 'idle']];
     let sp = null; SPOT.forEach(q => { if (b >= t(q[0])) sp = q; });
-    if (b < t('ra0')) { let i = -1; RAT.forEach((a, j) => { if (b >= a) i = j; }); const k = i >= 0 ? prog(b, RAT[i], RAT[i] + .4, E.io) : 0; st = { ...st, px: 10, x: 1170, y: 900 - 110 * Math.max(0, i - 1 + k) - 4, pose: 'up', walk: tt * 12 }; if (b >= t('up2')) { st.sweat = b; st.pose = 'idle'; } }
+    if (b < t('ra0')) { st = { ...st, px: 10, x: 1170, y: 900 - 110 * rungAt(b) - 4, pose: 'up', walk: tt * 12 }; if (b >= t('up2')) { st.sweat = b; st.pose = 'idle'; } }
     else if (sp && b < t('fight')) {
       const k = prog(b, t(sp[0]), t(sp[0]) + .35, E.io), prev = SPOT[SPOT.indexOf(sp) - 1] || sp;
       st = { ...st, x: lerp(prev[1], sp[1], k), y: lerp(prev[2], sp[2], k) - Math.sin(Math.PI * k) * 90, pose: sp[3] };

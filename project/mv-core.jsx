@@ -219,6 +219,35 @@ function sing(ctx, L, s) {
 }
 function typeSfx(at, text, st = .12, kind = 'key') { const ev = []; let i = 0; for (const c of marks(text)) { if (c.ch !== ' ' && c.ch !== '\n') ev.push([at + i * st / 4, kind]); i++; } return ev; }
 
+// ---------- 手机通知：手机屏幕贴图上的一条 + 画面下方的放大版。宽度都按文字实际量出来，换了字体也不出框 ----------
+// 按逗号分句、按宽度换行，标点不放行首
+function wrapNote(x, s, maxW) {
+  const lines = [];
+  for (const part of s.split(/(?<=[，。；])/)) { let l = ''; for (const ch of part) { if (x.measureText(l + ch).width > maxW && l && !'，。？！、；'.includes(ch)) { lines.push(l); l = ''; } l += ch; } if (l) lines.push(l); }
+  return lines;
+}
+// 手机屏幕（w 宽的贴图）上的通知气泡：标题太宽就缩字号，正文自动换行，气泡跟着行数长高；o.bar = [进度, 颜色] 画一根进度条
+function phoneNote(x, w, o) {
+  const y0 = o.y ?? 170, maxW = w - 50;
+  let ts = 22; x.font = `700 ${ts}px "Noto Sans SC",sans-serif`; while (ts > 14 && x.measureText(o.title).width > maxW) { ts--; x.font = `700 ${ts}px "Noto Sans SC",sans-serif`; }
+  const BF = `400 ${o.size || 18}px "Noto Sans SC",sans-serif`; x.font = BF;
+  const lines = wrapNote(x, o.body, maxW), hb = o.bar ? 24 : 0;
+  x.fillStyle = o.bg || 'rgba(255,255,255,.14)'; x.beginPath(); x.roundRect(14, y0, w - 28, 64 + lines.length * 26 + hb, 18); x.fill();
+  x.fillStyle = '#ffffff'; x.font = `700 ${ts}px "Noto Sans SC",sans-serif`; x.fillText(o.title, 30, y0 + 35);
+  x.font = BF; lines.forEach((s, i) => x.fillText(s, 30, y0 + 70 + i * 26));
+  if (o.bar) { x.fillStyle = o.bar[1]; x.fillRect(30, y0 + 70 + lines.length * 26 - 6, (w - 60) * o.bar[0], 10); }
+}
+// 画面下方的放大版通知条：框宽按标题（加上右边的「现在」）和正文的实际宽度算，至少 800，居中
+function noteBar(ctx, k, o) {
+  ctx.font = fnt(500, o.bodySize || 32); const bw = ctx.measureText(o.body).width;
+  ctx.font = fnt(700, 30); const tw0 = ctx.measureText(o.title).width + 110;
+  const W = Math.max(800, 108 + Math.max(bw, tw0) + 44), x = 960 - W / 2, y = 760 + (1 - k) * 30;
+  rr(ctx, x, y, W, 150, 28, o.bg || 'rgba(28,30,38,.88)', o.border || 'rgba(255,255,255,.12)', 2);
+  rr(ctx, x + 28, y + 34, 56, 56, 14, o.iconBg); txt(ctx, o.icon, x + 56, y + 63, fnt(900, o.iconSize || 30), '#fff', 'center');
+  txt(ctx, o.title, x + 108, y + 52, fnt(700, 30), '#ffffff'); txt(ctx, '现在', x + W - 40, y + 52, fnt(400, 24), 'rgba(255,255,255,.5)', 'right');
+  txt(ctx, o.body, x + 108, y + 104, fnt(500, o.bodySize || 32), o.bodyCol || 'rgba(255,255,255,.92)');
+}
+
 // ---------- Clawd：像素小人，十种打扮 ----------
 function clawdCells(st) {
   const cells = [], body = st.col || C.clawd, hi = st.hi || C.clawdHi;
@@ -226,7 +255,9 @@ function clawdCells(st) {
   const on = Math.sin(st.ph || 0) > 0;
   let L = [[0, 3], [1, 3]], R = [[10, 3], [11, 3]];
   if (st.pose === 'wave') R = on ? [[10, 2], [11, 1], [11, 0]] : [[10, 3], [11, 2], [12, 1]];
-  if (st.pose === 'up') R = [[10, 3], [10, 2], [10, 1], [10, 0]];
+  // 举手：先往外伸一格再往上，跟身体隔开一列（贴着身体的话手臂和身体连成一片，看不出举手，霓虹描边下尤其明显）
+  if (st.pose === 'up') R = [[10, 3], [11, 3], [11, 2], [11, 1], [11, 0]];
+  if (st.pose === 'upL') L = [[1, 3], [0, 3], [0, 2], [0, 1], [0, 0]]; // 举左手（站在右边、朝左边的人击掌）
   if (st.pose === 'both') { R = [[10, 3], [10, 2], [10, 1], [10, 0]]; L = [[1, 3], [1, 2], [1, 1], [1, 0]]; }
   if (st.pose === 'push') { R = [[10, 3], [11, 3], [12, 3]]; L = [[1, 3]]; }
   if (st.pose === 'point') R = [[10, 3], [11, 2], [12, 1]];
@@ -262,7 +293,8 @@ function clawd(ctx, st) {
   if (skin === 'pixel' || skin === 'paper' || skin === 'glow' || skin === 'flat') {
     if (skin === 'paper') { ctx.lineJoin = 'round'; ctx.lineWidth = px * .7; ctx.strokeStyle = st.line || '#fbf6ec'; edges(); ctx.stroke(); }
     if (skin === 'glow') { ctx.shadowColor = st.glow || st.col || C.clawd; ctx.shadowBlur = px * 1.2; }
-    const gap = skin === 'pixel' ? .94 : 1.02;
+    // 格子画满、稍微重叠，身体是一整块实心：以前 pixel 皮肤留 6% 的缝，印刷网点、像素抖动这些滤镜会把缝放大成一个个洞
+    const gap = 1.02;
     for (const [c, r, col] of cells) { const [cx, cy] = pos(c, r); ctx.fillStyle = col; ctx.fillRect(cx, cy, px * sxk * gap, px * sq * gap); }
     ctx.shadowBlur = 0;
   } else if (skin === 'neon' || skin === 'wire') {
@@ -402,8 +434,10 @@ vec3 look(float id,sampler2D C,sampler2D X,vec4 P,vec4 cam,vec4 fo,vec2 uv){
     c=tx(C,cu,0.);vec4 c2=tx(C,cu+o*1.8,1.);
     vec3 ink=unp(c);
     float ang=.26;mat2 R=mat2(cos(ang),sin(ang),-sin(ang),cos(ang));vec2 g=fract(R*px/7.)-.5;
-    float a=c.a>.93?c.a:smoothstep(sqrt(c.a)*.64+.07,sqrt(c.a)*.64-.07,length(g))*step(.03,c.a);
-    a*=.86+.14*vn(px*.35);
+    // 半透明的面打成网点；越接近实心越不打点（文字抗锯齿的边缘保持平滑，不被打碎）
+    float dt=smoothstep(sqrt(c.a)*.64+.07,sqrt(c.a)*.64-.07,length(g))*step(.03,c.a);
+    float a=mix(dt,c.a,smoothstep(.5,.93,c.a));
+    a*=.95+.05*vn(px*.35); // 油墨不匀：以前 14%，实心色块上会出现一个个浅色小洞
     col=paper*mix(vec3(1.),ink,a);
     col*=mix(vec3(1.),vec3(1.,.5,.74),c2.a*.3*P.y);
     ty=tx(X,uv+o*.35,0.);float at=ty.a*(.9+.1*vn(px*.5));col*=mix(vec3(1.),unp(ty),at);
@@ -466,7 +500,8 @@ vec3 look(float id,sampler2D C,sampler2D X,vec4 P,vec4 cam,vec4 fo,vec2 uv){
     float x1=uq.x+t*P.y*.01,x2=uq.x+t*P.y*.025;
     float hh1=.66+.05*sin(x1*6.)+.025*sin(x1*17.+1.),hh2=.77+.04*sin(x2*9.+2.)+.02*sin(x2*23.);
     if(uq.y>hh1)bg=P8[1];if(uq.y>hh2)bg=P8[0];
-    c=tx(C,q,lod);float a=step(by*.86+.07,c.a);vec3 rgb=quant(unp(c)+(by-.5)*.12);
+    // 透明度抖动只管淡入淡出的那一截：.55 以上一律实心（以前阈值到 .93，Clawd 跟着节奏稍微一暗，身上就被挖出一堆空格）；颜色抖动也减半
+    c=tx(C,q,lod);float a=step(by*.5+.05,c.a);vec3 rgb=quant(unp(c)+(by-.5)*.06);
     col=mix(bg,rgb,a);col*=1.-.45*fk;
     float ct=max(P.z,1.);vec2 gt=floor(uv*RS/ct),qt=(gt+.5)*ct/RS;
     ty=tx(X,qt,max(0.,log2(ct*uRes.y/1080.)-.5));col=mix(col,unp(ty),step(.42,ty.a));
@@ -1075,7 +1110,7 @@ function warpWorld(m, knots, bars) {
 }
 
 const K = { W, H, BPM, BEAT, BAR, F, C, E, LOOK, TR, clamp01, prog, lerp, bump, hash, hex, mixC, rgba, fnt, cw, rr, circ, seg, arrow, txt, tw, scaleAt, rotAt, alpha,
-  lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt, sing,
+  lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt, sing, phoneNote, noteBar,
   warpWorld, seq, narrate, scene, wrapText, readBars, glossCard, youType, typeSched, typeN,
   three: (ctx, L, o) => { L.did3d = true; return !!window.MV_3D && window.MV_3D.draw(ctx, L.w.m, L, o); } };
 window.MV_K = K;

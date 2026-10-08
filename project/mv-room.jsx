@@ -208,8 +208,11 @@ function build(T) {
   const lampM = std('#2a2c33', { metalness: .5, roughness: .4 });
   const lampB = new T.Mesh(new T.CylinderGeometry(7, 8, 2, 24), lampM); lampB.position.set(-22, 78, -168); lampB.castShadow = true; scene.add(lampB);
   const arm = new T.Mesh(new T.CylinderGeometry(.8, .8, 44, 8), lampM); arm.position.set(-22, 99, -168); scene.add(arm);
-  const head = new T.Mesh(new T.ConeGeometry(8, 12, 24, 1, true), std('#d9d4ca', { side: T.DoubleSide, roughness: .5 })); head.position.set(-14, 118, -160); head.rotation.z = -.9; head.rotation.x = .3; scene.add(head);
-  const bulb = new T.Mesh(new T.SphereGeometry(2.6, 12, 8), new T.MeshBasicMaterial({ color: 0xffd8a0 })); bulb.position.set(-12, 115, -158); scene.add(bulb);
+  // 灯罩：圆锥尖端接在灯杆顶上，开口朝书桌（向右前下方），灯泡在罩口里面；聚光灯从灯泡出发，方向和罩口一致
+  const armTop = new T.Vector3(-22, 121, -168), LD = new T.Vector3(.55, -.62, .56).normalize();
+  const head = new T.Mesh(new T.ConeGeometry(8, 12, 28, 1, true), std('#d9d4ca', { side: T.DoubleSide, roughness: .5, emissive: 0x4a2a0e }));
+  head.position.copy(armTop).addScaledVector(LD, 6); head.position.y -= .5; head.quaternion.setFromUnitVectors(new T.Vector3(0, -1, 0), LD); scene.add(head);
+  const bulb = new T.Mesh(new T.SphereGeometry(2.6, 12, 8), new T.MeshBasicMaterial({ color: 0xffd8a0 })); bulb.position.copy(head.position).addScaledVector(LD, 1.8); scene.add(bulb);
   // 墙上的钟
   const clk = canvasTex(T, 256, 256);
   const clockM = new T.Mesh(new T.CircleGeometry(16, 48), new T.MeshStandardMaterial({ map: clk.t, roughness: .5 })); clockM.position.set(-122, 198, WZ + 1); scene.add(clockM);
@@ -261,17 +264,19 @@ function build(T) {
   const amb = new T.HemisphereLight(0x405075, 0x120d0a, .55); scene.add(amb);
   const moon = new T.DirectionalLight(0x8fb0ff, .5); moon.position.set(WX + 40, 260, -420); moon.target.position.set(20, 60, -60); scene.add(moon, moon.target);
   moon.castShadow = true; moon.shadow.mapSize.set(1024, 1024); Object.assign(moon.shadow.camera, { left: -250, right: 250, top: 250, bottom: -250, near: 50, far: 900 }); moon.shadow.bias = -.002;
-  const lamp = new T.SpotLight(0xffb978, 2.2, 520, .95, .55, 1.6); lamp.position.set(-12, 115, -158); lamp.target.position.set(40, 60, -110); scene.add(lamp, lamp.target);
+  const lamp = new T.SpotLight(0xffb978, 2.2, 520, .95, .55, 1.6); lamp.position.copy(bulb.position); lamp.target.position.set(40, 60, -110); scene.add(lamp, lamp.target);
   lamp.castShadow = true; lamp.shadow.mapSize.set(1024, 1024); lamp.shadow.bias = -.001; lamp.shadow.camera.near = 5;
   const glow = new T.PointLight(0x9cc0ff, 1.1, 260, 2); glow.position.set(40, 96, -118); scene.add(glow);
   const sun = new T.DirectionalLight(0xffb070, 0); sun.position.set(WX - 60, 230, -520); sun.target.position.set(40, 40, -40); scene.add(sun, sun.target);
   const fill = new T.PointLight(0xffc89a, .25, 600, 2); fill.position.set(200, 200, 200); scene.add(fill);
 
   ROOM = { scene, scr, ph, note, clk, city, glassU, rain, rs, rp, steam, you, arms, headG, chair, lamp, glow, moon, sun, amb, bulb, cityM, fill, lid, lastNote: '', lastClock: '', lastDawn: -1 };
+  window.__mvRoom = ROOM; // 调试用：量穿模、看灯罩朝向
   return ROOM;
 }
 
 // 每帧：按这一场戏的设定摆好房间
+const IK = {};
 function pose(R, T, L, cfg, chat, cam, S, shots) {
   const b = L.b, t = L.t;
   const mood = cfg.room ? cfg.room(L, S) : {};
@@ -311,10 +316,24 @@ function pose(R, T, L, cfg, chat, cam, S, shots) {
   R.you.visible = p.hide ? false : true;
   R.you.rotation.x = -.12 + lean * .28; R.you.position.z = -92 + lean * 6;
   R.headG.rotation.set(-.1 + lean * .15 + nod * Math.sin(t * 7) * .06, yaw, 0);
+  // 手臂：两节 IK。手的目标位置固定在键盘上（身体后靠时滑回桌沿，够不到就伸直），肘部自己算，手和小臂不会沉进桌面（桌面 y=77，键盘面约 78；小臂半径 3.9，所以手心定在 81 上下）
+  if (!IK.S) { IK.S = new T.Vector3(); IK.H = new T.Vector3(); IK.E = new T.Vector3(); IK.U = new T.Vector3(); IK.P = new T.Vector3(); IK.t1 = new T.Vector3(); IK.dn = new T.Vector3(0, -1, 0); IK.q1 = new T.Quaternion(); IK.q2 = new T.Quaternion(); IK.q3 = new T.Quaternion(); }
+  R.you.updateMatrixWorld(true);
+  const ARM_A = 24.5, ARM_F = 25.5, S3 = IK.S, H3 = IK.H, E3 = IK.E, U3 = IK.U, P3 = IK.P;
   R.arms.forEach(({ g, fore }, i) => {
-    const sd = i ? 1 : -1, tp = typing * Math.max(0, Math.sin(t * 14 + i * 2.1)) * .12;
+    const sd = i ? 1 : -1, tp = typing * Math.max(0, Math.sin(t * 14 + i * 2.1));
     if (p.armsUp) { g.rotation.set(2.7, 0, sd * -.35); fore.rotation.set(.9, 0, 0); return; }
-    g.rotation.set(.95 - lean * .45 - tp, 0, sd * -.1); fore.rotation.set(.62 + lean * .25 + tp * 1.5, 0, sd * .22);
+    const k = clamp01(lean * 1.6);
+    H3.set(40 + sd * lerp(10.5, 17, k), lerp(81.5, 80.8, k) + tp * .9, lerp(-146, -125, k) + (typing ? Math.sin(t * 9 + i * 1.7) * .4 : 0));
+    g.getWorldPosition(S3);
+    U3.subVectors(H3, S3); const d = Math.min(U3.length(), ARM_A + ARM_F - .05); U3.normalize(); H3.copy(S3).addScaledVector(U3, d);
+    const x = (ARM_A * ARM_A - ARM_F * ARM_F + d * d) / (2 * d), h = Math.sqrt(Math.max(0, ARM_A * ARM_A - x * x));
+    P3.set(sd * .8, .1, .6); P3.addScaledVector(U3, -P3.dot(U3)).normalize();        // 肘往外、往身体这边收，不往下掉
+    E3.copy(S3).addScaledVector(U3, x).addScaledVector(P3, h);
+    const qa = IK.q1.setFromUnitVectors(IK.dn, IK.t1.subVectors(E3, S3).normalize());   // 上臂的世界朝向
+    R.you.getWorldQuaternion(IK.q2); g.quaternion.copy(IK.q2.invert().multiply(qa));
+    const qf = IK.q3.setFromUnitVectors(IK.dn, IK.t1.subVectors(H3, E3).normalize());   // 小臂的世界朝向
+    fore.quaternion.copy(qa.clone().invert().multiply(qf));
   });
   R.lid.rotation.x = -.22 + (mood.lidClose ?? 0) * 1.72;
   // 相机：在镜头之间按设定移动；加一点手持晃动

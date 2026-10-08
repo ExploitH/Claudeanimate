@@ -273,14 +273,14 @@ return scene({
       top(lb); return { c, lb, x: -440 + i * 92, z: TZ + 250 + (i % 2) * 36 };
     });
     const ghost = k3.label(T, NAME, { font: '"JetBrains Mono",monospace', size: 40, bg: 'rgba(30,14,6,.6)', border: ORG, col: ORG, h: 46 }); ghost.position.set(-FAC - 200, 200, TZ); top(ghost); sc.add(ghost);
-    // 风衣人
+    // 风衣人（攻击者）：一身红
     const face = new T.PointLight(0xdfe4ff, .55, 1500, 1.2); face.position.set(-120, 320, TZ + 900); sc.add(face);
     const man = new T.Group(); {
-      const dk = k3.mat(T, '#34343a', { r: .6 }), coat = new T.Mesh(new T.CylinderGeometry(24, 40, 150, 14), dk); coat.position.y = 75; man.add(coat);
-      const head = new T.Mesh(new T.SphereGeometry(19, 14, 12), k3.mat(T, '#2a2a2a')); head.position.y = 170; man.add(head);
+      const dk = k3.mat(T, RED, { r: .55, e: RED, ei: .18 }), coat = new T.Mesh(new T.CylinderGeometry(24, 40, 150, 14), dk); coat.position.y = 75; man.add(coat);
+      const head = new T.Mesh(new T.SphereGeometry(19, 14, 12), k3.mat(T, '#5a1616', { r: .6 })); head.position.y = 170; man.add(head);
       const brim = new T.Mesh(new T.CylinderGeometry(38, 38, 4, 20), dk); brim.position.y = 188; man.add(brim);
       const crown = new T.Mesh(new T.CylinderGeometry(21, 23, 28, 16), dk); crown.position.y = 203; man.add(crown);
-      const tie = new T.Mesh(new T.BoxGeometry(8, 50, 4), new T.MeshBasicMaterial({ color: k3.col(T, RED) })); tie.position.set(0, 120, 24); man.add(tie);
+      const tie = new T.Mesh(new T.BoxGeometry(8, 50, 4), new T.MeshBasicMaterial({ color: 0x0a0a0a })); tie.position.set(0, 120, 24); man.add(tie);
     } man.scale.setScalar(1.35); sc.add(man); const manL = new T.SpotLight(0xffffff, 0, 900, .45, .6, 1); sc.add(manL, manL.target);
     // 抢注的店：从空地里升起来
     const shop = new T.Group(); shop.position.set(-FAC - 200, 0, TZ); sc.add(shop);
@@ -302,7 +302,7 @@ return scene({
       [0, [300, 900, 1400], [-200, 120, -1400], 42, 0],
       [t('open') + .1, [-120, 175, TZ + 840], [-270, 72, TZ + 120], 42, t('pkg0') - t('open') + .4],
       [t('pkg1'), [300, 1300, 600], [-150, 0, -1800], 46, 2.4],
-      [t('pkg2'), [200, 200, TZ + 800], [-300, 140, TZ - 400], 38, 2],
+      [t('pkg2'), [-120, 200, TZ + 800], [-300, 140, TZ - 400], 38, 2],
       [BUILD0 - .2, [150, 260, TZ + 600], [-600, 220, TZ], 36, 1.2],
       [t('pkg3'), [-290, 210, TZ - 560], [-320, 95, TZ + 200], 40, .05],
       [DOOR - .4, [-20, 240, TZ + 620], [-480, 130, TZ + 80], 34, 1, 'out'],

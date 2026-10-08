@@ -1088,7 +1088,8 @@ function Piece({ tw }) {
   const T = Tp + fc.off;
   const [fv, setFv] = useState(0);
   // 给 tools/mvexport.js 逐帧导出用：按 1920×1080 画第 t 秒，返回 JPEG（q 传 'png' 就是无损 PNG）
-  window.__mvFrame = (t, q = .95) => { GLR.noEnc = true; try { renderFrame(t + fc.off, P, tw, fv, RES['原生']); } finally { GLR.noEnc = false; } return q === 'png' ? GLR.cv.toDataURL('image/png') : GLR.cv.toDataURL('image/jpeg', q); };
+  // q = 'raw' 只画不编码，返回画布本身（给 mvfast.js 用 WebCodecs 在浏览器里直接编码）
+  window.__mvFrame = (t, q = .95) => { GLR.noEnc = true; try { renderFrame(t + fc.off, P, tw, fv, RES['原生']); } finally { GLR.noEnc = false; } return q === 'raw' ? GLR.cv : q === 'png' ? GLR.cv.toDataURL('image/png') : GLR.cv.toDataURL('image/jpeg', q); };
   const opt = useMemo(() => ({ sfx: tw.sfx !== false, bgm: tw.bgm !== false, vol: tw.bgmVol ?? .8 }), [tw.sfx, tw.bgm, tw.bgmVol]);
   useEffect(() => {
     const text = P.ws.map(w => (w.m.text || '') + (w.m.hud ? w.m.hud.name + (w.m.hud.world || '') + (w.m.hud.line || '') + (w.m.hud.time || '') : '') + (w.m.rule ? w.m.rule.text : '') + (w.m.you || []).map(y => y[2]).join('')).join('') + '来源：规则清单你 0123456789/%+-.:「」' + SING.flat().map(x => x[1]).join('');

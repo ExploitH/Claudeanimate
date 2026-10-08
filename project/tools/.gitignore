@@ -7,3 +7,4 @@ tts/clips/
 tts/samples/
 tts/failed.json
 __pycache__/
+cache/

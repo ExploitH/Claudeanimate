@@ -15,7 +15,7 @@ for x in L:
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af', af, '-ac', '1', '-ar', '24000', '-b:a', '32k', dst], check=True)
     dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', dst], capture_output=True, text=True).stdout.strip())
     D[x['k']] = round(dur, 3); A[x['k']] = base64.b64encode(open(dst, 'rb').read()).decode()
-js = '/* Vibe Coding 电影版：配音（自动生成，勿手改） */\nwindow.MV_VOX = ' + json.dumps({'d': D, 'a': A}, ensure_ascii=False, separators=(',', ':')) + ';\n'
+js = '/* 配音数据（pack.py 自动生成，勿手改） */\nwindow.MV_VOX = ' + json.dumps({'d': D, 'a': A}, ensure_ascii=False, separators=(',', ':')) + ';\n'
 open(out, 'w').write(js)
 print(out, len(D), 'clips,', round(sum(D.values()) / 60, 1), 'min,', round(len(js) / 1e6, 2), 'MB; missing', len(miss))
 for m in miss[:10]: print('  missing:', m)

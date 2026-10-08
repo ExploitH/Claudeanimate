@@ -1,30 +1,27 @@
-// 导演剪辑版单文件构建：预编译 JSX，内联成一个 html。用法：node mvbuild.js [out.html] [--stub]
+// 单文件构建：入口 dc 的全部模块预编译后内联成一个 html（顶部章节栏 + 画质切换 + 声音开关）。
+// 用法：node mvbuild.js [out.html] [--dc 入口.dc.html] [--title 标题]
 const fs = require('fs'), path = require('path');
-const Babel = require(path.join(process.env.MV_DEPS || path.join(__dirname, 'node_modules'), '@babel/standalone'));
-const SRC = path.resolve(__dirname, '..');
-const args = process.argv.slice(2), stub = args.includes('--stub'), out = args.find(a => !a.startsWith('--')) || path.join(__dirname, 'mv/index.html');
-const DCF = process.env.DC || 'Vibe Coding 电影版.dc.html', TITLE = process.env.TITLE || '电影版';
-const dc = fs.readFileSync(path.join(SRC, DCF), 'utf8');
-const scenes = JSON.parse(dc.match(/window\.OM_SCENES = '(.*?)';<\/script>/)[1]);
-const files = dc.match(/component-from-global-scope="MVApp" from="([^"]+)"/)[1].split(' ').map(f => f.replace('./', ''));
-let bundle = '/* Vibe Coding 导演剪辑版：预编译包 */\n';
-for (const f of files) {
-  let p = path.join(SRC, f);
-  if (!fs.existsSync(p)) { if (!stub) { console.log('skip missing', f); continue; } p = path.join(__dirname, 'stubs', f); if (!fs.existsSync(p)) { console.log('no stub', f); continue; } }
-  const code = Babel.transform(fs.readFileSync(p, 'utf8'), { filename: f, presets: ['react'] }).code;
-  bundle += `\n// ---- ${f}\n;(function (React, module, exports, require) {\n${code}\n})(window.React, { exports: {} }, {}, function () { return {}; });\n`;
-}
-// 配音数据：dc 的 helmet 里引了 mv-voice.js 就原样内联（不过 Babel，体积大）
-const voxP = path.join(SRC, 'mv-voice.js'), voxScript = dc.includes('./mv-voice.js') && fs.existsSync(voxP) ? '<script>\n' + fs.readFileSync(voxP, 'utf8') + '\n</script>\n' : '';
-let t = 0;
-const starts = scenes.map(s => { const r = t; t += s.dur; return r; });
-const total = t, mmss = x => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart(2, '0')}`;
-const btns = scenes.map((s, i) => { const [num, ...rest] = s.name.split(' '); const label = rest.join(' ').replace(/^· /, '') || '片尾'; return `      <button class="ch" type="button" data-t="${starts[i]}" title="${s.name} · ${mmss(starts[i])}"><b>${num}</b><span>${label}</span></button>`; }).join('\n');
-const fontHref = dc.match(/<link href="(https:\/\/fonts\.googleapis\.com\/css2[^"]+)"/)[1].replace(/&amp;/g, '&');
-const html = `<title>Vibe Coding ${TITLE}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+const L = require('./mv-lib');
+
+function build(dcFile, out, title) {
+  const e = L.readEntry(dcFile), cfg = L.config();
+  const TITLE = title || cfg.title || path.basename(dcFile).replace(/\.dc\.html$/, '');
+  const scenes = e.scenes;
+  const scriptBundle = L.bundle(e);
+  const voxScript = e.hasVox && fs.existsSync(path.join(L.ROOT, 'mv-voice.js')) ? '<script>\n' + fs.readFileSync(path.join(L.ROOT, 'mv-voice.js'), 'utf8') + '\n</script>\n' : '';
+  const playback = (e.html.match(/window\.OM_PLAYBACK = '(.*?)';/) || [, '{"mode":"loop"}'])[1];
+  let t = 0;
+  const starts = scenes.map(s => { const r = t; t += s.dur; return r; });
+  const total = t, mmss = x => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart(2, '0')}`;
+  const btns = scenes.map((s, i) => {
+    const m = s.name.match(/^(\S+)\s*·?\s*(.*)$/), num = m ? m[1] : s.name, label = (m && m[2]) || '';
+    return `      <button class="ch" type="button" data-t="${starts[i]}" title="${s.name} · ${mmss(starts[i])}"><b>${num}</b><span>${label}</span></button>`;
+  }).join('\n');
+  const fontLink = e.font ? `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="${fontHref.replace(/&/g, '&amp;')}">
+<link rel="stylesheet" href="${e.font.replace(/&/g, '&amp;')}">` : '';
+  const html = `<title>${TITLE}</title>
+${fontLink}
 <style>
 /* 顶部一条章节栏（点击跳到该段），下方是播放区；全片一条时间轴 */
 :root {
@@ -62,7 +59,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 400 14px/1.4 va
 </style>
 
 <header class="bar">
-  <div class="brand"><b>Vibe Coding</b><span>${TITLE} · ${mmss(total)}</span></div>
+  <div class="brand"><b>${TITLE}</b><span>${mmss(total)}</span></div>
   <nav class="chs" aria-label="跳到段落">
 ${btns}
   </nav>
@@ -82,15 +79,16 @@ ${btns}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 window.OM_SCENES = ${JSON.stringify(JSON.stringify(scenes.map(s => ({ name: s.name, dur: s.dur }))))};
-window.OM_PLAYBACK = '{"mode":"loop"}';
+window.OM_PLAYBACK = '${playback}';
 </script>
 ${voxScript}<script>
-${bundle.replace(/<\/script/gi, '<\\/script')}
+${scriptBundle.replace(/<\/script/gi, '<\\/script')}
 </script>
 <script>
 (function () {
   var stage = document.getElementById('stage'), note = document.getElementById('note'), soundBtn = document.getElementById('sound');
   var SEL = 'svg[data-om-exportable-video-with-duration-secs]', root = null, quality = '流畅';
+  var TWEAKS = ${JSON.stringify(e.tweaks)};
   var chs = Array.prototype.slice.call(document.querySelectorAll('.ch')), starts = chs.map(function (c) { return +c.dataset.t; });
   try { window.__mvAudio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { window.__mvAudio = null; }
   function soundState() {
@@ -105,7 +103,7 @@ ${bundle.replace(/<\/script/gi, '<\\/script')}
   function mount(keepTime) {
     if (!window.MVApp) { note.textContent = '动画脚本没有加载成功，请刷新重试'; return; }
     if (!keepTime) { try { localStorage.removeItem('animstage-v3:t'); } catch (e) {} }
-    window.TWEAK_DEFAULTS = { motionEditor: true, sfx: true, bgm: true, bgmVol: .8, quality: quality, fx: 1 };
+    window.TWEAK_DEFAULTS = Object.assign({}, TWEAKS, { quality: quality });
     if (root) root.unmount();
     stage.textContent = '';
     var host = document.createElement('div'); stage.appendChild(host);
@@ -137,6 +135,15 @@ ${bundle.replace(/<\/script/gi, '<\\/script')}
 })();
 </script>
 `;
-fs.mkdirSync(path.dirname(out), { recursive: true });
-fs.writeFileSync(out, html);
-console.log(out, (html.length / 1024).toFixed(0) + ' KB', 'total', total + 's', scenes.length, 'scenes');
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, html);
+  console.log(out, (html.length / 1024).toFixed(0) + ' KB', 'total', total + 's', scenes.length, 'scenes');
+  return { out, total, scenes };
+}
+
+module.exports = { build };
+
+if (require.main === module) {
+  const { o, pos } = L.args(process.argv.slice(2), ['--dc', '--title']);
+  build(L.entry(o.dc), path.resolve(pos[0] || path.join(L.BUILD_DIR, 'index.html')), o.title);
+}

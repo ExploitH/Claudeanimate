@@ -1,7 +1,7 @@
 {
-  "name": "vibe-coding-film-tools",
+  "name": "mv-tools",
   "private": true,
-  "description": "电影版的构建/截图/音频/配音工具，见 ../配音交接.md",
+  "description": "基于 Vibe Coding 动画引擎的通用工具：构建、截图、快速导出、音频分析、剧本/配音台本导出、配音合成。见 README.md",
   "dependencies": {
     "@babel/standalone": "7.29.0",
     "playwright": "1.56.1",

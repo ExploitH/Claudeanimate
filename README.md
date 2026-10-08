@@ -1,25 +1,14 @@
-# CODING AGENTS: READ THIS FIRST
+# Vibe Coding 动画引擎内核（base）
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+只保留制作动画所需的内核文件，所有画面内容（章节、世界、电影版场景、工具链）已移除。
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+## 文件
 
-## What you should do — IMPORTANT
+- `project/support.js` — 运行时（由 dc-runtime 生成，勿手改）
+- `project/mv-core.jsx` — 引擎：节拍时间、片元着色器画风、转场、动态字、音轨调度
+- `project/mv-3d.jsx` — Three.js 3D 层，世界模块通过 `three: (T, U) => ({ scene, update })` 接入
+- `project/mv-kit3d.jsx` — 3D 道具箱（`window.MV_K3`），各场景共用
+- `project/mv-music.jsx` — 配乐与音效的离线渲染
+- `project/mv-voice.js` — 配音数据（`window.MV_VOX`），目前为空占位
 
-**Read the chat transcripts first.** There are 2 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
-
-**Find the primary design file under `project/` and read it top to bottom.** The chat transcripts will tell you which file the user was last iterating on. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
-
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
-
-## About the design files
-
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
-
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
-
-## Bundle contents
-
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `动画制作前期确认` project files (HTML prototypes, assets, components)
+各场景/世界模块需要重新接入到 `window.MV_W[id]` 才能运行。

@@ -214,22 +214,24 @@ const { F, C, E, TR, LOOK, prog, lerp, rgba, fnt, rr, circ, seg, txt, scaleAt, a
 const S = seq([
   { id: 'card', pause: 4.5 },
   { id: 'src', pause: 3.5 },
+  { id: 'cred', pause: 3.5 }, // 落款：监制 ExploitH，其余职位 Claude Opus 5.5
   { id: 'end', pause: 2.5 },
 ], { start: .25, tail: .25 });
 const t = S.t;
+const AI = 'Claude Opus 5.5', CRED = [['编剧 · 导演', AI], ['动画 · 配乐 · 剪辑', AI], ['监制', 'ExploitH']];
 const TICK = RULES.map((_, i) => t('card') + .9 + i * .3);
 const END = t('end');
 return scene({
   scene: '片尾',
-  desc: '清单逐条打勾；来源；信息截至 2026 年 10 月；音乐盒弹一遍主旋律，两下心跳，光标闪两下，熄灭。',
+  desc: '清单逐条打勾；来源；信息截至 2026 年 10 月；落款（编剧、导演、动画、配乐、剪辑 Claude Opus 5.5，监制 ExploitH）；音乐盒弹一遍主旋律，两下心跳，光标闪两下，熄灭。',
   look: LOOK.PRISM,
   enter: { kind: TR.INK, a: 0, b: 1.5, p: [.5, .5, 0, 0] },
   hud: { ink: '#e8e9ee' },
   noInv: true,
   par: L => [1 - prog(L.b, END + 1.2, END + 2.2), 0, 0, 0],
   lb: L => prog(L.b, END + 1.8, END + 2.4, E.io) * 4.2,
-  sfx: [...TICK.map((a, i) => [a, 'blip', 900 + i * 80]), [t('src') + .2, 'paper'], [END + .2, 'heart'], [END + .7, 'heart']],
-  text: RULES.join('') + SOURCES.join('') + 'Vibe Coding 清单需要注意的细节 · 电影版信息截至 2026 年 10 月来源周一 08:00示意第章',
+  sfx: [...TICK.map((a, i) => [a, 'blip', 900 + i * 80]), [t('src') + .2, 'paper'], ...CRED.map((_, i) => [t('cred') + .3 + i * .45, 'blip', 1320 + i * 120]), [END + .2, 'heart'], [END + .7, 'heart']],
+  text: RULES.join('') + SOURCES.join('') + 'Vibe Coding 清单需要注意的细节 · 电影版信息截至 2026 年 10 月来源周一 08:00示意第章' + CRED.flat().join('') + '电影版2026',
   draw(cx, tx, L) {
     const b = L.b, tt = L.t, fade = 1 - prog(b, END + 1.2, END + 2);
     // 清单卡片
@@ -250,12 +252,20 @@ return scene({
       });
     }));
     // 来源
-    const ks = prog(b, t('src'), t('src') + .5) * fade;
+    const ks = prog(b, t('src'), t('src') + .5) * (1 - prog(b, t('cred') - .3, t('cred')));
     if (ks > 0) alpha(tx, ks, () => {
       txt(tx, '来源', 960, 190, fnt(900, 40), '#f4f1ea', 'center');
       SOURCES.forEach((s, i) => { const col = i % 2, row = Math.floor(i / 2); txt(tx, s, col ? 1000 : 920, 270 + row * 56, fnt(500, 28, F.mono), 'rgba(244,241,234,.8)', col ? 'left' : 'right'); });
       txt(tx, '信息截至 2026 年 10 月', 960, 720, fnt(700, 34), C.clawd, 'center');
       txt(tx, '包名、代码里的密码、作业提交页都是示意', 960, 772, fnt(500, 26), 'rgba(244,241,234,.55)', 'center');
+    });
+    // 落款
+    const kf = prog(b, t('cred'), t('cred') + .4) * fade;
+    if (kf > 0) alpha(tx, kf, () => {
+      txt(tx, 'Vibe Coding', 960, 270, fnt(700, 60, F.mono), '#f4f1ea', 'center'); txt(tx, '电影版', 960, 340, fnt(500, 28), rgba('#f4f1ea', .55), 'center');
+      CRED.forEach(([role, who], i) => { const k = prog(b, t('cred') + .3 + i * .45, t('cred') + .7 + i * .45, E.out); if (k <= 0) return; const y = 470 + i * 90 + (1 - k) * 20;
+        alpha(tx, k, () => { txt(tx, role, 920, y, fnt(500, 32), rgba('#f4f1ea', .6), 'right'); txt(tx, who, 1000, y, fnt(800, 44, F.mono), who === AI ? C.clawd : '#f4f1ea', 'left'); }); });
+      alpha(tx, prog(b, t('cred') + 1.8, t('cred') + 2.2), () => txt(tx, '2026', 960, 800, fnt(500, 28, F.mono), rgba('#f4f1ea', .45), 'center'));
     });
     // Clawd 在右下角
     const kw = prog(b, t('card') + .2, t('card') + .8, E.io);

@@ -8440,12 +8440,13 @@ Object.assign(window, {
           if (crash <= 0) st = {
             ...st,
             alpha: kE,
-            x: x - Math.sin(r) * 50,
-            y: y - 60,
+            x: x + Math.sin(r) * 62,
+            y: y - 6 - Math.cos(r) * 62,
             px: 6,
             pose: 'up',
             rot: r
-          };else {
+          }; // 脚踩在车斗口上，跟着车身一起转
+          else {
             const kl = prog(b, t('br') + 1.8, t('br') + 2.7, E.io),
               xx = lerp(BX + 120, 1300, kl);
             st = {

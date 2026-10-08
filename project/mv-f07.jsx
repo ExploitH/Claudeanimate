@@ -315,7 +315,7 @@ return scene({
         alpha(cx, 1 - prog(b, t('br2') + .1, t('br2') + .5), () => cart(cx, x, y - 6, r));
         if (crash > 0 && crash < 1) for (let j = 0; j < 14; j++) { const a = hash(j) * 6.283, d = crash * (80 + hash(j + 9) * 140); pxr(cx, BX + 60 + Math.cos(a) * d, BY - 40 + Math.sin(a) * d, 18, 18, j % 3 ? P.org : P.yel); }
       }
-      if (crash <= 0) st = { ...st, alpha: kE, x: x - Math.sin(r) * 50, y: y - 60, px: 6, pose: 'up', rot: r };
+      if (crash <= 0) st = { ...st, alpha: kE, x: x + Math.sin(r) * 62, y: y - 6 - Math.cos(r) * 62, px: 6, pose: 'up', rot: r }; // 脚踩在车斗口上，跟着车身一起转
       else { const kl = prog(b, t('br') + 1.8, t('br') + 2.7, E.io), xx = lerp(BX + 120, 1300, kl); st = { ...st, alpha: kE, x: xx, y: lerp(BY - 80, MY - 30, kl) - Math.sin(Math.PI * kl) * 160, px: 9, pose: kl >= 1 ? 'idle' : 'both', eyeShape: kl < 1 ? 'x' : b >= t('br2') + .9 ? 'happy' : null, rot: 0 }; }
     });
     // ---------- E. 测试灯 ----------

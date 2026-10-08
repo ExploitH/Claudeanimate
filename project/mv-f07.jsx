@@ -98,7 +98,8 @@ const S = seq([
   { id: 'cut', say: '比如第四步「顺便重构 LoginController」——这次用不着，划掉。', hold: .25 },
   { id: 'add', say: '再加一条：每改完一步，跑一次测试。', hold: .25 },
   { id: 'ok', say: '你盖了章，我再往下走。', hold: 1 },
-  { id: 'mode', say: '多数工具都有「计划模式」：先出方案，不动代码。课件里讲 Qoder 三种模式那页提到过。', hold: .75 },
+  { id: 'mode', say: '有的工具有「计划模式」：先出方案，不动代码。' }, // 不点名具体工具：IDEA 里的 Qoder 没有计划模式
+  { id: 'mode2', say: '没有的话，直接跟我说：先别改代码，给我一个计划。', hold: .75 },
   { id: 'save0', say: '每过一关、验证通过，就提交一次。', gloss: ['Git 提交', 'commit', '给代码拍一张快照，以后随时能回到这一刻。'], until: 'bug' },
   { id: 'save1', say: 'Git 的每一次提交，就是游戏里的存档点。', hold: .75 },
   { id: 'bug', say: '下一步改坏了？', dur: 1.75 },
@@ -151,7 +152,7 @@ return scene({
     [t('test') + .4, 'type'], ...LAMP.map(b => [b, 'coin']), [t('trick') + .5, 'type'], [t('trick') + 1, 'buzz'], ...DIE.map(b => [b, 'bonk']), [t('go'), 'freeze'], [t('cont') + .1, 'menu'], [t('c0'), 'menu'], [t('c1'), 'menu'], [t('c2'), 'menu'],
     [t('learn0') + .2, 'jump'], [t('eq') + .5, 'buzz'], [t('eq') + 1.3, 'coin'], [t('teacher') + .3, 'q', 600]],
   text: NODES.map(n => n[0]).join('') + PLAN.join('') + SLOTS.flat().join('') + LOG.flat().join('') + TCODE.join('') + TNAME.join('') + MENU.map(m => m[1]).join('') + FILES5.join('') +
-    '测试：11 个通过，1 个失败改动处已检查这一步找到了计划PLAN+ 每改完一步，跑一次 mvn test这次用不着OK你计划模式ON先出方案不动代码只读SAVELOAD存档空第 3 步 ✗ 测试失败◀◀ 读档回到存档 2第二天 · 新对话git log --oneline→ 接着做第 3 步：UserService.login 改用 verify()main 主线try/jwt 分支删掉分支✓ 不受影响UserServiceTest.java终点：全部通过假通过→ 第 8 章改跑看结果同一个问题NPE：User.password 为空第 1 次第 2 次第 3 次✗PAUSE‖教程关基础语法看着没问题？if (user.getPassword() == input) {return true;}user.getPassword().equals(input)比较字符串用 equals()作业要求完成用户登录功能AI 使用：按老师的要求老师你',
+    '测试：11 个通过，1 个失败改动处已检查这一步找到了计划PLAN+ 每改完一步，跑一次 mvn test这次用不着OK你计划模式ON先出方案不动代码只读没有这个模式？直接说：「先别改代码，给我一个计划」SAVELOAD存档空第 3 步 ✗ 测试失败◀◀ 读档回到存档 2第二天 · 新对话git log --oneline→ 接着做第 3 步：UserService.login 改用 verify()main 主线try/jwt 分支删掉分支✓ 不受影响UserServiceTest.java终点：全部通过假通过→ 第 8 章改跑看结果同一个问题NPE：User.password 为空第 1 次第 2 次第 3 次✗PAUSE‖教程关基础语法看着没问题？if (user.getPassword() == input) {return true;}user.getPassword().equals(input)比较字符串用 equals()作业要求完成用户登录功能AI 使用：按老师的要求老师你',
   draw(cx, tx, L) {
     const b = L.b, tt = L.t, step = Math.floor(tt * 8) / 8;
     let st = { x: 960, y: 890, px: 12, col: P.org, hi: P.pch, eyeC: P.blk, hat: 'cap8', hatC: P.red, pose: 'idle', ph: step * 10, blink: (tt % 3) < .1, eye: 0, alpha: 0 };
@@ -253,6 +254,7 @@ return scene({
         if (kl > .01) scaleAt(cx, x + 40, 600, kl, () => pic(cx, 'lock', x + 40, 600, 6));
       });
       const k2 = prog(b, t('mode') + .9, t('mode') + 1.2); if (k2 > 0) alpha(tx, k2, () => { txt(tx, '不动代码', 1180, 730, fnt(900, 44), P.yel, 'center'); txt(tx, '只读', 1180, 445, fnt(700, 28), P.lgy, 'center'); });
+      const k3 = prog(b, t('mode2'), t('mode2') + .3); if (k3 > 0) alpha(tx, k3, () => txt(tx, '没有这个模式？直接说：「先别改代码，给我一个计划」', 960, 790, fnt(700, 30), P.wht, 'center'));
       st = { ...st, alpha: kM, x: 1740, y: 780, px: 11, pose: 'type', ph: tt * 18 };
     });
     // ---------- C. 存档菜单 ----------

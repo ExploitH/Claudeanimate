@@ -534,7 +534,7 @@ float tmask(vec2 uv,float k,float kind,vec4 tp,out vec3 ec,out float ea){
   if(kind<4.5){float pos=uv.x+(uv.y-.5)*.22+(fbm3(vec2(uv.y*14.,3.))-.5)*.07;float th=k*1.45-.22;
     ec=vec3(.98,.96,.91);ea=step(th,pos)*step(pos,th+.012+.008*vn(vec2(uv.y*90.,1.)))*live;return step(pos,th);}
   if(kind<5.5){float d=length((uv-tp.xy)*vec2(AR,1.));float n=fbm(uv*vec2(AR,1.)*3.2)*.55+d*.62;float th=k*1.55;
-    ec=pal(n*1.6+uT*.15)*1.2;ea=smoothstep(.07,0.,abs(n-th+.035))*live;return smoothstep(th,th-.045,n);}
+    ec=uTC.w>.5?uTC.rgb*1.2:pal(n*1.6+uT*.15)*1.2;ea=smoothstep(.07,0.,abs(n-th+.035))*live;return smoothstep(th,th-.045,n);}
   if(kind<6.5){float row=floor(uv.y*30.);float s=h1(vec2(row,floor(uT*24.)));ea=step(abs(s-k),.035)*live;return step(s,k*1.12-.06);}
   if(kind<7.5){float n=fbm(uv*vec2(AR,1.)*4.)*.7+length((uv-tp.xy)*vec2(AR,1.))*.4;float th=k*1.35;
     ec=mix(vec3(1.,.32,.04),vec3(1.,.92,.55),smoothstep(.05,0.,n-th));ea=smoothstep(.06,0.,n-th)*step(th,n)*live*1.6;return step(n,th);}
@@ -768,7 +768,7 @@ function renderFrame(T, P, tw, fv, res) {
   const u = {
     uT: T, uBeat: uA.L.beat * fx, uMix: pk.B ? pk.k : 0, uTK: e.kind ?? 0, uLA: uA.look, uLB: uB ? uB.look : 0, uFx: fx, uBox: box, uFlash: flash * Math.min(1, fx),
     uPA: uA.par, uPB: uB ? uB.par : [0, 0, 0, 0], uCamA: uA.cam, uCamB: uB ? uB.cam : [1, 0, 0, 0], uFoA: uA.fo, uFoB: uB ? uB.fo : [.5, .5, 1, 0],
-    uTP: ex, uTC: [...ec, 1],
+    uTP: ex, uTC: [...ec, e.col ? 1 : 0], // w=1：转场指定了颜色（墨迹边就用它，不用彩虹色）
   };
   return GLR.render(res, u, [1, 1, !!uB, !!uB, 1]);
 }

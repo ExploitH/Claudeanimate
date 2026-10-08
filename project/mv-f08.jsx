@@ -218,7 +218,7 @@ const P3 = {};
 return scene({
   scene: '08 案例复现 · 抢注包名', look: LOOK.NOIR,
   desc: '3D：雨夜的包仓库大街。五个模型指着同一块空地喊出同一个假包名；53 块空地亮起灯；风衣人走来抢注，空地上长出一家亮着红光的店；Clawd 照着名字走进去，红光涌出；SLOPSQUATTING。',
-  enter: { kind: TR.INK, a: 0, b: .8 },
+  enter: { kind: TR.INK, a: 0, b: 3, col: '#e0242f' },
   hud: noirHud(true),
   par: L => [1, 0, 0, 0],
   pulse: () => .2,
@@ -407,7 +407,7 @@ const PX = i => 110 + i * 590;
 return scene({
   scene: '08 黑色电影 · 三件事', look: LOOK.NOIR,
   desc: '三项检查：恢复被注释的那行、看 diff；自己跑出四个测试一个失败；测边界的三个输入；去 Maven Central 搜一下包名；规则 7；METR 的感觉 +20% 和实测 −19%。',
-  enter: { kind: TR.INK, a: 0, b: .8 },
+  enter: { kind: TR.INK, a: 0, b: 3, col: '#e0242f' },
   hud: noirHud(true),
   par: L => [1, .6, 0, 0],
   pulse: L => .3,

@@ -1,47 +1,47 @@
 [
  {
-  "k": "clawd|这是一段示例台词，用来演示配音台本的格式。",
-  "sp": "clawd",
+  "k": "narrator|这是一段示例台词，用来演示配音台本的格式。",
+  "sp": "narrator",
   "text": "这是一段示例台词，用来演示配音台本的格式。",
   "kind": "say",
   "scene": "示例 · 开场",
   "t": 2
  },
  {
-  "k": "clawd|你好，我是示例角色。",
-  "sp": "clawd",
+  "k": "narrator|你好，我是示例角色。",
+  "sp": "narrator",
   "text": "你好，我是示例角色。",
   "kind": "me",
   "scene": "示例 · 开场",
   "t": 6.5
  },
  {
-  "k": "you|你好，我想看看这个动画怎么做。",
-  "sp": "you",
+  "k": "user|你好，我想看看这个动画怎么做。",
+  "sp": "user",
   "text": "你好，我想看看这个动画怎么做。",
   "kind": "you",
   "scene": "示例 · 开场",
   "t": 9
  },
  {
-  "k": "clawd|第一步：准备素材",
-  "sp": "clawd",
+  "k": "narrator|第一步：准备素材",
+  "sp": "narrator",
   "text": "第一步：准备素材",
   "kind": "big",
   "scene": "示例 · 讲解",
   "t": 14
  },
  {
-  "k": "clawd|规则一：每句台词只念一遍。",
-  "sp": "clawd",
+  "k": "narrator|规则一：每句台词只念一遍。",
+  "sp": "narrator",
   "text": "规则一：每句台词只念一遍。",
   "kind": "rule",
   "scene": "示例 · 讲解",
   "t": 19
  },
  {
-  "k": "clawd|台词文件由 voxlist.js 导出，合成后用 pack.py 打包。",
-  "sp": "clawd",
+  "k": "narrator|台词文件由 voxlist.js 导出，合成后用 pack.py 打包。",
+  "sp": "narrator",
   "text": "台词文件由 voxlist.js 导出，合成后用 pack.py 打包。",
   "kind": "say",
   "scene": "示例 · 讲解",

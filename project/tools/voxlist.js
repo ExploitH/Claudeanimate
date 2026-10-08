@@ -1,5 +1,6 @@
 // 导出全片配音台本：node voxlist.js <out.json> [--html f | --dc 入口]
-// 每条带 k（配音的 md5 键）、sp（说话的人，对应 tts/gen.py 的 --voice 键）、text、kind、scene、t（成片秒数）。同一句只记一次。
+// 每条带 k（sp|text）、sp（说话人：narrator 或 user，对应 mv-voice.js 里 banks 的键）、text、kind、scene、t（成片秒数）。同一句只记一次。
+// 用来对着台本录人声碎片：每个字念一个碎片，标点不念。
 const fs = require('fs');
 const L = require('./mv-lib');
 

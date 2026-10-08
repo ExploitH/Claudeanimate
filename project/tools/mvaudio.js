@@ -8,7 +8,7 @@ async function renderAudio(page, { A0 = 0, AD = 0, wantWav = false } = {}) {
   return page.evaluate(async ([wantWav, A0, AD]) => {
     const P = window.__mvPlan;   // sfx 的位置以小节计，换成秒要乘 MV_K.BAR
     const T0 = A0 ? +A0 : 0, total = AD ? +AD : P.total - T0, t0 = performance.now();
-    const sfx = []; for (const w of P.ws) for (const s of w.m.sfx || []) sfx.push([w.start + s[0] * window.MV_K.BAR, ...s.slice(1)]); for (const r of P.rules) sfx.push([r.t, 'rule']); for (const w of P.ws) for (const [at, k, d] of w.m.vox || []) sfx.push([w.start + at * window.MV_K.BAR, 'vox', k, d]);
+    const sfx = []; for (const w of P.ws) for (const s of w.m.sfx || []) sfx.push([w.start + s[0] * window.MV_K.BAR, ...s.slice(1)]); for (const r of P.rules) sfx.push([r.t, 'rule']); for (const w of P.ws) for (const [at, sp, seed] of w.m.vox || []) sfx.push([w.start + at * window.MV_K.BAR, 'voice', sp, .12, seed]);
     const J = window.MV_MUSIC.job(P, sfx, T0, total, { sfx: true, bgm: true, vol: .8 });
     const times = []; let last = performance.now();
     await J.run(() => { const n = performance.now(); times.push(Math.round(n - last)); last = n; });

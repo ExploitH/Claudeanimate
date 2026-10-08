@@ -313,7 +313,7 @@ function renderChunk(ev, cs, ce, opt, x = {}) {
   // 人声：单独一条总线，不跟音乐一起静音；说话时音乐压到 40%，说完 0.35 秒内回来
   const vox = A.createGain(); vox.gain.value = 1.15; const vhp = A.createBiquadFilter(); vhp.type = 'highpass'; vhp.frequency.value = 90; vox.connect(vhp); vhp.connect(lim);
   const duck = music.gain; duck.setValueAtTime(1, 0);
-  const vi = []; for (const e of ev) if (e.i === 'vox' && e.t + (e.d || 0) > cs - .5 && e.t < ce + TAIL) { const a = R(e.t) - .12, b = R(e.t + (e.d || 0)); const l = vi[vi.length - 1]; if (l && a < l[1] + .45) l[1] = Math.max(l[1], b); else vi.push([a, b]); }
+  const vi = []; for (const e of ev) if (e.i === 'voice' && e.t + (e.d || 0) > cs - .5 && e.t < ce + TAIL) { const a = R(e.t) - .12, b = R(e.t + (e.d || 0)); const l = vi[vi.length - 1]; if (l && a < l[1] + .45) l[1] = Math.max(l[1], b); else vi.push([a, b]); }
   for (const [a, b] of vi) { if (a > 0) duck.setValueAtTime(1, a); duck.linearRampToValueAtTime(.4, Math.max(.01, a + .12)); duck.setValueAtTime(.4, Math.max(.02, b)); duck.linearRampToValueAtTime(1, Math.max(.03, b + .35)); }
   // 侧链：合成器总线跟着底鼓压一下
   const sc = synth.gain; sc.setValueAtTime(1, 0);
@@ -543,7 +543,8 @@ function renderChunk(ev, cs, ce, opt, x = {}) {
   };
   const spawn = e => {
     const t = R(e.t); curEnd = t + (e.d || 0) + 3.5;
-    if (e.i === 'vox') { const buf = VOX.get(e.a); if (buf) { const src = A.createBufferSource(); src.buffer = buf; src.connect(vox); src.start(Math.max(0, t), e.off || 0); } return; }
+    // 人声碎片：从说话人的碎片库里按字挑一个，音高和音量各抖一点，同一个字每次都一样
+    if (e.i === 'voice') { const B = bankOf(e.a); if (B) { const src = A.createBufferSource(), g = G(), h = hsh(e.x); src.buffer = B[Math.floor(h * B.length) % B.length]; src.playbackRate.value = 1 + (hsh(e.x + .5) - .5) * .12; g.gain.value = .75 + .25 * hsh(e.x + .25); src.connect(g); g.connect(vox); src.start(Math.max(0, t)); } return; }
     if (e.sfx) { const f = X[e.i]; if (f) f(t, e.a); return; }
     if (e.i === 'lp' || e.i === 'mute') return;
     if (I[e.i]) I[e.i](e, t);
@@ -563,15 +564,29 @@ function renderChunk(ev, cs, ce, opt, x = {}) {
   return A.startRendering();
 }
 
-// ---------- 配音解码 ----------
-const VOX = new Map(); let VOXP = null;
-function voxReady() {
-  if (VOXP) return VOXP;
-  const src = (window.MV_VOX && window.MV_VOX.a) || {}, ks = Object.keys(src);
-  if (!ks.length) return (VOXP = Promise.resolve());
-  const ctx = new OfflineAudioContext(1, 1, SR);
-  VOXP = Promise.all(ks.map(k => { const bin = atob(src[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return ctx.decodeAudioData(u.buffer).then(b => VOX.set(k, b)).catch(e => console.warn('配音解码失败：', k, e)); }));
-  return VOXP;
+// ---------- 人声碎片库 ----------
+// window.MV_VOX = { rate, banks: {说话人: [base64 的 16 位单声道 WAV, ...]} }（mv-voice.js，由 tools/voice/blips.py 生成或打包）
+const BANKS = new Map();
+function bankOf(sp) {
+  if (BANKS.has(sp)) return BANKS.get(sp);
+  const V = window.MV_VOX, list = V && V.banks && V.banks[sp];
+  const out = list && list.length ? list.map(b => wavBuffer(b, V.rate || 24000)) : null;
+  BANKS.set(sp, out); return out;
+}
+// 同步解析 WAV（只认 16 位单声道 PCM）：找到 data 块，逐个读出采样
+function wavBuffer(b64, rate) {
+  const bin = atob(b64), u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const dv = new DataView(u.buffer);
+  let p = 12, at = 44, n = Math.max(0, (u.length - 44) >> 1);
+  while (p + 8 <= u.length) {
+    const id = String.fromCharCode(u[p], u[p + 1], u[p + 2], u[p + 3]), sz = dv.getUint32(p + 4, true);
+    if (id === 'data') { at = p + 8; n = Math.min(sz, u.length - at) >> 1; break; }
+    p += 8 + sz + (sz & 1);
+  }
+  const buf = new AudioBuffer({ length: Math.max(1, n), numberOfChannels: 1, sampleRate: rate }), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = dv.getInt16(at + 2 * i, true) / 32768;
+  return buf;
 }
 
 // ---------- 分段任务 ----------
@@ -608,7 +623,6 @@ function renderSlice(ev, sl, opt) {
     if (e.t >= c0) { sel.push(e); continue; }
     // 段首前很早开始、现在还在响的长音：截到 c0 再起音（起音落在预渲染里，会被丢掉）
     if ((e.d || 0) > PRE && e.t + e.d + 1 > a) sel.push({ ...e, t: c0, d: e.d - (c0 - e.t), off: (e.off || 0) + (c0 - e.t) });
-    else if (e.i === 'vox' && e.t + e.d > c0) sel.push({ ...e, t: c0, d: e.d - (c0 - e.t), off: (e.off || 0) + (c0 - e.t) });
   }
   return renderChunk(sel, c0, Math.min(we, x1), opt, { all: true, tail: x1 - Math.min(we, x1) + .05 }).then(buf => {
     const o = Math.round((x0 - c0) * SR), n = Math.round((x1 - x0) * SR), f = Math.round(XF * 2 * SR);
@@ -629,12 +643,11 @@ window.MV_MUSIC = {
   job(P, sfx, T0, dur, opt) {
     const song = compose(P), ev = [];
     if (opt.bgm) ev.push(...song.ev); else ev.push(...song.ev.filter(e => e.i === 'mute'));
-    for (const [t, i, a, d] of sfx) if (opt.sfx || i === 'vox') ev.push({ t, i, a, d: i === 'vox' ? d : undefined, sfx: true });
+    for (const [t, i, a, d, x] of sfx) if (opt.sfx || i === 'voice') ev.push({ t, i, a, d: i === 'voice' ? d : undefined, x, sfx: true });
     ev.sort((a, b) => a.t - b.t);
     const key = song.sig + '|' + JSON.stringify(opt) + '|' + sfx.length, list = slices(P, T0, dur);
     const J = { done: [], dead: false, at: T0, cancel() { J.dead = true; }, focus(t) { J.at = t; },
       async run(cb) {
-        await voxReady();
         const todo = list.slice();
         // 几段同时渲（离线渲染各占一个线程，按核数定 2~4 路）；每次都挑播放头所在的段，然后往后，后面渲完了再回头补前面
         const worker = async () => {

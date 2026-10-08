@@ -14,7 +14,7 @@ const CDN = {
 const GL_ARGS = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'];
 const DEFAULT_TWEAKS = { motionEditor: true, sfx: true, bgm: true, bgmVol: .8, quality: '流畅', fx: 1 };
 
-// 项目配置（可选）：{ "dc": "入口.dc.html", "title": "标题", "script": { "labels": {...} }, "tts": { "model": "...", "subs": [[正则, 替换], ...] } }
+// 项目配置（可选）：{ "dc": "入口.dc.html", "title": "标题", "script": { "labels": {...} } }
 function config() {
   for (const p of [path.join(ROOT, 'mv.config.json'), path.join(__dirname, 'mv.config.json')]) {
     if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));

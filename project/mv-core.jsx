@@ -763,6 +763,7 @@ function sfxList(P) {
   for (const w of P.ws) for (const s of w.m.sfx || []) ev.push([w.start + s[0] * BAR, ...s.slice(1)]);
   for (const w of P.ws) for (const [at, , text] of w.m.you || []) { const nt = youType(text); [...text].forEach((ch, i) => { if (ch !== ' ') ev.push([w.start + (at + .06 + (i + .5) * nt / text.length) * BAR, 'key', .8]); }); ev.push([w.start + at * BAR, 'blip', 660]); }
   for (const r of P.rules) ev.push([r.t, 'rule']);
+  for (const w of P.ws) for (const [at, k, d] of w.m.vox || []) ev.push([w.start + at * BAR, 'vox', k, d]);
   return ev;
 }
 function toWav(ch, sr) {
@@ -857,6 +858,23 @@ function readLen(s) {
   }
   return n;
 }
+// ---------- 配音 ----------
+// window.MV_VOX = { d: {key: 秒}, a: {key: base64 mp3} }（mv-voice.js）。没有配音文件时一切照旧。
+// 一句台词的配音：Clawd 念旁白、大字、对话和规则；「你」念自己打的字。词条卡不念（让人自己读）。
+const voxClean = s => String(s).replace(/[‹›«»]/g, '').replace(/\n/g, '').trim();
+function voxLines(s) {
+  const out = [], cj = x => /[㐀-鿿]/.test(x || '');
+  if (s.say) out.push(['clawd', voxClean(s.say), 'say']);
+  if (s.big && (cj(s.big) || cj(s.sub))) out.push(['clawd', voxClean(s.big) + (s.sub && cj(s.sub) ? '。' + voxClean(s.sub) : ''), 'big']);
+  if (s.me) out.push(['clawd', voxClean(s.me), 'me']);
+  if (s.you) out.push(['you', voxClean(s.you), 'you']);
+  if (s.rule) out.push(['clawd', '规则' + '零一二三四五六七八九'[s.rule[0]] + '：' + voxClean(s.rule[1]), 'rule']);
+  return out;
+}
+const voxKey = (sp, text) => sp + '|' + text;
+window.MV_VOXLINES = voxLines; window.MV_VOXKEY = voxKey;
+const voxDur = k => (window.MV_VOX && window.MV_VOX.d && window.MV_VOX.d[k]) || 0;
+const VOX_LEAD = { say: .06, big: .15, me: 0, you: .03, rule: .12 }, VOX_TAIL = .55; // 小节 / 秒
 const readBars = (s, slow = 1) => Math.ceil(Math.max(READ.min, readLen(s) / READ.cps * slow + READ.pad) / BAR * 4) / 4;
 function seq(steps, o = {}) {
   const at = {}, end = {}, items = [];
@@ -869,8 +887,16 @@ function seq(steps, o = {}) {
     let d = s.dur ?? (t ? readBars(t, s.slow) : 1);
     if (s.you && s.dur === undefined) d += youType(s.you);
     if (s.me && s.dur === undefined) d += .5 + (s.wait || 0); // 「对方正在输入」
+    // 配音：每句至少留够念完的时间（只会拉长，不会缩短）
+    const vox = [];
+    for (const [sp, text, kind] of voxLines(s)) {
+      const k = voxKey(sp, text), v = voxDur(k); if (!v) continue;
+      const lead = kind === 'me' ? .5 + (s.wait || 0) : VOX_LEAD[kind];
+      vox.push({ k, at: lead, d: v });
+      d = Math.max(d, Math.ceil((lead + (v + VOX_TAIL) / BAR) * 4) / 4);
+    }
     d += s.hold || 0;
-    const it = { ...s, at: st, out: st + d };
+    const it = { ...s, at: st, out: st + d, vox };
     items.push(it);
     if (s.id) { at[s.id] = st; end[s.id] = st + d; }
     prev = st;
@@ -964,7 +990,8 @@ function scene(m, S) {
   const you = S.items.filter(i => i.you && !m.chat).map(i => [i.at, i.out, i.you]);
   const r = S.items.find(i => i.rule);
   const src = S.items.filter(i => i.src).map(i => [i.at, i.srcOut, i.src]);
-  return { ...m, bars: m.bars ?? S.bars, S, cue: S.at, you: [...(m.you || []), ...you], src: [...(m.src || []), ...src],
+  const vox = []; for (const i of S.items) for (const v of i.vox || []) vox.push([i.at + v.at, v.k, v.d]);
+  return { ...m, vox, bars: m.bars ?? S.bars, S, cue: S.at, you: [...(m.you || []), ...you], src: [...(m.src || []), ...src],
     rule: r ? { n: r.rule[0], at: r.at, len: r.out - r.at, text: r.rule[1] } : m.rule,
     text: (m.text || '') + S.text };
 }

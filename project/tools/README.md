@@ -45,8 +45,8 @@ PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install   # 不下载浏览器
 | `node mvbuild.js [out.html]` | 把入口和全部模块打成一个 html（章节栏、画质切换、声音开关）。默认输出到 `tools/mv/index.html` |
 | `node plan.js [世界id]` | 看时间表：每个世界的起点、小节数；给了 id 就列它每个小节点的绝对秒数 |
 | `node mvshot.js <目录> <t1> [t2 ...] [--hi]` | 截指定秒数的关键帧，用来看画面 |
-| `node mvexport.js <out.mp4> [--from --to --fps --hi --audio --keep]` | **快速导出**，见下 |
-| `node mvaudio.js <目录> [--wav out.wav] [--from --dur]` | 离线渲染音轨，输出频谱图和每段的 RMS/峰值，可写 WAV |
+| `node mvexport.js <out.mp4> [--from --to --fps --hi --audio --no-keys --keep]` | **快速导出**，见下 |
+| `node mvaudio.js <目录> [--wav out.wav] [--from --dur --no-keys]` | 离线渲染音轨，输出频谱图和每段的 RMS/峰值，可写 WAV |
 | `node mvscenes.js [dc ...]` | 从世界模块算每场时长，写回 `OM_SCENES`（改了 bars 之后跑） |
 | `node script.js <out.md>` | 从世界模块导出剧本（台词、词条、出处、规则，时间码与成片一致） |
 | `node voxlist.js <out.json>` | 导出全片台词，去重后每句一条，用来对着台本录人声碎片 |
@@ -59,12 +59,18 @@ PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install   # 不下载浏览器
 
 ## 人声碎片（一字一声）
 
-字幕的配音不用 TTS。和打字声一样，每个念出来的字都触发一个人声碎片，像 Undertale 的文字音。
+字幕的配音不用 TTS。每个念出来的字都触发一个人声碎片，像 Undertale 的文字音。
 
 - **说话人**：`narrator` 念旁白、大字、角色对话和规则；`user` 念「你」自己打的字。引擎 `mv-core.jsx` 的 `voxLines` 决定哪句归哪个说话人。
 - **碎片库**：`mv-voice.js` 里 `window.MV_VOX = { rate, source, banks: { 说话人: [WAV, ...] } }`。每个字用 `seed` 挑一个碎片，音高和音量各抖一点，同一个字每次都一样。没有碎片库的说话人不出声。
-- **时间**：「你」跟着打字的节奏走（和按键声同一套时间）；其它每字 0.06 秒（和 `typeSfx` 的默认打字节奏一样），标点和空白不念。同一项里几句依次念，不叠在一起。
+- **字幕是打字机**：每个字在它念出来的那一刻出现，每字 0.06 秒（和 `typeSfx` 的默认打字节奏一样）。标点和空白不念，但它们和字一样占一个时刻，所以停顿跟屏上一致。画面和声音用同一个 `typeStep` 算时刻，逐字对得上。没有大字的字幕才念（有大字时字幕不画，也不念）。
+- **大字、规则、角色对话**：仍是整段淡入，念的节奏按读字的速度排开，同一项里几句依次念，不叠在一起。
+- **「你」**：「你」的气泡跟着打字的节奏念，碎片用 `user` 的那一库。
 - **音量**：念的时候背景音乐会压低，和之前的配音一样。
+
+**「你打字的按键声」开关**：设置面板里有一个开关（默认开）。打开时，「你」在打字的时间段里的键盘声都会响；关掉后这些键盘声全部去掉，别的打字声（代码、标题、Clawd 的回复）不受影响。判断的依据是时间段：落在某一句「你」的时间段里、类型为按键声的，就算「你」的。聊天风的世界自己放按键声，也按这个规则处理。`user` 的碎片不受这个开关控制。
+
+导出时同样生效：`mvaudio.js` 和 `mvexport.js` 加 `--no-keys` 即可去掉「你」的按键声。
 
 **占位与录音**：`synth` 生成的碎片是合成的类人声元音，只是占位，`mv-voice.js` 的 `source` 会写着 `synth`。真正的人声要自己录：
 
@@ -99,6 +105,7 @@ PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install   # 不下载浏览器
 - `window.MV_W`：世界注册表；`window.MV_K`：工具集，工具要用它的 `BAR`（一小节的秒数）
 - `window.__mvPlan`：时间表（`ws`、`rules`、`total`）
 - `window.MV_MUSIC.job`：离线音频渲染
+- `window.MV_SFXLIST(P, opt)`：这一份时间表上的全部声音事件（页面和导出用的是同一个）
 - `window.MV_VOX`：人声碎片库
 - `window.MV_VOXLINES` / `window.MV_VOXKEY`：台词和键
 - `window.MVApp`：入口挂载的根组件

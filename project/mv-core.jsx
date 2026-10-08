@@ -758,14 +758,20 @@ function Frame({ T, P, tw, fv }) {
 
 // ---------- 音轨：音乐模块分块离线渲染 ----------
 // 有 window.__mvAudio（单文件预览）就用 Web Audio 逐块播放；否则拼成一条 WAV 放进 <video>，编辑器导出时会带上声音
-function sfxList(P) {
-  const ev = [];
-  for (const w of P.ws) for (const s of w.m.sfx || []) ev.push([w.start + s[0] * BAR, ...s.slice(1)]);
-  for (const w of P.ws) for (const [at, , text] of w.m.you || []) { const nt = youType(text); [...text].forEach((ch, i) => { if (ch !== ' ') ev.push([w.start + (at + .06 + (i + .5) * nt / text.length) * BAR, 'key', .8]); }); ev.push([w.start + at * BAR, 'blip', 660]); }
+function sfxList(P, opt = {}) {
+  const ev = [], keys = opt.youKeys !== false;
+  // 「你」在打字的时间段（秒）。这段里的键盘声（kind 'key'）就是你的按键声：开关关掉时去掉。
+  // 聊天风的世界自己画「你」的气泡、自己放按键声，所以按时间段来认，不看是哪个世界。
+  const youAt = [];
+  for (const w of P.ws) for (const i of (w.m.S ? w.m.S.items : [])) if (i.you) youAt.push([w.start + i.at * BAR, w.start + i.out * BAR]);
+  const inYou = t => youAt.some(([a, b]) => t >= a - .02 && t <= b + .02);
+  for (const w of P.ws) for (const s of w.m.sfx || []) { const t = w.start + s[0] * BAR; if (!keys && s[1] === 'key' && inYou(t)) continue; ev.push([t, ...s.slice(1)]); }
+  if (keys) for (const w of P.ws) for (const [at, , text] of w.m.you || []) { const nt = youType(text); [...text].forEach((ch, i) => { if (ch !== ' ') ev.push([w.start + (at + .06 + (i + .5) * nt / text.length) * BAR, 'key', .8]); }); ev.push([w.start + at * BAR, 'blip', 660]); }
   for (const r of P.rules) ev.push([r.t, 'rule']);
   for (const w of P.ws) for (const [at, sp, seed] of w.m.vox || []) ev.push([w.start + at * BAR, 'voice', sp, .12, seed]); // 一个人声碎片约 0.12 秒
   return ev;
 }
+window.MV_SFXLIST = sfxList;
 function toWav(ch, sr) {
   const n = ch[0].length, v = new DataView(new ArrayBuffer(44 + n * 4));
   const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
@@ -779,7 +785,7 @@ function useMusic(P, T0, dur, opt, timeRef) {
   useEffect(() => {
     let live = true; setChunks([]);
     const M = window.MV_MUSIC; if (!M || !(opt.sfx || opt.bgm) || window.__mvNoAudio) return;
-    const job = M.job(P, sfxList(P), T0, dur, opt);
+    const job = M.job(P, window.MV_SFXLIST(P, opt), T0, dur, opt);
     job.focus(T0 + (timeRef.current || 0));
     timeRef.job = job;
     job.run(() => { if (live) setChunks(job.done.slice()); });
@@ -873,24 +879,31 @@ function voxLines(s) {
 }
 const voxKey = (sp, text) => sp + '|' + text;
 window.MV_VOXLINES = voxLines; window.MV_VOXKEY = voxKey;
-// 字的节奏：「你」跟着打字走（和按键声同一套时间）；其它跟着读字的节奏，每字 BLIP_ST 小节（和 typeSfx 的默认打字节奏一样，0.06 秒）
-const BLIP_ST = .03, BLIP_LEAD = { say: .06, big: .15, me: 0, rule: .12 }; // 小节
+// 字的节奏：字幕和「你」都是打字机，字在屏上出现的时候念它的碎片；大字、规则、角色对话按读字的节奏排开。
+// 每字 BLIP_ST 小节（0.06 秒，和 typeSfx 的默认打字节奏一样）。narrate 里的字幕打字机也用 typeStep，两边对得上。
+const BLIP_ST = .03, BLIP_LEAD = { big: .15, me: 0, rule: .12 }; // 小节
+const typeText = s => String(s).replace(/[‹›«»\n]/g, ''); // 屏上逐字出现的字符：去掉颜色标记和换行
+const typeLen = s => [...typeText(s)].length;
+const typeStep = (n, dur, lead = 0) => Math.min(BLIP_ST, Math.max(.012, (dur - lead - .1) / Math.max(1, n)));
 // 一项里的每句：每个字一个碎片（标点和空白不念）。seed 决定这个字用哪一个碎片、音高怎么抖，同一个字每次都一样。
 function voxBlips(s, dur) {
   const out = [];
-  let cur = 0; // 同一项里几句依次念，不叠在一起
+  let cur = 0; // 同一项里几段依次念，不叠在一起
+  const emit = (sp, text, lead, step) => {
+    [...text].forEach((ch, i) => { if (/[\p{L}\p{N}]/u.test(ch)) out.push({ sp, at: lead + i * step, seed: ch.codePointAt(0) * 131 + i }); });
+    return lead + [...text].length * step + .1;
+  };
+  // 字幕只在没有大字时才画，所以只在这种时候念
+  if (s.say && !s.big) cur = emit('narrator', typeText(s.say), 0, typeStep(typeLen(s.say), dur));
   for (const [sp, text, kind] of voxLines(s)) {
-    const n = [...text].length, idx = [...text].map((ch, i) => [ch, i]).filter(([ch]) => /[\p{L}\p{N}]/u.test(ch));
-    if (!idx.length) continue;
+    if (kind === 'say') continue;
     if (kind === 'you') {
-      const nt = youType(text);
-      for (const [ch, i] of idx) out.push({ sp, at: .06 + (i + .5) * nt / n, seed: ch.codePointAt(0) * 131 + i });
-    } else {
-      const lead = Math.max(cur, kind === 'me' ? .5 + (s.wait || 0) : BLIP_LEAD[kind]);
-      const step = Math.min(BLIP_ST, Math.max(.012, (dur - lead - .1) / n));
-      for (const [ch, i] of idx) out.push({ sp, at: lead + i * step, seed: ch.codePointAt(0) * 131 + i });
-      cur = lead + n * step + .1;
+      const n = [...text].length, nt = youType(text);
+      [...text].forEach((ch, i) => { if (/[\p{L}\p{N}]/u.test(ch)) out.push({ sp, at: .06 + (i + .5) * nt / n, seed: ch.codePointAt(0) * 131 + i }); });
+      continue;
     }
+    const lead = Math.max(cur, kind === 'me' ? .5 + (s.wait || 0) : BLIP_LEAD[kind]);
+    cur = emit(sp, text, lead, typeStep([...text].length, dur, lead));
   }
   return out;
 }
@@ -961,7 +974,8 @@ function narrate(ctx, L, S, st = {}) {
       const y = (it.y ?? sub.y) - (n - 1) * lh / 2 - (n > 1 ? lh / 2 : 0);
       ctx.save();
       if (sub.shadow) { ctx.shadowColor = sub.shadow; ctx.shadowBlur = 14; ctx.shadowOffsetY = 2; }
-      lyric(ctx, L, { at: it.at, out: it.sayOut ?? it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: 'fade', d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
+      // 字幕是打字机：每个字在 typeStep 的时刻出现，和 voxBlips 里它念出来的时刻一致；退场沿用淡出
+      lyric(ctx, L, { at: it.at, out: it.sayOut ?? it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: 'type', outAnim: 'fade', st: typeStep(typeLen(it.say), it.out - it.at) * 4, rev: 1e9, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
       ctx.restore();
     }
     if (it.big) {
@@ -1052,7 +1066,7 @@ function Piece({ tw }) {
   window.__mvPlan = P;
   const T = Tp + fc.off;
   const [fv, setFv] = useState(0);
-  const opt = useMemo(() => ({ sfx: tw.sfx !== false, bgm: tw.bgm !== false, vol: tw.bgmVol ?? .8 }), [tw.sfx, tw.bgm, tw.bgmVol]);
+  const opt = useMemo(() => ({ sfx: tw.sfx !== false, bgm: tw.bgm !== false, vol: tw.bgmVol ?? .8, youKeys: tw.youKeys !== false }), [tw.sfx, tw.bgm, tw.bgmVol, tw.youKeys]);
   useEffect(() => {
     const text = P.ws.map(w => (w.m.text || '') + (w.m.hud ? w.m.hud.name + (w.m.hud.world || '') + (w.m.hud.line || '') + (w.m.hud.time || '') : '') + (w.m.rule ? w.m.rule.text : '') + (w.m.you || []).map(y => y[2]).join('')).join('') + '来源：规则清单你 0123456789/%+-.:「」' + SING.flat().map(x => x[1]).join('');
     const loads = [];
@@ -1067,7 +1081,7 @@ function Piece({ tw }) {
   );
 }
 function MVApp() {
-  const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS || { motionEditor: true, sfx: true, bgm: true, bgmVol: .8, quality: '流畅', fx: 1 });
+  const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS || { motionEditor: true, sfx: true, youKeys: true, bgm: true, bgmVol: .8, quality: '流畅', fx: 1 });
   return (
     <>
       <CompositionStage width={W} height={H} scenes={window.OM_SCENES} playback={window.OM_PLAYBACK} bg="#000">
@@ -1079,6 +1093,7 @@ function MVApp() {
         <TweakSection label="声音" />
         <TweakToggle label="音乐" value={t.bgm} onChange={v => setTweak('bgm', v)} />
         <TweakToggle label="音效" value={t.sfx} onChange={v => setTweak('sfx', v)} />
+        <TweakToggle label="你打字的按键声" value={t.youKeys !== false} onChange={v => setTweak('youKeys', v)} />
         <TweakSlider label="音量" value={t.bgmVol} min={0} max={1} step={.05} onChange={v => setTweak('bgmVol', v)} />
         <TweakSection label="画面" />
         <TweakRadio label="渲染分辨率" value={t.quality} options={['流畅', '高', '原生']} onChange={v => setTweak('quality', v)} />

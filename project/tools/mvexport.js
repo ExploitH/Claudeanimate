@@ -2,6 +2,7 @@
 // 每帧不等两帧刷新；引擎广告了 data-om-sync-seek 时完全不等。字体已内联，所以单独截 svg 也是对的。
 // 用法：node mvexport.js <out.mp4> [--fps 30] [--from 秒] [--to 秒] [--hi] [--audio] [--keep] [--html f | --dc 入口] [--title 标题]
 //   --audio  同时离线渲染整条音轨并和画面合成（同一段时间）
+//   --no-keys  音轨里去掉「你」的按键声（和页面上的开关一样）
 //   --keep   保留逐帧 png（tools/out/<name>/frames/）
 const path = require('path'), fs = require('fs'), { execFileSync } = require('child_process');
 const L = require('./mv-lib');
@@ -10,7 +11,7 @@ const { renderAudio } = require('./mvaudio');
 (async () => {
   const { o, pos } = L.args(process.argv.slice(2), ['--html', '--dc', '--title', '--fps', '--from', '--to']);
   const [outFile] = pos;
-  if (!outFile) { console.error('用法：node mvexport.js <out.mp4> [--fps 30] [--from 秒] [--to 秒] [--hi] [--audio] [--keep] [--html f | --dc 入口]'); process.exit(1); }
+  if (!outFile) { console.error('用法：node mvexport.js <out.mp4> [--fps 30] [--from 秒] [--to 秒] [--hi] [--audio] [--no-keys] [--keep] [--html f | --dc 入口]'); process.exit(1); }
   const fps = +(o.fps || 30), from = +(o.from || 0);
   const name = path.basename(outFile, path.extname(outFile));
   const dir = path.join(L.BUILD_DIR, '..', 'out', name, 'frames');
@@ -45,7 +46,7 @@ const { renderAudio } = require('./mvaudio');
     const args = ['-y', '-v', 'error', '-framerate', String(fps), '-i', path.join(dir, '%07d.png')];
     if (o.audio) {
       const wav = path.join(dir, '..', 'audio.wav');
-      const res = await renderAudio(page, { A0: from, AD: to - from, wantWav: true });
+      const res = await renderAudio(page, { A0: from, AD: to - from, wantWav: true, youKeys: !o['no-keys'] });
       fs.writeFileSync(wav, Buffer.from(res.wav, 'base64'));
       console.log(`音轨完成，${res.ms} ms`);
       args.push('-i', wav, '-c:a', 'aac', '-b:a', '192k', '-shortest');

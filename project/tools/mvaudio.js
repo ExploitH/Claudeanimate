@@ -1,20 +1,21 @@
-// 离线渲染整条音轨并分析（不用实时播放）：node mvaudio.js <outdir> [--wav out.wav] [--from 秒] [--dur 秒] [--html f | --dc 入口]
-// 输出 outdir/spec.png（频谱图）和每段的 RMS / 峰值。--wav 同时写出立体声 WAV。
+// 离线渲染整条音轨并分析（不用实时播放）：node mvaudio.js <outdir> [--wav out.wav] [--from 秒] [--dur 秒] [--no-keys] [--html f | --dc 入口]
+// 输出 outdir/spec.png（频谱图）和每段的 RMS / 峰值。--wav 同时写出立体声 WAV。--no-keys 去掉「你」的按键声（和页面上的开关一样）。
 const path = require('path'), fs = require('fs');
 const L = require('./mv-lib');
 
 // 在已打开并挂好的页面里渲染：A0 起点秒，AD 时长秒（缺省到全片结束）
-async function renderAudio(page, { A0 = 0, AD = 0, wantWav = false } = {}) {
-  return page.evaluate(async ([wantWav, A0, AD]) => {
+async function renderAudio(page, { A0 = 0, AD = 0, wantWav = false, youKeys = true } = {}) {
+  return page.evaluate(async ([wantWav, A0, AD, youKeys]) => {
     const P = window.__mvPlan;   // sfx 的位置以小节计，换成秒要乘 MV_K.BAR
     const T0 = A0 ? +A0 : 0, total = AD ? +AD : P.total - T0, t0 = performance.now();
-    const sfx = []; for (const w of P.ws) for (const s of w.m.sfx || []) sfx.push([w.start + s[0] * window.MV_K.BAR, ...s.slice(1)]); for (const r of P.rules) sfx.push([r.t, 'rule']); for (const w of P.ws) for (const [at, sp, seed] of w.m.vox || []) sfx.push([w.start + at * window.MV_K.BAR, 'voice', sp, .12, seed]);
+    const sfx = window.MV_SFXLIST(P, { youKeys });   // 和页面用的是同一份声音事件：字幕碎片、你的按键声都在里面
     const J = window.MV_MUSIC.job(P, sfx, T0, total, { sfx: true, bgm: true, vol: .8 });
     const times = []; let last = performance.now();
     await J.run(() => { const n = performance.now(); times.push(Math.round(n - last)); last = n; });
     const ms = performance.now() - t0, sr = J.done[0].buf.sampleRate, n = Math.ceil((total + 1) * sr);
     const Lc = new Float32Array(n), Rc = new Float32Array(n);
-    for (const c of J.done) { const o = Math.round(c.t0 * sr), a = c.buf.getChannelData(0), bb = c.buf.getChannelData(1); for (let i = 0; i < a.length && i + o < n; i++) { Lc[i + o] += a[i]; Rc[i + o] += bb[i]; } }
+    // c.t0 是全片的时间，这里的缓冲从 T0 开始，所以要减去 T0；不减的话 --from 之后的音轨会全写到缓冲外面
+    for (const c of J.done) { const o = Math.round((c.t0 - T0) * sr), a = c.buf.getChannelData(0), bb = c.buf.getChannelData(1); for (let i = 0; i < a.length && i + o < n; i++) { Lc[i + o] += a[i]; Rc[i + o] += bb[i]; } }
     // 每 0.5 秒 RMS / 峰值
     const step = sr / 2, rms = [], peak = [];
     for (let i = 0; i + step <= n; i += step) { let s = 0, p = 0; for (let j = i; j < i + step; j++) { const v = (Lc[j] + Rc[j]) / 2; s += v * v; p = Math.max(p, Math.abs(Lc[j]), Math.abs(Rc[j])); } rms.push(+Math.sqrt(s / step).toFixed(3)); peak.push(+p.toFixed(2)); }
@@ -35,7 +36,7 @@ async function renderAudio(page, { A0 = 0, AD = 0, wantWav = false } = {}) {
       for (let i = 0, o = 44; i < n; i++, o += 4) { v.setInt16(o, Math.max(-1, Math.min(1, Lc[i])) * 32767, true); v.setInt16(o + 2, Math.max(-1, Math.min(1, Rc[i])) * 32767, true); }
       const bytes = new Uint8Array(v.buffer); let s = ''; for (let i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)); wavB64 = btoa(s); }
     return { ms: Math.round(ms), times, chunks: J.done.length, rms, peak, png: cv.toDataURL('image/png'), wav: wavB64, sr, starts: P.ws.map(w => [w.m.id, w.start]) };
-  }, [wantWav, A0, AD]);
+  }, [wantWav, A0, AD, youKeys]);
 }
 
 module.exports = { renderAudio };
@@ -50,7 +51,7 @@ if (require.main === module) {
     try {
       await L.ready(page);
       await L.seek(page, 0);
-      const res = await renderAudio(page, { A0: +(o.from || 0), AD: +(o.dur || 0), wantWav: !!o.wav });
+      const res = await renderAudio(page, { A0: +(o.from || 0), AD: +(o.dur || 0), wantWav: !!o.wav, youKeys: !o['no-keys'] });
       fs.writeFileSync(path.join(out, 'spec.png'), Buffer.from(res.png.split(',')[1], 'base64'));
       if (res.wav) fs.writeFileSync(o.wav, Buffer.from(res.wav, 'base64'));
       console.log('render ms', res.ms, 'per chunk', res.times.join(','), 'chunks', res.chunks);

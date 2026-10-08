@@ -1,0 +1,8 @@
+node_modules/
+package-lock.json
+mv/
+out/
+tts/.key
+tts/clips/
+tts/samples/
+tts/failed.json

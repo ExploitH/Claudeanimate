@@ -94,7 +94,7 @@ function drawScreen(x, w, h, L, cfg, chat, S) {
   let y = h - 70;
   const vis = chat.filter(m => L.b >= m.at).slice(-6).reverse();
   for (const m of vis) {
-    const me = !!m.me, s = (me ? m.me : m.you).replace(/[‹›«»]/g, ''), n = me ? s.length : Math.min(s.length, Math.floor(clamp01((L.b - m.at - .03) / Math.max(.05, Math.min(.5, s.length * .028))) * s.length + 1e-6));
+    const me = !!m.me, s = (me ? m.me : m.you).replace(/[‹›«»]/g, ''), n = chatN(m, L.b);
     if (me && L.b < m.at + .5 + (m.wait || 0)) { x.fillStyle = '#2a1d18'; roundR(x, px0 + 14, y - 26, 60, 30, 10); x.fill(); x.fillStyle = '#d97757'; for (let i = 0; i < 3; i++) { x.globalAlpha = .4 + .6 * (Math.floor(t * 6 + i) % 3 === 0); x.beginPath(); x.arc(px0 + 30 + i * 14, y - 11, 3.5, 0, 6.283); x.fill(); } x.globalAlpha = 1; y -= 44; continue; }
     x.font = '500 15px "Noto Sans SC",sans-serif';
     const wrapped = wrapCJK(x, s.slice(0, n), (w - px0) * .78);
@@ -109,6 +109,8 @@ function drawScreen(x, w, h, L, cfg, chat, S) {
   x.fillStyle = '#5d626c'; x.font = '400 14px "Noto Sans SC",sans-serif'; x.fillText(cfg.inputHint || '给 Clawd 发消息', px0 + 24, h - 27);
   if (cfg.screenOverlay) cfg.screenOverlay(x, w, h, L, S);
 }
+// 对话框里的字：Clawd 的等「正在输入」结束再开始打，「你」的紧跟着出现；都按 typeSched 逐字出，和人声碎片对齐
+function chatN(m, b) { const K = window.MV_K, me = !!m.me, t0 = m.at + (me ? .5 + (m.wait || 0) : .06); return K.typeN(me ? m.me : m.you, (b - t0) * K.BAR); }
 function roundR(x, a, b, w, h, r) { x.beginPath(); x.roundRect(a, b, w, h, r); }
 function wrapCJK(x, s, maxW) { const out = []; let l = ''; for (const ch of s) { if (x.measureText(l + ch).width > maxW && l) { out.push(l); l = ''; } l += ch; } out.push(l); return out; }
 
@@ -349,7 +351,7 @@ window.MV_REAL = (K, cfg) => {
   // 对话的提示音：你打字的键声，Clawd 的消息到达
   const sfx = [...(typeof cfg.sfx === 'function' ? cfg.sfx(S) : cfg.sfx || [])];
   for (const m of chat) {
-    if (m.you) { const n = m.you.replace(/[‹›«»]/g, '').length, d = Math.min(.5, n * .028); for (let i = 0; i < n; i += 2) sfx.push([m.at + .03 + d * i / n, 'key', .7]); if (m.enter !== false) sfx.push([m.at + d + .1, 'enter']); }
+    if (m.you) { if (m.enter !== false) sfx.push([m.at + .06 + K.youType(m.you) + .05, 'enter']); }
     else sfx.push([m.at + .5 + (m.wait || 0), 'pop']);
   }
   const m = scene({
@@ -390,10 +392,9 @@ function chatOverlay(ctx, L, chat, side, K) {
   let y = 880;
   const items = [];
   for (let i = last.length - 1; i >= 0; i--) {
-    const m = last[i], me = !!m.me, raw = (me ? m.me : m.you), n0 = raw.replace(/[‹›«»]/g, '').length;
+    const m = last[i], me = !!m.me, raw = (me ? m.me : m.you);
     const typing = me && b < m.at + .5 + (m.wait || 0);
-    let s = raw;
-    if (!me) { const d = Math.min(.5, n0 * .028), n = Math.floor(Math.min(1, Math.max(0, (b - m.at - .03) / Math.max(.05, d))) * n0 + 1e-6); s = cut(raw, n); }
+    const s = cut(raw, chatN(m, b));
     ctx.font = fnt(500, 36, F.sans);
     const lines = typing ? ['···'] : wrapText(ctx, s.replace(/[‹›«»]/g, ''), W0 - 150).split('\n');
     const bw = Math.min(W0 - 90, Math.max(...lines.map(l => ctx.measureText(l).width)) + 48), bh = lines.length * 50 + 30;

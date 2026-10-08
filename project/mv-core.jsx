@@ -86,7 +86,7 @@ function marks(s) {
   return out;
 }
 const GLYPH = '01アカサタナ#$%&*+=<>/\\|{}[]?!密码令牌函数变量提交测试';
-// s: {at, out, outLen, text, x, y, size, fam, w, col, acc, align, anim, outAnim, st(拍/字), d(小节), lh, ls, wave, glow, stroke, shadow, box, caret}
+// s: {at, out, outLen, text, x, y, size, fam, w, col, acc, align, anim, outAnim, st(拍/字), times(每个字出现的时间，小节，从 at 起；给了就不用 st), d(小节), lh, ls, wave, glow, stroke, shadow, box, caret}
 function lyric(ctx, L, s) {
   const b = L.b, outLen = s.outLen ?? .25;
   if (b < s.at - 1e-3 || (s.out !== undefined && b >= s.out + outLen + .5)) return null;
@@ -118,7 +118,7 @@ function lyric(ctx, L, s) {
       rr(ctx, x - pd, ly - lh * .46, (lw + pd * 2) * kk, lh * .92, rad ?? 6, bc); ctx.shadowBlur = sh; ctx.globalAlpha = ga;
     }
     for (const c of ln) {
-      const i = gi++, cs = s.at + i * st, e = prog(b, cs, cs + d, E.lin), wch = cw(ctx, c.ch);
+      const i = gi++, cs = s.at + (s.times ? s.times[Math.min(i, s.times.length - 1)] : i * st), e = prog(b, cs, cs + d, E.lin), wch = cw(ctx, c.ch);
       let a = 1, dx = 0, dy = 0, sc = 1, rot = 0, ch = c.ch, blur = 0;
       if (anim === 'type') a = b >= cs ? 1 : 0;
       else if (anim === 'fade') { a = E.out(e); dy = (1 - E.out(e)) * size * .25; }
@@ -163,7 +163,31 @@ function lyric(ctx, L, s) {
   }
   return box;
 }
-const youType = text => Math.min(.5, text.length * .028); // 你的气泡：整句打字用时（小节）
+// ---------- 打字机节奏：一字一个人声碎片（Undertale 式） ----------
+// 字幕、「你」的气泡、对话框和人声碎片共用这一张表：字出来的瞬间，碎片响一声。
+// 汉字一字一声；英文数字每两个字母一声；标点不出声，只停一下（逗号 .17 秒，句号 .32 秒）。想整体变快变慢改这里。
+const TYPE_CJK = .062, TYPE_LAT = .036;   // 秒 / 字
+const TS = new Map();
+function typeSched(text) {
+  let r = TS.get(text); if (r) return r;
+  const g = [...String(text).replace(/[‹›«»\n]/g, '')], t = [], blip = []; let c = 0, run = 0;
+  for (let i = 0; i < g.length; i++) {
+    const ch = g[i], nx = g[i + 1]; t.push(c);
+    if (/[㐀-鿿]/.test(ch)) { blip.push(true); run = 0; c += TYPE_CJK; }
+    else if (/[A-Za-z0-9]/.test(ch)) { blip.push(run % 2 === 0); run++; c += TYPE_LAT; }
+    else {
+      blip.push(false); run = 0;
+      if (/[，、；：,;:]/.test(ch)) c += .17;
+      else if (/[。！？]/.test(ch) || (/[.!?]/.test(ch) && (nx === undefined || /[\s㐀-鿿]/.test(nx)))) c += .32;
+      else if (/[—…]/.test(ch)) c += .12;
+      else if (/\s/.test(ch)) c += .02;
+      else c += .04;
+    }
+  }
+  r = { g, t, blip, dur: c + .08 }; TS.set(text, r); return r;
+}
+const typeN = (text, sec) => { const s = typeSched(text); let n = 0; while (n < s.t.length && s.t[n] <= sec + 1e-6) n++; return n; }; // sec 秒时已经出现几个字
+const youType = text => typeSched(text).dur / BAR; // 整句打字用时（小节）
 // 副歌：主旋律 8 小节，每个字落在一个音符上
 const SING = [[[0, '顺着感觉走'], [-1, '，'], [1, '别闭眼'], [-1, '；']], [[2, '说清要啥'], [-1, '，'], [3, '再按回车'], [-1, '。']], [[4, '我会犯错的'], [-1, '，'], [5, '别全信'], [-1, '；']], [[6, '小步存档'], [-1, '——'], [7, '走']]];
 const HOOK_ON = [[0, 1.5, 2, 3, 3.5], [0, 2, 3], [0, 1.5, 2, 3], [0, 2, 2.5, 3], [0, 1, 1.5, 2, 3], [0, 2, 3], [0, 1.5, 2, 3], [0]];
@@ -671,7 +695,7 @@ function drawHud(ctx, T, P, cur, k) {
   // 你：右上角的对话气泡（所有世界样式不变）
   for (const [at, out, text] of m.you || []) {
     if (L.b < at - .02 || L.b > out + .2) continue;
-    const kin = prog(L.b, at, at + .1, E.out), kout = prog(L.b, out, out + .15, E.in), nt = youType(text), n = Math.floor(prog(L.b, at + .06, at + .06 + nt, E.lin) * text.length + 1e-6);
+    const kin = prog(L.b, at, at + .1, E.out), kout = prog(L.b, out, out + .15, E.in), n = typeN(text, (L.b - at - VOX_LEAD.you) * BAR);
     ctx.save(); ctx.globalAlpha *= kin * (1 - kout) * (1 - k * .8);
     ctx.font = fnt(500, 34, F.sans); const tw0 = ctx.measureText(text).width, hh = 76, bw = tw0 + 150, x = 1850 - bw, y = 118 - (1 - kin) * 16 - kout * 20;
     rr(ctx, x, y, bw, hh, 22, 'rgba(16,17,22,.95)', 'rgba(255,255,255,.22)', 2);
@@ -761,11 +785,15 @@ function Frame({ T, P, tw, fv }) {
 function sfxList(P) {
   const ev = [];
   for (const w of P.ws) for (const s of w.m.sfx || []) ev.push([w.start + s[0] * BAR, ...s.slice(1)]);
-  for (const w of P.ws) for (const [at, , text] of w.m.you || []) { const nt = youType(text); [...text].forEach((ch, i) => { if (ch !== ' ') ev.push([w.start + (at + .06 + (i + .5) * nt / text.length) * BAR, 'key', .8]); }); ev.push([w.start + at * BAR, 'blip', 660]); }
   for (const r of P.rules) ev.push([r.t, 'rule']);
-  for (const w of P.ws) for (const [at, k, d] of w.m.vox || []) ev.push([w.start + at * BAR, 'vox', k, d]);
+  // 人声：每句一条「压低音乐」的标记（'vox'，d 是秒），每个会出声的字一个碎片（'vb'，a 说话人，x 字码）
+  for (const w of P.ws) for (const v of w.m.vox || []) {
+    const t0 = w.start + v.at * BAR; ev.push([t0, 'vox', null, v.sched.dur]);
+    v.sched.g.forEach((ch, i) => { if (v.sched.blip[i]) ev.push([t0 + v.sched.t[i], 'vb', v.sp, 0, ch.codePointAt(0)]); });
+  }
   return ev;
 }
+window.MV_SFXLIST = sfxList; // 给 tools/mvaudio.js 离线渲染用
 function toWav(ch, sr) {
   const n = ch[0].length, v = new DataView(new ArrayBuffer(44 + n * 4));
   const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
@@ -859,22 +887,28 @@ function readLen(s) {
   return n;
 }
 // ---------- 配音 ----------
-// window.MV_VOX = { d: {key: 秒}, a: {key: base64 mp3} }（mv-voice.js）。没有配音文件时一切照旧。
+// 不再用整句录音：一字一个人声碎片（mv-voice.js 里的 MV_VOX.blips，tools/tts/blips.py 生成），字幕按同一张时间表逐字打出来。
 // 一句台词的配音：Clawd 念旁白、大字、对话和规则；「你」念自己打的字。词条卡不念（让人自己读）。
-const voxClean = s => String(s).replace(/[‹›«»]/g, '').replace(/\n/g, '').trim();
+const voxClean = s => String(s).replace(/[‹›«»]/g, '').replace(/\n/g, '');
 function voxLines(s) {
-  const out = [], cj = x => /[㐀-鿿]/.test(x || '');
+  const out = [];
   if (s.say) out.push(['clawd', voxClean(s.say), 'say']);
-  if (s.big && (cj(s.big) || cj(s.sub))) out.push(['clawd', voxClean(s.big) + (s.sub && cj(s.sub) ? '。' + voxClean(s.sub) : ''), 'big']);
+  if (s.big) out.push(['clawd', voxClean(s.big), 'big']);
   if (s.me) out.push(['clawd', voxClean(s.me), 'me']);
   if (s.you) out.push(['you', voxClean(s.you), 'you']);
-  if (s.rule) out.push(['clawd', '规则' + '零一二三四五六七八九'[s.rule[0]] + '：' + voxClean(s.rule[1]), 'rule']);
+  if (s.rule) out.push(['clawd', voxClean(s.rule[1]), 'rule']);
   return out;
 }
 const voxKey = (sp, text) => sp + '|' + text;
 window.MV_VOXLINES = voxLines; window.MV_VOXKEY = voxKey;
-const voxDur = k => (window.MV_VOX && window.MV_VOX.d && window.MV_VOX.d[k]) || 0;
-const VOX_LEAD = { say: .06, big: .15, me: 0, you: .03, rule: .12 }, VOX_TAIL = .55; // 小节 / 秒
+// 每个字出现的时间（秒）：字幕、气泡按 typeSched；大字跟着 lyric 自己的逐字节奏；规则条在 .75 秒里打完
+function voxSched(kind, text, s) {
+  const b = typeSched(text), n = Math.max(1, b.g.length);
+  if (kind === 'rule') return { ...b, t: b.g.map((_, i) => (i + 1) * .75 / n), dur: .8 };
+  if (kind === 'big') { const st = Math.min(((s.bigS || {}).st ?? .1) / 4, .3 / n) * BAR; return { ...b, t: b.g.map((_, i) => i * st), dur: n * st + .1 }; }
+  return b;
+}
+const VOX_LEAD = { say: .06, big: .15, me: 0, you: .06, rule: .075 }, VOX_TAIL = .55; // 小节 / 秒
 const readBars = (s, slow = 1) => Math.ceil(Math.max(READ.min, readLen(s) / READ.cps * slow + READ.pad) / BAR * 4) / 4;
 function seq(steps, o = {}) {
   const at = {}, end = {}, items = [];
@@ -887,13 +921,12 @@ function seq(steps, o = {}) {
     let d = s.dur ?? (t ? readBars(t, s.slow) : 1);
     if (s.you && s.dur === undefined) d += youType(s.you);
     if (s.me && s.dur === undefined) d += .5 + (s.wait || 0); // 「对方正在输入」
-    // 配音：每句至少留够念完的时间（只会拉长，不会缩短）
+    // 配音：每句至少留够打完的时间（只会拉长，不会缩短）
     const vox = [];
     for (const [sp, text, kind] of voxLines(s)) {
-      const k = voxKey(sp, text), v = voxDur(k); if (!v) continue;
-      const lead = kind === 'me' ? .5 + (s.wait || 0) : VOX_LEAD[kind];
-      vox.push({ k, at: lead, d: v });
-      d = Math.max(d, Math.ceil((lead + (v + VOX_TAIL) / BAR) * 4) / 4);
+      const lead = kind === 'me' ? .5 + (s.wait || 0) : VOX_LEAD[kind], sched = voxSched(kind, text, s);
+      vox.push({ sp, text, kind, at: lead, sched });
+      d = Math.max(d, Math.ceil((lead + (sched.dur + VOX_TAIL) / BAR) * 4) / 4);
     }
     d += s.hold || 0;
     const it = { ...s, at: st, out: st + d, vox };
@@ -950,7 +983,8 @@ function narrate(ctx, L, S, st = {}) {
       const y = (it.y ?? sub.y) - (n - 1) * lh / 2 - (n > 1 ? lh / 2 : 0);
       ctx.save();
       if (sub.shadow) { ctx.shadowColor = sub.shadow; ctx.shadowBlur = 14; ctx.shadowOffsetY = 2; }
-      lyric(ctx, L, { at: it.at, out: it.sayOut ?? it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: 'fade', d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
+      const v = (it.vox || []).find(x => x.kind === 'say'); // 逐字打出来，和人声碎片同一张时间表
+      lyric(ctx, L, { at: it.at, out: it.sayOut ?? it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: v ? 'type' : 'fade', outAnim: 'fade', times: v ? v.sched.t.map(x => v.at + x / BAR) : undefined, d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
       ctx.restore();
     }
     if (it.big) {
@@ -990,7 +1024,7 @@ function scene(m, S) {
   const you = S.items.filter(i => i.you && !m.chat).map(i => [i.at, i.out, i.you]);
   const r = S.items.find(i => i.rule);
   const src = S.items.filter(i => i.src).map(i => [i.at, i.srcOut, i.src]);
-  const vox = []; for (const i of S.items) for (const v of i.vox || []) vox.push([i.at + v.at, v.k, v.d]);
+  const vox = []; for (const i of S.items) for (const v of i.vox || []) vox.push({ ...v, at: i.at + v.at });
   return { ...m, vox, bars: m.bars ?? S.bars, S, cue: S.at, you: [...(m.you || []), ...you], src: [...(m.src || []), ...src],
     rule: r ? { n: r.rule[0], at: r.at, len: r.out - r.at, text: r.rule[1] } : m.rule,
     text: (m.text || '') + S.text };
@@ -1030,7 +1064,7 @@ function warpWorld(m, knots, bars) {
 
 const K = { W, H, BPM, BEAT, BAR, F, C, E, LOOK, TR, clamp01, prog, lerp, bump, hash, hex, mixC, rgba, fnt, cw, rr, circ, seg, arrow, txt, tw, scaleAt, rotAt, alpha,
   lyric, typeSfx, marks, clawd, clawdCells, hop, clawdAt, sing,
-  warpWorld, seq, narrate, scene, wrapText, readBars, glossCard, youType,
+  warpWorld, seq, narrate, scene, wrapText, readBars, glossCard, youType, typeSched, typeN,
   three: (ctx, L, o) => { L.did3d = true; return !!window.MV_3D && window.MV_3D.draw(ctx, L.w.m, L, o); } };
 window.MV_K = K;
 

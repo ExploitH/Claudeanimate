@@ -1,4 +1,4 @@
-// 渲染整条音轨并分析：node mvaudio.js file.html outdir
+// 渲染整条音轨并分析：node mvaudio.js file.html outdir [x.wav] [起点秒] [时长秒]；VOICE_ONLY=1 只渲人声碎片（不带音乐和音效）
 const path = require('path'), fs = require('fs'), http = require('http');
 const D = process.env.MV_DEPS || path.join(__dirname, 'node_modules'), { chromium } = require(path.join(D, 'playwright'));
 const MAP = { 'https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js': D + '/react/umd/react.production.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js': D + '/react-dom/umd/react-dom.production.min.js' };
@@ -14,15 +14,15 @@ const MAP = { 'https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.pro
   await pg.waitForSelector('svg[data-om-exportable-video-with-duration-secs]');
   await pg.evaluate(() => document.querySelector('svg[data-om-exportable-video-with-duration-secs]').dispatchEvent(new CustomEvent('data-om-seek-to-time-frame', { detail: { time: 0, sync: true, playing: false } })));
   await pg.waitForTimeout(1500);
-  const res = await pg.evaluate(async ([wantWav, A0, AD]) => {
+  const res = await pg.evaluate(async ([wantWav, A0, AD, voiceOnly]) => {
     const P = window.__mvPlan, T0 = A0 ? +A0 : 0, total = AD ? +AD : P.total - T0, t0 = performance.now();
-    const sfx = []; for (const w of P.ws) for (const s of w.m.sfx || []) sfx.push([w.start + s[0] * 2, ...s.slice(1)]); for (const r of P.rules) sfx.push([r.t, 'rule']); for (const w of P.ws) for (const [at, k, d] of w.m.vox || []) sfx.push([w.start + at * 2, 'vox', k, d]);
-    const J = window.MV_MUSIC.job(P, sfx, T0, total, { sfx: true, bgm: true, vol: .8 });
+    const sfx = window.MV_SFXLIST(P);
+    const J = window.MV_MUSIC.job(P, sfx, T0, total, { sfx: !voiceOnly, bgm: !voiceOnly, vol: .8 });
     const times = []; let last = performance.now();
     await J.run(() => { const n = performance.now(); times.push(Math.round(n - last)); last = n; });
     const ms = performance.now() - t0, sr = J.done[0].buf.sampleRate, n = Math.ceil((total + 1) * sr);
     const L = new Float32Array(n), R = new Float32Array(n);
-    for (const c of J.done) { const o = Math.round(c.t0 * sr), a = c.buf.getChannelData(0), bb = c.buf.getChannelData(1); for (let i = 0; i < a.length && i + o < n; i++) { L[i + o] += a[i]; R[i + o] += bb[i]; } }
+    for (const c of J.done) { const o = Math.round((c.t0 - T0) * sr), a = c.buf.getChannelData(0), bb = c.buf.getChannelData(1); for (let i = 0; i < a.length && i + o < n; i++) { L[i + o] += a[i]; R[i + o] += bb[i]; } }
     // 每 0.5 秒 RMS / 峰值
     const step = sr / 2, rms = [], peak = [];
     for (let i = 0; i + step <= n; i += step) { let s = 0, p = 0; for (let j = i; j < i + step; j++) { const v = (L[j] + R[j]) / 2; s += v * v; p = Math.max(p, Math.abs(L[j]), Math.abs(R[j])); } rms.push(+Math.sqrt(s / step).toFixed(3)); peak.push(+p.toFixed(2)); }
@@ -43,7 +43,7 @@ const MAP = { 'https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.pro
       for (let i = 0, o = 44; i < n; i++, o += 4) { v.setInt16(o, Math.max(-1, Math.min(1, L[i])) * 32767, true); v.setInt16(o + 2, Math.max(-1, Math.min(1, R[i])) * 32767, true); }
       const bytes = new Uint8Array(v.buffer); let s = ''; for (let i = 0; i < bytes.length; i += 32768) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768)); wavUrl = btoa(s); }
     return { ms: Math.round(ms), times, chunks: J.done.length, rms, peak, png: cv.toDataURL('image/png'), wav: wavUrl, starts: P.ws.map(w => [w.m.id, w.start]) };
-  }, [wav && wav !== "-", A0, AD]);
+  }, [wav && wav !== "-", A0, AD, !!process.env.VOICE_ONLY]);
   fs.writeFileSync(path.join(out, 'spec.png'), Buffer.from(res.png.split(',')[1], 'base64'));
   if (res.wav) fs.writeFileSync(wav, Buffer.from(res.wav, 'base64'));
   console.log('render ms', res.ms, 'per chunk', res.times.join(','), 'chunks', res.chunks);

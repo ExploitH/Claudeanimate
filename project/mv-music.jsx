@@ -310,11 +310,11 @@ function renderChunk(ev, cs, ce, opt, x = {}) {
   const fb = A.createGain(); fb.gain.value = .4; const pl = A.createStereoPanner(), pr = A.createStereoPanner(); pl.pan.value = -.75; pr.pan.value = .75;
   dlp.connect(dl); dl.connect(pl); pl.connect(music); dl.connect(dr); dr.connect(pr); pr.connect(music); dr.connect(fb); fb.connect(dl);
   const R = t => t - cs;
-  // 人声：单独一条总线，不跟音乐一起静音；说话时音乐压到 40%，说完 0.35 秒内回来
+  // 人声：单独一条总线，不跟音乐一起静音；说话时音乐压到 50%，说完 0.35 秒内回来
   const vox = A.createGain(); vox.gain.value = 1.0; const vhp = A.createBiquadFilter(); vhp.type = 'highpass'; vhp.frequency.value = 90; vox.connect(vhp); vhp.connect(lim);
   const duck = music.gain; duck.setValueAtTime(1, 0);
   const vi = []; for (const e of ev) if (e.i === 'vox' && e.t + (e.d || 0) > cs - .5 && e.t < ce + TAIL) { const a = R(e.t) - .12, b = R(e.t + (e.d || 0)); const l = vi[vi.length - 1]; if (l && a < l[1] + .45) l[1] = Math.max(l[1], b); else vi.push([a, b]); }
-  for (const [a, b] of vi) { if (a > 0) duck.setValueAtTime(1, a); duck.linearRampToValueAtTime(.4, Math.max(.01, a + .12)); duck.setValueAtTime(.4, Math.max(.02, b)); duck.linearRampToValueAtTime(1, Math.max(.03, b + .35)); }
+  for (const [a, b] of vi) { if (a > 0) duck.setValueAtTime(1, a); duck.linearRampToValueAtTime(.5, Math.max(.01, a + .12)); duck.setValueAtTime(.5, Math.max(.02, b)); duck.linearRampToValueAtTime(1, Math.max(.03, b + .35)); }
   // 侧链：合成器总线跟着底鼓压一下
   const sc = synth.gain; sc.setValueAtTime(1, 0);
   for (const e of ev) if (e.i === 'kick' && e.x !== 'heart' && e.t >= cs - .3 && e.t < ce + TAIL) {
@@ -541,9 +541,21 @@ function renderChunk(ev, cs, ce, opt, x = {}) {
     thunder: t => { out(nz(t, 3.5, 'lowpass', 420, .7, .4, 90, .25), sfxB, 0, .5); out(nz(t + .05, .4, 'lowpass', 1600, .6, .18), sfxB, -.3, .4); },
     swoosh3d: t => { out(nz(t, .9, 'bandpass', 200, .8, .22, 2400, .45), sfxB, -.4, .3); out(nz(t + .3, .7, 'bandpass', 2400, .8, .12, 400, .2), sfxB, .4, .3); },
   };
+  // 一字一个人声碎片：同一个字永远是同一片、同一个音高（像语言，不像随机）；英文 a/o/e/i/u 取对应音节
+  const VB = { clawd: [.95, 1.45], you: [.78, 1.08] };   // 播放速率范围（= 音高范围）
+  const VOWEL = { a: 0, o: 1, e: 2, i: 3, u: 4 };
+  const blip = (e, t) => {
+    const bank = VOX.get(e.a); if (!bank || !bank.length) return;
+    const code = e.x, v = VOWEL[String.fromCodePoint(code).toLowerCase()], r = VB[e.a] || VB.clawd;
+    const k = (v !== undefined ? v * 2 + (code & 1) : Math.floor(hsh(code * 1.73 + 3) * bank.length)) % bank.length;
+    const src = A.createBufferSource(); src.buffer = bank[k]; src.playbackRate.value = r[0] + (r[1] - r[0]) * hsh(code * 2.31 + 7);
+    const g = G(); g.gain.value = .9 * (.86 + .14 * hsh(code * 5.1 + 1));
+    src.connect(g); g.connect(vox); src.start(Math.max(0, t));
+  };
   const spawn = e => {
     const t = R(e.t); curEnd = t + (e.d || 0) + 3.5;
-    if (e.i === 'vox') { const buf = VOX.get(e.a); if (buf) { const src = A.createBufferSource(); src.buffer = buf; src.connect(vox); src.start(Math.max(0, t), e.off || 0); } return; }
+    if (e.i === 'vox') return; // 只用来压低音乐，不出声
+    if (e.i === 'vb') { blip(e, t); return; }
     if (e.sfx) { const f = X[e.i]; if (f) f(t, e.a); return; }
     if (e.i === 'lp' || e.i === 'mute') return;
     if (I[e.i]) I[e.i](e, t);
@@ -563,14 +575,16 @@ function renderChunk(ev, cs, ce, opt, x = {}) {
   return A.startRendering();
 }
 
-// ---------- 配音解码 ----------
+// ---------- 人声碎片解码 ----------
+// window.MV_VOX = { blips: { clawd: [base64 wav, …], you: [...] } }（mv-voice.js）。没有这个文件就没有人声，其余照旧。
 const VOX = new Map(); let VOXP = null;
 function voxReady() {
   if (VOXP) return VOXP;
-  const src = (window.MV_VOX && window.MV_VOX.a) || {}, ks = Object.keys(src);
+  const src = (window.MV_VOX && window.MV_VOX.blips) || {}, ks = Object.keys(src);
   if (!ks.length) return (VOXP = Promise.resolve());
   const ctx = new OfflineAudioContext(1, 1, SR);
-  VOXP = Promise.all(ks.map(k => { const bin = atob(src[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return ctx.decodeAudioData(u.buffer).then(b => VOX.set(k, b)).catch(e => console.warn('配音解码失败：', k, e)); }));
+  const dec = b64 => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return ctx.decodeAudioData(u.buffer); };
+  VOXP = Promise.all(ks.map(k => Promise.all(src[k].map(dec)).then(bs => VOX.set(k, bs)).catch(e => console.warn('人声碎片解码失败：', k, e))));
   return VOXP;
 }
 
@@ -629,7 +643,7 @@ window.MV_MUSIC = {
   job(P, sfx, T0, dur, opt) {
     const song = compose(P), ev = [];
     if (opt.bgm) ev.push(...song.ev); else ev.push(...song.ev.filter(e => e.i === 'mute'));
-    for (const [t, i, a, d] of sfx) if (opt.sfx || i === 'vox') ev.push({ t, i, a, d: i === 'vox' ? d : undefined, sfx: true });
+    for (const [t, i, a, d, x] of sfx) if (opt.sfx || i === 'vox' || i === 'vb') ev.push({ t, i, a, d: i === 'vox' ? d : undefined, x, sfx: true });
     ev.sort((a, b) => a.t - b.t);
     const key = song.sig + '|' + JSON.stringify(opt) + '|' + sfx.length, list = slices(P, T0, dur);
     const J = { done: [], dead: false, at: T0, cancel() { J.dead = true; }, focus(t) { J.at = t; },

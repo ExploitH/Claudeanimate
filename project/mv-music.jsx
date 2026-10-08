@@ -311,7 +311,7 @@ function renderChunk(ev, cs, ce, opt, x = {}) {
   dlp.connect(dl); dl.connect(pl); pl.connect(music); dl.connect(dr); dr.connect(pr); pr.connect(music); dr.connect(fb); fb.connect(dl);
   const R = t => t - cs;
   // 人声：单独一条总线，不跟音乐一起静音；说话时音乐压到 40%，说完 0.35 秒内回来
-  const vox = A.createGain(); vox.gain.value = 1.15; const vhp = A.createBiquadFilter(); vhp.type = 'highpass'; vhp.frequency.value = 90; vox.connect(vhp); vhp.connect(lim);
+  const vox = A.createGain(); vox.gain.value = 1.0; const vhp = A.createBiquadFilter(); vhp.type = 'highpass'; vhp.frequency.value = 90; vox.connect(vhp); vhp.connect(lim);
   const duck = music.gain; duck.setValueAtTime(1, 0);
   const vi = []; for (const e of ev) if (e.i === 'vox' && e.t + (e.d || 0) > cs - .5 && e.t < ce + TAIL) { const a = R(e.t) - .12, b = R(e.t + (e.d || 0)); const l = vi[vi.length - 1]; if (l && a < l[1] + .45) l[1] = Math.max(l[1], b); else vi.push([a, b]); }
   for (const [a, b] of vi) { if (a > 0) duck.setValueAtTime(1, a); duck.linearRampToValueAtTime(.4, Math.max(.01, a + .12)); duck.setValueAtTime(.4, Math.max(.02, b)); duck.linearRampToValueAtTime(1, Math.max(.03, b + .35)); }

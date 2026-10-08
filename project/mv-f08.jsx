@@ -230,7 +230,7 @@ return scene({
     sc.background = k3.col(T, '#050506'); sc.fog = new T.FogExp2(k3.col(T, '#050506'), .00032);
     sc.add(new T.HemisphereLight(k3.col(T, '#5a6070'), k3.col(T, '#050506'), .55));
     const moon = new T.DirectionalLight(0xffffff, .35); moon.position.set(600, 1500, 800); sc.add(moon);
-    const ground = new T.Mesh(new T.PlaneGeometry(12000, 12000), new T.MeshStandardMaterial({ color: k3.col(T, '#0c0c0e'), roughness: .18, metalness: .75 })); ground.rotation.x = -Math.PI / 2; sc.add(ground);
+    const ground = new T.Mesh(new T.PlaneGeometry(12000, 12000), new T.MeshStandardMaterial({ color: k3.col(T, '#0c0c0e'), roughness: .7, metalness: .3 })); ground.rotation.x = -Math.PI / 2; sc.add(ground);
     [-1, 1].forEach(sd => { const w = new T.Mesh(new T.BoxGeometry(180, 14, 9000), k3.mat(T, '#1a1a1c', { r: .5 })); w.position.set(sd * (FAC - 90), 7, -3500); sc.add(w); });
     for (let z = 400; z > -7000; z -= 160) { const d = new T.Mesh(new T.BoxGeometry(8, 1, 70), new T.MeshBasicMaterial({ color: 0x555555 })); d.position.set(0, 1, z); sc.add(d); }
     // 窗户贴图
@@ -238,6 +238,7 @@ return scene({
     const wt = new T.CanvasTexture(wc); wt.encoding = T.sRGBEncoding;
     const bmat = new T.MeshStandardMaterial({ color: k3.col(T, '#17171a'), roughness: .8, metalness: .2, emissive: 0xffffff, emissiveMap: wt, emissiveIntensity: .3 });
     const r = k3.rnd(17); let pi = 0;
+    const twoSided = m => { m.material.side = T.FrontSide; const bk = new T.Mesh(m.geometry, m.material); bk.rotation.y = Math.PI; bk.position.z = -.5; m.add(bk); return m; };
     const lotLights = [];
     for (let i = 0; i < 21; i++) ['L', 'R'].forEach(sd => {
       const s = sd === 'L' ? -1 : 1, z = ZS(i);
@@ -247,29 +248,33 @@ return scene({
         const lan = new T.Group(); lan.add(new T.Mesh(new T.SphereGeometry(30, 16, 12), new T.MeshBasicMaterial({ color: k3.col(T, ORG) }))); const shaft = new T.Mesh(new T.CylinderGeometry(10, 10, 700, 10, 1, true), new T.MeshBasicMaterial({ color: k3.col(T, ORG), transparent: true, opacity: .35, depthWrite: false, blending: T.AdditiveBlending })); shaft.position.y = 350; lan.add(shaft); lan.position.set(s * (FAC + 200), 160, z); lan.visible = false; sc.add(lan);
         const q = k3.label(T, '?', { size: 40, col: ORG, h: 46, pad: 4 }); q.position.set(s * (FAC + 200), 240, z); q.visible = false; sc.add(q);
         lotLights.push({ lan, q, i, s });
-        if (!(sd === 'L' && i === TGT)) { const sg = k3.label(T, '空地', { size: 30, bg: '#202020', col: '#bbbbbb', h: 26 }); sg.position.set(s * (FAC - 40), 80, z + 120); sc.add(sg); }
+        if (!(sd === 'L' && i === TGT)) { const sg = twoSided(k3.label(T, '空地', { size: 30, bg: '#202020', col: '#bbbbbb', h: 26 })); sg.position.set(s * (FAC - 40), 80, z + 120); sc.add(sg); }
         return;
       }
       const h = 280 + r() * 420, b = new T.Mesh(new T.BoxGeometry(400, h, 300), bmat); b.position.set(s * (FAC + 200), h / 2, z); sc.add(b);
-      const sign = k3.label(T, PKGS[pi++ % PKGS.length], { font: '"JetBrains Mono",monospace', size: 28, bg: '#1d1d1f', border: '#8a8a8a', col: '#e8e8e8', h: 34 });
+      const sign = twoSided(k3.label(T, PKGS[pi++ % PKGS.length], { font: '"JetBrains Mono",monospace', size: 28, bg: '#1d1d1f', border: '#8a8a8a', col: '#e8e8e8', h: 34 }));
       sign.position.set(s * (FAC - 70), 250 + (i % 3) * 40, z); sc.add(sign);
     });
     // 路灯
     const lamps = [];
     for (let i = 0; i < 6; i++) {
-      const s = i % 2 ? 1 : -1, z = 300 - i * 700;
+      const s = i % 2 ? 1 : -1, z0 = 300 - i * 700, z = s < 0 && Math.abs(z0 - TZ) < 250 ? TZ + 500 : z0;
       const post = new T.Mesh(new T.CylinderGeometry(5, 7, 420, 8), k3.mat(T, '#222')); post.position.set(s * (FAC - 120), 210, z); sc.add(post);
-      const head = new T.Mesh(new T.SphereGeometry(16, 12, 10), new T.MeshBasicMaterial({ color: 0xfff3dc })); head.position.set(s * (FAC - 150), 420, z); sc.add(head);
+      const arm = new T.Mesh(new T.BoxGeometry(62, 5, 5), k3.mat(T, '#222')); arm.position.set(s * (FAC - 146), 418, z); sc.add(arm);
+      const shade = new T.Mesh(new T.CylinderGeometry(7, 20, 16, 16, 1, true), k3.mat(T, '#2a2a2a', { r: .4 })); shade.material.side = T.DoubleSide; shade.position.set(s * (FAC - 172), 410, z); sc.add(shade);
+      const head = new T.Mesh(new T.SphereGeometry(8, 12, 8), new T.MeshBasicMaterial({ color: 0xfff3dc })); head.position.set(s * (FAC - 172), 402, z); sc.add(head);
       const pl = new T.PointLight(0xfff0d8, 1.6, 1100, 1.6); pl.position.copy(head.position); sc.add(pl); lamps.push(pl);
     }
     // 五个模型：灰色体素小人，头上飘着同一个名字
+    const top = (m, o = 20) => { m.material.depthTest = false; m.renderOrder = o; return m; };
     const MOD = [0, 1, 2, 3, 4].map(i => {
-      const c = k3.clawd(T, { px: 8, col: ['#3a3a3e', '#4a4a50', '#56565c', '#303034', '#62626a'][i], hi: '#7a7a82' }); sc.add(c.g);
+      const c = k3.clawd(T, { px: 8, col: ['#5c5c64', '#6a6a72', '#76767e', '#54545c', '#80808a'][i], hi: '#9a9aa2' }); sc.add(c.g);
       const lb = k3.label(T, NAME, { font: '"JetBrains Mono",monospace', size: 26, bg: 'rgba(20,20,20,.85)', border: ORG, col: '#ffd9c0', h: 24 }); sc.add(lb);
-      return { c, lb, x: -160 - (i % 2) * 110, z: TZ + 220 - i * 110 };
+      top(lb); return { c, lb, x: -440 + i * 92, z: TZ + 250 + (i % 2) * 36 };
     });
-    const ghost = k3.label(T, NAME, { font: '"JetBrains Mono",monospace', size: 40, bg: 'rgba(30,14,6,.6)', border: ORG, col: ORG, h: 46 }); ghost.position.set(-FAC - 200, 240, TZ); sc.add(ghost);
+    const ghost = k3.label(T, NAME, { font: '"JetBrains Mono",monospace', size: 40, bg: 'rgba(30,14,6,.6)', border: ORG, col: ORG, h: 46 }); ghost.position.set(-FAC - 200, 200, TZ); top(ghost); sc.add(ghost);
     // 风衣人
+    const face = new T.PointLight(0xdfe4ff, .55, 1500, 1.2); face.position.set(-120, 320, TZ + 900); sc.add(face);
     const man = new T.Group(); {
       const dk = k3.mat(T, '#34343a', { r: .6 }), coat = new T.Mesh(new T.CylinderGeometry(24, 40, 150, 14), dk); coat.position.y = 75; man.add(coat);
       const head = new T.Mesh(new T.SphereGeometry(19, 14, 12), k3.mat(T, '#2a2a2a')); head.position.y = 170; man.add(head);
@@ -283,24 +288,25 @@ return scene({
     const win = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ color: k3.col(T, RED) })); win.rotation.y = Math.PI / 2; win.position.set(201, 0, -50); shop.add(win); const mull = new T.Mesh(new T.PlaneGeometry(6, 1), new T.MeshBasicMaterial({ color: 0x050505 })); mull.rotation.y = Math.PI / 2; mull.position.set(202, 0, -50); shop.add(mull);
     const door = new T.Mesh(new T.PlaneGeometry(70, 130), new T.MeshBasicMaterial({ color: 0x050505 })); door.rotation.y = Math.PI / 2; door.position.set(202, 65, 90); shop.add(door);
     const doorGlow = new T.Mesh(new T.PlaneGeometry(70, 130), new T.MeshBasicMaterial({ color: k3.col(T, RED), transparent: true, opacity: 0 })); doorGlow.rotation.y = Math.PI / 2; doorGlow.position.set(201.5, 65, 90); shop.add(doorGlow);
-    const shopSign = k3.label(T, NAME + '  v1.0.0', { font: '"JetBrains Mono",monospace', size: 34, bg: '#160606', border: RED, col: '#ffb0b0', h: 40 }); shopSign.position.set(-FAC + 70, 270, TZ - 120); sc.add(shopSign);
+    const shopSign = k3.label(T, NAME + '\nv1.0.0', { font: '"JetBrains Mono",monospace', size: 34, bg: '#160606', border: RED, col: '#ffb0b0', h: 64 });
+    shopSign.scale.setScalar(Math.min(1, 270 / shopSign.userData.w)); shopSign.rotation.y = Math.PI / 2; shopSign.position.set(203, 375, 0); shop.add(shopSign);
     const redL = new T.PointLight(k3.col(T, RED), 0, 1300, 1.4); redL.position.set(-FAC + 80, 120, TZ + 90); sc.add(redL);
     // Clawd：站在路灯下看着，最后照着名字走进去
     const me = k3.clawd(T, { px: 8 }); sc.add(me.g);
-    const myL = k3.label(T, '引入依赖：' + NAME, { font: '"JetBrains Mono",monospace', size: 26, bg: 'rgba(20,20,20,.85)', border: ORG, col: '#ffd9c0', h: 24 }); sc.add(myL);
+    const myL = top(k3.label(T, '引入依赖：' + NAME, { font: '"JetBrains Mono",monospace', size: 26, bg: 'rgba(20,20,20,.85)', border: ORG, col: '#ffd9c0', h: 24 })); sc.add(myL);
     // 雨
     const RN = 1600, rp = new Float32Array(RN * 6), rs = Array.from({ length: RN }, () => [r() * 2600 - 1300, r() * 1400, r() * 2600 - 1300, .7 + r() * .6]);
     const rg = new T.BufferGeometry(); rg.setAttribute('position', new T.BufferAttribute(rp, 3));
     const rain = new T.LineSegments(rg, new T.LineBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: .35 })); sc.add(rain);
     const cam = k3.rig([
       [0, [300, 900, 1400], [-200, 120, -1400], 42, 0],
-      [t('open') + .1, [150, 200, TZ + 560], [-300, 40, TZ - 60], 42, t('pkg0') - t('open') + .4],
-      [t('pkg1'), [300, 1300, 600], [-150, 0, -2600], 46, 2.4],
+      [t('open') + .1, [-120, 175, TZ + 840], [-270, 72, TZ + 120], 42, t('pkg0') - t('open') + .4],
+      [t('pkg1'), [300, 1300, 600], [-150, 0, -1800], 46, 2.4],
       [t('pkg2'), [200, 200, TZ + 800], [-300, 140, TZ - 400], 38, 2],
       [BUILD0 - .2, [150, 260, TZ + 600], [-600, 220, TZ], 36, 1.2],
-      [t('pkg3'), [300, 260, TZ + 900], [-350, 120, TZ + 100], 34, 1.4],
+      [t('pkg3'), [-290, 210, TZ - 560], [-320, 95, TZ + 200], 40, .05],
       [DOOR - .4, [-20, 240, TZ + 620], [-480, 130, TZ + 80], 34, 1, 'out'],
-      [t('slop'), [450, 800, TZ + 1200], [-480, 150, TZ], 40, 2.4],
+      [t('slop'), [450, 800, TZ + 1200], [-480, 400, TZ], 40, 2.4],
     ]);
     const V = new T.Vector3();
     return { scene: sc, update(L, c) {
@@ -310,9 +316,9 @@ return scene({
       // 五个模型
       MOD.forEach((m, i) => {
         const k = U.prog(b, t('pkg0') + .5 + i * .25, t('pkg0') + .8 + i * .25), vis = b < t('pkg2') + .2;
-        m.c.set({ pose: k > 0 && b < t('pkg1') ? 'pointL' : 'idle', walk: -1, eye: -1, blink: (tt * .7 + i) % 3 < .1, alpha: vis ? 1 : 0 });
-        m.c.g.position.set(m.x, 0, m.z); m.c.g.rotation.y = -Math.PI / 4;
-        m.lb.visible = vis && k > 0; m.lb.position.set(m.x - 30, 100 + i * 26 + Math.sin(tt * 2 + i) * 5 + (1 - k) * -30, m.z); m.lb.lookAt(c.position); m.lb.material.opacity = k;
+        m.c.set({ pose: k > 0 && b < t('pkg1') ? 'point' : 'idle', walk: -1, eye: -1, blink: (tt * .7 + i) % 3 < .1, alpha: vis ? 1 : 0 });
+        m.c.g.position.set(m.x, 0, m.z); m.c.g.rotation.y = -.42;
+        m.lb.visible = vis && k > 0; m.lb.position.set(m.x, 104 + (i % 2) * 34 + Math.sin(tt * 2 + i) * 3 - (1 - k) * 20, m.z); m.lb.lookAt(c.position); m.lb.material.opacity = k;
       });
       ghost.visible = b >= t('pkg0') + 1.9 && b < BUILD0; ghost.material.opacity = (.45 + .35 * Math.sin(tt * 7)) * U.prog(b, t('pkg0') + 1.9, t('pkg0') + 2.3);
       // 空地亮灯
@@ -321,23 +327,23 @@ return scene({
       // 风衣人：从街那头走到空地前，抢注后离开
       const kw = U.prog(b, WALK0, WALK1), kx = U.prog(b, BUILD1 + .2, BUILD1 + 1.6);
       man.visible = b >= WALK0 - .1 && kx < 1;
-      man.position.set(lerp(-230, -FAC + 120, kw) + kx * 150, Math.abs(Math.sin(tt * 8)) * 3 * (kw > 0 && kw < 1 ? 1 : 0), lerp(TZ - 1300, TZ - 60, kw) - kx * 1200);
+      man.position.set(lerp(-230, -FAC + 120, kw) + kx * 150, Math.abs(Math.sin(tt * 8)) * 3 * (kw > 0 && kw < 1 ? 1 : 0), lerp(TZ - 1300, TZ - 190, kw) - kx * 1200);
       man.rotation.y = kx > 0 ? Math.PI : kw < 1 ? Math.PI * .02 : -Math.PI / 2;
       manL.position.set(man.position.x + 60, 700, man.position.z + 100); manL.target.position.copy(man.position); manL.intensity = man.visible ? 2.4 : 0;
       // 店
       const kb = U.out(U.prog(b, BUILD0, BUILD1)), H = 460 * kb;
       shop.visible = kb > 0; box.scale.set(1, Math.max(1, H), 1); box.position.y = H / 2;
       win.scale.set(170, 100 * kb, 1); win.position.y = 250 * kb; win.visible = kb > .3; mull.scale.set(1, 100 * kb, 1); mull.position.y = 250 * kb; mull.visible = win.visible; door.visible = kb > .6;
-      shopSign.visible = b >= BUILD1 - .3; shopSign.lookAt(c.position);
+      shopSign.visible = b >= BUILD1 - .3; shopSign.position.y = 375 * kb;
       const open = U.prog(b, DOOR, DOOR + .4); doorGlow.material.opacity = open; door.visible = kb > .6 && open < 1;
       redL.intensity = kb > .5 ? 1.4 + 2.2 * open + .4 * Math.sin(tt * 9) : 0;
       // Clawd
       const kc = U.prog(b, CL0, CL1), inShop = b >= DOOR + .5;
-      const cx0 = 10, cz0 = TZ + 140, cx1 = -FAC + 40, cz1 = TZ + 90;
+      const cx0 = 40, cz0 = TZ + 160, cx1 = -FAC + 40, cz1 = TZ + 90;
       me.set({ pose: b < t('pkg3') ? (b >= t('pkg1') && b < t('pkg2') ? 'up' : 'idle') : b >= DOOR ? 'cover' : 'idle', walk: kc > 0 && kc < 1 ? tt * 10 : -1, ph: tt * 8, eye: b < CL0 ? -1 : 0, blink: (tt % 2.9) < .1, sweat: b >= t('pkg2') && b < t('pkg3') ? tt : 0, alpha: inShop ? 1 - U.prog(b, DOOR + .5, DOOR + 1) : 1 });
       me.g.position.set(lerp(cx0, cx1, kc), kc > 0 && kc < 1 ? Math.abs(Math.sin(tt * 10)) * 3 : 0, lerp(cz0, cz1, kc));
-      me.g.rotation.y = kc > 0 ? -Math.PI / 2 - .4 : -Math.PI / 3;
-      myL.visible = b >= CL0 - .2 && b < DOOR + .6; myL.position.set(me.g.position.x, 110, me.g.position.z); myL.lookAt(c.position);
+      me.g.rotation.y = kc > 0 ? Math.atan2(cx1 - cx0, cz1 - cz0) : -.9;
+      myL.visible = b >= CL0 - .2 && b < DOOR + .6; myL.position.set(me.g.position.x, 120, me.g.position.z); myL.lookAt(c.position);
       // 雨跟着镜头
       const cp = c.position;
       for (let i = 0; i < RN; i++) { const d = rs[i], y = 1400 - ((d[1] + tt * 900 * d[3]) % 1400), x = cp.x + d[0], z = cp.z + d[2] - 600; rp[i * 6] = x; rp[i * 6 + 1] = y; rp[i * 6 + 2] = z; rp[i * 6 + 3] = x - 4; rp[i * 6 + 4] = y - 38; rp[i * 6 + 5] = z; }
@@ -350,12 +356,15 @@ return scene({
     const b = L.b;
     K.three(cx, L);
     const k0 = prog(b, t('pkg0') + .6, t('pkg0') + .9) * (1 - prog(b, t('pkg1') - .2, t('pkg1')));
-    if (k0 > 0) alpha(tx, k0, () => { txt(tx, '127', 1500, 300, fnt(700, 150, F.mono), WH, 'center'); txt(tx, '个同样的假包名', 1500, 400, fnt(900, 40, F.serif), WH, 'center'); txt(tx, '5 个主流模型都会编', 1500, 450, fnt(700, 30, F.serif), '#bbbbbb', 'center'); });
+    const shade = (x, y, rx, ry, a) => { tx.save(); tx.translate(x, y); tx.scale(rx / ry, 1); const g = tx.createRadialGradient(0, 0, 0, 0, 0, ry); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(.6, `rgba(0,0,0,${a * .7})`); g.addColorStop(1, 'rgba(0,0,0,0)'); tx.fillStyle = g; tx.fillRect(-ry, -ry, ry * 2, ry * 2); tx.restore(); };
+    if (k0 > 0) alpha(tx, k0, () => { shade(960, 250, 380, 170, .75); txt(tx, '127', 960, 190, fnt(700, 130, F.mono), WH, 'center'); txt(tx, '个同样的假包名', 960, 285, fnt(900, 40, F.serif), WH, 'center'); txt(tx, '5 个主流模型都会编', 960, 335, fnt(700, 30, F.serif), '#bbbbbb', 'center'); });
     const k1 = prog(b, t('pkg1') + .3, t('pkg1') + .6) * (1 - prog(b, t('pkg2') - .2, t('pkg2')));
-    if (k1 > 0) alpha(tx, k1, () => { txt(tx, '53', 960, 300, fnt(700, 150, F.mono), ORG, 'center'); txt(tx, '个 · 当时没人注册', 960, 400, fnt(900, 40, F.serif), WH, 'center'); });
+    if (k1 > 0) alpha(tx, k1, () => { shade(960, 340, 330, 170, .7); txt(tx, '53', 960, 300, fnt(700, 150, F.mono), ORG, 'center'); txt(tx, '个 · 当时没人注册', 960, 400, fnt(900, 40, F.serif), WH, 'center'); });
     const k2 = prog(b, BUILD1, BUILD1 + .3) * (1 - prog(b, t('pkg3') - .2, t('pkg3')));
     if (k2 > 0 && P3.shop && P3.shop[2]) alpha(tx, k2, () => { const [x, y] = P3.shop; rr(tx, x - 150, y - 110, 300, 76, 6, 'rgba(20,4,4,.85)', RED, 4); txt(tx, '抢注 · 恶意代码', x, y - 72, fnt(900, 32, F.serif), RED, 'center'); });
     alpha(tx, prog(b, t('pkg0'), t('pkg0') + .3), () => txt(tx, '示意 · 包名虚构', 60, 1040, fnt(500, 22), 'rgba(255,255,255,.5)'));
+    const ks = prog(b, t('slop'), t('slop') + .3);
+    if (ks > 0) alpha(tx, ks, () => shade(960, 330, 700, 200, .7));
     narrate(tx, L, S, { sub: { y: 990, fam: F.serif, w: 900, col: WH, shadow: 'rgba(0,0,0,1)', acc: [RED, ORG] }, big: { fam: F.type }, bigSub: { size: 40, col: WH } });
   },
   music(Sm, H, w) {

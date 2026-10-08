@@ -195,13 +195,14 @@ return scene({
       for (let y = 220; y < 880; y += 60) for (let x = 120 + (Math.round((y - 220) / 60) % 2) * 60; x < 1800; x += 120) pxr(cx, x, y, 60, Math.min(60, 880 - y), '#0a7a48');
       const path = (x0, y0, x1, y1) => { const k = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) / 48; for (let i = 0; i <= k; i++) pxr(cx, lerp(x0, x1, i / k) - 30, lerp(y0, y1, i / k) - 30, 60, 60, P.pch); };
       path(200, 380, 1500, 380); path(1500, 380, 1500, 720); path(1500, 720, 420, 720);
+      const kpl = prog(b, t('yours') + .2, t('yours') + .5, E.out) * (1 - prog(b, t('ok') + .4, t('ok') + .7));
       NODES.forEach(([n, ic, x, y], i) => {
         const human = i === 2, lit = b >= HOPS[i], done = i < 2 ? b >= HOPS[i + 1] : i >= 3 && b >= GO3[i - 3] + .3;
         const kp = prog(b, HOPS[i], HOPS[i] + .25, E.back), s = 1 + .15 * Math.max(0, kp > 0 && kp < 1 ? Math.sin(kp * Math.PI) : 0);
         scaleAt(cx, x, y, s, () => { pxr(cx, x - 60, y - 60, 120, 120, P.blk); pxr(cx, x - 54, y - 54, 108, 108, human ? P.blu : done ? P.grn : lit ? P.lgy : P.dgy); pxr(cx, x - 46, y - 46, 92, 92, human ? P.wht : P.navy); pic(cx, ic, x, y, 6); });
-        alpha(tx, lit ? 1 : .35, () => { const w = tw(tx, n, fnt(900, 36)) + 28; pxr(tx, x - w / 2, y + 74, w, 50, 'rgba(0,0,0,.72)'); txt(tx, n, x, y + 98, fnt(900, 36), human ? P.blu : P.wht, 'center'); });
+        alpha(tx, (lit ? 1 : .35) * (1 - kpl), () => { const w = tw(tx, n, fnt(900, 36)) + 28; pxr(tx, x - w / 2, y + 74, w, 50, 'rgba(0,0,0,.72)'); txt(tx, n, x, y + 98, fnt(900, 36), human ? P.blu : P.wht, 'center'); });
       });
-      person(cx, 1610, 440, 5, P.blu); txt(tx, '你', 1610, 322, fnt(900, 30), P.blu, 'center');
+      person(cx, 1610, 440, 5, P.blu); alpha(tx, 1 - kpl, () => txt(tx, '你', 1610, 322, fnt(900, 30), P.blu, 'center'));
       // 第二关和第三关之间的闸门：盖章以后才抬起来
       const gate = prog(b, t('ok') + .5, t('ok') + .8, E.io);
       pxr(cx, 1428, 576 - gate * 60, 144, 18, P.brn); pxr(cx, 1428, 612 - gate * 60, 144, 18, P.brn); pxr(cx, 1420, 556, 12, 90, P.dgy); pxr(cx, 1568, 556, 12, 90, P.dgy);
@@ -213,6 +214,8 @@ return scene({
       p = [lerp(from[0], to[0], k), lerp(from[1], to[1], k) - Math.sin(Math.PI * k) * 70];
       st = { ...st, alpha: kB, x: p[0], y: p[1], px: 7, pose: b >= GO3[2] + .3 ? 'both' : 'idle', eye: b >= HOPS[2] && b < t('ok') ? -1 : 0 };
       if (b >= t('yours') && b < t('ok')) st.q = 1;
+      // 卷轴打开时，Clawd 从第三关跳到卷轴右下，站在一旁等你盖章
+      if (kpl > 0) { st.x = lerp(st.x, 1640, kpl); st.y = lerp(st.y, 860, kpl); st.px = lerp(7, 11, kpl); }
       // 计划卷轴
       const kp = prog(b, t('yours') + .2, t('yours') + .5, E.out) * (1 - prog(b, t('ok') + .4, t('ok') + .7));
       if (kp > 0) alpha(cx, kp, () => alpha(tx, kp, () => {

@@ -374,7 +374,7 @@ return scene({
       const x0 = -720 + u * 230;
       [0, 1, 2].forEach(lv => { const pl = new T.Mesh(new T.BoxGeometry(220, 6, 70), k3.mat(T, '#2a2f3a', { m: .6 })); pl.position.set(x0 + 110, 40 + lv * 70, -230); pl.castShadow = pl.receiveShadow = true; SH.add(pl); });
       [0, 220].forEach(dx => { const p = new T.Mesh(new T.BoxGeometry(6, 220, 70), k3.mat(T, '#2a2f3a', { m: .6 })); p.position.set(x0 + dx, 110, -230); SH.add(p); });
-      for (let lv = 0; lv < 3; lv++) for (let j = 0; j < 16; j++) { const h = 40 + r() * 18; M.makeScale(10, h, 52); M.setPosition(x0 + 10 + j * 12.5, 43 + lv * 70 + h / 2, -230); files.setMatrixAt(fi, M); files.setColorAt(fi, C.set(['#c9bfa8', '#a89f8a', '#8a95a8', '#d6cdb6'][Math.floor(r() * 4)]).convertSRGBToLinear()); fi++; }
+      for (let lv = 0; lv < 3; lv++) for (let j = 0; j < 16; j++) { const h = 40 + r() * 18; M.makeScale(10, h, 52); M.setPosition(x0 + 10 + j * 12.5, 43 + lv * 70 + h / 2, -230); if (u === 3 && lv === 1 && j <= 8) M.makeScale(1e-4, 1e-4, 1e-4); /* 给 Clawd 腾出的空位 */ files.setMatrixAt(fi, M); files.setColorAt(fi, C.set(['#c9bfa8', '#a89f8a', '#8a95a8', '#d6cdb6'][Math.floor(r() * 4)]).convertSRGBToLinear()); fi++; }
     }
     SH.add(files);
     const gold = new T.Mesh(new T.BoxGeometry(12, 54, 54), k3.mat(T, '#ffb020', { e: '#ffb020', ei: 0 })); gold.position.set(100, 43 + 70 + 27, -228); SH.add(gold);
@@ -383,7 +383,7 @@ return scene({
     const ag = k3.clawd(T, { px: 7, col: '#4f7fe0', hi: '#8fb4ff' }); sc.add(ag.g);
     // Clawd：事故之后进场，逐条站到四个原因旁边
     const me = k3.clawd(T, { px: 8 }); sc.add(me.g);
-    const SPOT = [['why', 150, 260, 0], ['c0', 220, 60, 0], ['c1', -10, -215, 113], ['c2', 300, 40, 0], ['c3', 860, 60, 0], ['end', 260, 260, 0]];
+    const SPOT = [['why', 150, 260, 0], ['c0', 220, 60, 0], ['c1', 30, -226, 113], ['c2', 300, 40, 0], ['c3', 860, 60, 0], ['end', 260, 260, 0]];
     const kk = k3.key(T, AM, 1.3, { glow: true, ei: .8 }); sc.add(kk); const kL = new T.PointLight(k3.col(T, AM), 0, 300, 2); sc.add(kL);
     // 数据库：两摞圆柱，坐在同一块存储卷上
     const slab = new T.Mesh(new T.BoxGeometry(520, 30, 260), k3.mat(T, '#1c222c', { m: .6, r: .35 })); slab.position.set(SLAB[0], 15, SLAB[1]); slab.castShadow = slab.receiveShadow = true; sc.add(slab);

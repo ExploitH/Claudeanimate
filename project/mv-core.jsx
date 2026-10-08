@@ -992,7 +992,7 @@ function narrate(ctx, L, S, st = {}) {
       ctx.save();
       if (sub.shadow) { ctx.shadowColor = sub.shadow; ctx.shadowBlur = 14; ctx.shadowOffsetY = 2; }
       const v = (it.vox || []).find(x => x.kind === 'say'); // 逐字打出来，和人声碎片同一张时间表
-      lyric(ctx, L, { at: it.at, out: it.sayOut ?? it.out, outLen: .12, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: v ? 'type' : 'fade', outAnim: 'fade', times: v ? v.sched.t.map(x => v.at + x / BAR) : undefined, d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
+      lyric(ctx, L, { at: it.at, out: it.sayOut ?? it.out, outLen: .06, text: txt0, x: it.x ?? 960, y, size: sub.size, fam: sub.fam, w: sub.w, col: it.col || sub.col, acc: sub.acc, align: it.align || 'center', anim: v ? 'type' : 'fade', outAnim: 'fade', times: v ? v.sched.t.map(x => v.at + x / BAR) : undefined, d: .1, rev: .12, lh: sub.lh, box: sub.box ? [16, sub.box, 10] : undefined });
       ctx.restore();
     }
     if (it.big) {

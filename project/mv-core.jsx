@@ -876,7 +876,9 @@ function AudioTrack({ P, T0, dur, opt }) {
 // gloss（词条卡 [词, 英文, 解释]）、src（来源）、rule（规则条 [n, 文字]）、note（只给画面用的标记）；
 // pause（空几小节）、hold（多停几小节）、dur（直接给长度）、with（和上一步同时开始，off 偏移）、
 // gap（之后空多少）、until / untilEnd（显示到某一步开始 / 结束）、slow（阅读时间倍数）。
-const READ = { cps: 4.3, min: 2.2, pad: .85 };
+const READ = { cps: 4.3, min: 2.2, pad: .85, cps2: 7, pad2: .9 }; // cps/min/pad 是旧的整句阅读速度（readBars 还在用）；cps2/pad2：词条卡和小字的阅读速度，秒
+const TYPED_MIN = 1.4, HOLD0 = .55, HOLD_PER = .012, HOLD_MAX = 1.3; // 一步最短 1.4 秒；打完后停 HOLD0 + 字数 × HOLD_PER 秒（最多 HOLD_MAX）
+const holdAfter = n => Math.min(HOLD_MAX, HOLD0 + n * HOLD_PER);
 const PUNCT = /^[，。、；：！？—…「」“”‘’（）·,.;:!?()《》\-]$/;
 function readLen(s) {
   let n = 0;
@@ -917,16 +919,20 @@ function seq(steps, o = {}) {
     const s = typeof s0 === 'string' ? { say: s0 } : s0;
     if (s.pause !== undefined && !s.say && !s.big) { if (s.id) { at[s.id] = c; end[s.id] = c + s.pause; } c += s.pause; prev = c; continue; }
     const st = s.with ? prev + (s.off || 0) : s.at ?? c;
-    const t = [s.say, s.big, s.sub, s.you, s.me, s.gloss && s.gloss.slice(1).join(' '), s.rule && s.rule[1]].filter(Boolean).join(' ');
-    let d = s.dur ?? (t ? readBars(t, s.slow) : 1);
-    if (s.you && s.dur === undefined) d += youType(s.you);
-    if (s.me && s.dur === undefined) d += .5 + (s.wait || 0); // 「对方正在输入」
-    // 配音：每句至少留够打完的时间（只会拉长，不会缩短）
-    const vox = [];
+    // 时长跟着打字走：打字机打完 + 一小段读完最后几个字的停顿，就转到下一步（不再按慢速阅读留白）。
+    // 词条卡、大字下的小字不是打出来的，另按读完所需的时间留够；写了 dur 的步骤以 dur 为准，但至少要留够打完的时间。
+    const vox = []; let need = 0, typed = 0;
     for (const [sp, text, kind] of voxLines(s)) {
-      const lead = kind === 'me' ? .5 + (s.wait || 0) : VOX_LEAD[kind], sched = voxSched(kind, text, s);
-      vox.push({ sp, text, kind, at: lead, sched });
-      d = Math.max(d, Math.ceil((lead + (sched.dur + VOX_TAIL) / BAR) * 4) / 4);
+      const lead = (kind === 'me' ? .5 + (s.wait || 0) : VOX_LEAD[kind]) * BAR, sched = voxSched(kind, text, s);
+      vox.push({ sp, text, kind, at: lead / BAR, sched });
+      need = Math.max(need, lead + sched.dur);
+      typed = Math.max(typed, lead + sched.dur + holdAfter(sched.g.length));
+    }
+    let d;
+    if (s.dur !== undefined) d = Math.max(s.dur, Math.ceil((need + .3) / BAR * 4) / 4);
+    else {
+      const rest = [s.gloss && s.gloss.slice(1).join(' '), s.sub, s.big].filter(Boolean).join(' '), reads = rest ? readLen(rest) / READ.cps2 + READ.pad2 : 0;
+      d = Math.ceil(Math.max(typed, reads, vox.length || rest ? TYPED_MIN : 0) * (s.slow || 1) / BAR * 4) / 4 || 1;
     }
     d += s.hold || 0;
     const it = { ...s, at: st, out: st + d, vox };
@@ -946,6 +952,8 @@ function seq(steps, o = {}) {
   // 词条卡：没写 until 就留到下一张词条卡出现（最多 12 小节）
   const gl = items.filter(i => i.gloss);
   gl.forEach((g, i) => { if (!g.until && !g.untilEnd && !g.dur) g.out = Math.min(gl[i + 1] ? gl[i + 1].at : bars, g.at + 12); });
+  // 词条卡至少留够读完的时间（后面的步骤变短了，until 到得早）；下面「同一位置只放一张」的限制优先
+  gl.forEach(g => { g.out = Math.max(g.out, g.at + ((readLen(g.gloss.slice(1).join(' ')) + [...g.gloss[0]].length * .5) / 6.5 + 1) / BAR); });
   // 同一位置只放一张：下一张出现前，这一张必须已经退场
   gl.forEach((g, i) => { if (gl[i + 1]) g.out = Math.min(g.out, gl[i + 1].at); });
   const text = items.map(i => [i.say, i.big, i.sub, i.you, i.me, i.gloss && i.gloss.join(''), i.rule && i.rule[1], i.src].filter(Boolean).join('')).join('');

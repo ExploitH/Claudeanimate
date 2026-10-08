@@ -3647,7 +3647,7 @@ Object.assign(window, {
         const b = L.b,
           g = geo(b),
           r = g.wr / 1080 * prog(b, .4, 1.6, E.out);
-        return [g.wx / 1920, WC[1] / 1080, r, .05 + .6 * bump(b, t('out') + 1.5, 1.4) + .85 * g.lp];
+        return [g.wx / 1920, WC[1] / 1080, Math.max(.001, r), .05 + .6 * bump(b, t('out') + 1.5, 1.4) + .85 * g.lp];
       },
       cam: L => [1.03 + .02 * Math.sin(L.t * .3), .015 * Math.sin(L.t * .17), .01 * Math.sin(L.t * .2), 0],
       pulse: L => .5,

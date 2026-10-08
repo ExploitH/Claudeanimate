@@ -111,7 +111,7 @@ return scene({
   desc: '上下文窗口和圈外的黑暗；窗口里的四样东西；token 和容量上限；训练截止；Agent 的循环；context rot 和压缩；能动手脚的三处。',
   enter: { kind: TR.IRIS, a: 0, b: 2.5, p: [.5, .5, 0, 0], col: '#9fd8ff' },
   hud: { num: '02', name: 'AI 写代码时在做什么', time: '21:10', line: '你还记得吧？', ink: '#e6efff', acc: '#9fd8ff', card: [1180, 400], mv: [2.1, 2.6] },
-  par: L => { const b = L.b, g = geo(b), r = (g.wr / 1080) * prog(b, .4, 1.6, E.out); return [g.wx / 1920, WC[1] / 1080, r, .05 + .6 * bump(b, t('out') + 1.5, 1.4) + .85 * g.lp]; },
+  par: L => { const b = L.b, g = geo(b), r = (g.wr / 1080) * prog(b, .4, 1.6, E.out); return [g.wx / 1920, WC[1] / 1080, Math.max(.001, r), .05 + .6 * bump(b, t('out') + 1.5, 1.4) + .85 * g.lp]; },
   cam: L => [1.03 + .02 * Math.sin(L.t * .3), .015 * Math.sin(L.t * .17), .01 * Math.sin(L.t * .2), 0],
   pulse: L => .5,
   sfx: [[t('void'), 'swish'], [t('out'), 'whoosh'], ...KINDS.map((_, i) => [t('k' + (i + 1)) + .1, 'pop']), [t('cap'), 'click'], [t('cut'), 'freeze'], [t('fake') + .4, 'glitch'], [t('ag'), 'swish'],

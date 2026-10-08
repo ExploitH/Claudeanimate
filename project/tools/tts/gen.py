@@ -1,16 +1,11 @@
-# 批量合成配音：python3 gen.py lines.json --clawd <音色> --you <音色> [--model qwen-audio-3.1-tts-next] [--jobs 4] [--only clawd|you] [--limit N]
+# 批量合成配音：python3 gen.py lines.json --clawd <音色> --you <音色> [--clawd-inst 指令] [--you-inst 指令] [--model qwen-audio-3.1-tts-flash] [--jobs 4] [--only clawd|you] [--limit N]
 # 每句存成 clips/<md5>.mp3，已存在就跳过；失败的句子记进 failed.json
 import argparse, hashlib, json, os, re, sys, time, threading
 from concurrent.futures import ThreadPoolExecutor
-import dashscope
-from dashscope.audio.tts_v2 import SpeechSynthesizer
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from dsapi import synth, MODEL
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# key 只从环境变量 DASHSCOPE_API_KEY 或本目录的 .key（已 gitignore）读，绝不写进仓库
-KEY = os.path.join(HERE, '.key')
-dashscope.api_key = os.environ.get('DASHSCOPE_API_KEY') or open(KEY).read().strip()
-dashscope.base_websocket_api_url = os.environ.get('VOX_WS', 'wss://llm-rn6r3clw907289cr.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference')
-
 # 念出来和写出来不一样的地方
 SUB = [(r'==', '双等号'), (r'(?<![A-Za-z])\.env\b', '点 env'), (r'\.gitignore\b', '点 gitignore'), (r'AGENTS\.md', 'AGENTS 点 md'),
        (r'——$', '……'), (r'——', '，'), (r'「|」', ''), (r'\s+', ' ')]
@@ -22,7 +17,7 @@ def clip_name(k): return hashlib.md5(k.encode('utf-8')).hexdigest()[:16] + '.mp3
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('lines'); ap.add_argument('--clawd', required=True); ap.add_argument('--you', required=True)
-    ap.add_argument('--model', default='qwen-audio-3.1-tts-next'); ap.add_argument('--jobs', type=int, default=4)
+    ap.add_argument('--model', default=MODEL); ap.add_argument('--clawd-inst'); ap.add_argument('--you-inst'); ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--only'); ap.add_argument('--limit', type=int, default=0); ap.add_argument('--out', default=os.path.join(HERE, 'clips'))
     a = ap.parse_args()
     L = json.load(open(a.lines)); os.makedirs(a.out, exist_ok=True)
@@ -34,7 +29,7 @@ def main():
         voice = a.clawd if x['sp'] == 'clawd' else a.you
         for tries in range(3):
             try:
-                audio = SpeechSynthesizer(model=a.model, voice=voice).call(speak_text(x['text']))
+                audio = synth(speak_text(x['text']), voice, a.clawd_inst if x['sp'] == 'clawd' else a.you_inst, a.model)
                 if not audio: raise RuntimeError('empty audio')
                 open(os.path.join(a.out, clip_name(x['k'])), 'wb').write(audio)
                 with lock: n[0] += 1; print(f"[{n[0]}/{len(todo)}] {x['sp']} {x['text'][:30]}", flush=True)

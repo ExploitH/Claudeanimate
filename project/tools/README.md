@@ -63,6 +63,8 @@ PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install   # 不下载浏览器
 
 `--html <file>` 可以代替 `--dc`，直接用已经构建好的页面。所有截图和导出都默认用入口现构建。
 
+`tts/lines.json` 只是格式示例，台词是虚构的，不对应任何真实动画。换成 `voxlist.js` 导出的真实台词即可。说话人键 `clawd`（旁白、大字、角色对话、规则）和 `you`（用户输入）由引擎 `mv-core.jsx` 的 `voxLines` 决定，`--voice` 要为它们都指定音色。
+
 ## 快速导出（`mvexport.js`）
 
 引擎的可导出根节点是 `svg[data-om-exportable-video-with-duration-secs]`，它支持同步定格：`data-om-seek-to-time-frame` 事件带 `sync: true` 时，引擎会用 `flushSync` 立刻提交这一帧。引擎广告了 `data-om-sync-seek` 之后，导出器就不用等两帧刷新。

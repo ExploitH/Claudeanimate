@@ -908,9 +908,11 @@ window.MV_VOXLINES = voxLines; window.MV_VOXKEY = voxKey;
 function voxSched(kind, text, s) {
   const b = typeSched(text), n = Math.max(1, b.g.length);
   if (kind === 'rule') return { ...b, t: b.g.map((_, i) => (i + 1) * .75 / n), dur: .8 };
-  if (kind === 'big') { const st = Math.min(((s.bigS || {}).st ?? .1) / 4, .3 / n) * BAR; return { ...b, t: b.g.map((_, i) => i * st), dur: n * st + .1 }; }
+  // 大字：和字幕同样的打字节奏（标点处停顿），再慢一点（BIG_SLOW 倍）。以前整句挤在 0.3 小节里，长句的人声碎片会连成一串
+  if (kind === 'big') return { ...b, t: b.t.map(x => x * BIG_SLOW), dur: b.dur * BIG_SLOW };
   return b;
 }
+const BIG_SLOW = 1.3;
 const VOX_LEAD = { say: .06, big: .15, me: 0, you: .06, rule: .075 }, VOX_TAIL = .55; // 小节 / 秒
 const readBars = (s, slow = 1) => Math.ceil(Math.max(READ.min, readLen(s) / READ.cps * slow + READ.pad) / BAR * 4) / 4;
 function seq(steps, o = {}) {
@@ -1001,7 +1003,8 @@ function narrate(ctx, L, S, st = {}) {
       if (it.x !== undefined) bg.x = it.x; if (it.y !== undefined) bg.y = it.y;
       ctx.font = fnt(bg.w, bg.size, bg.fam || F.sans);
       const t1 = it.nowrap ? it.big : wrapText(ctx, it.big, bg.maxW || 1600);
-      const box = lyric(ctx, L, { ...bg, at: it.at, out: it.out, text: t1 });
+      const vb = (it.vox || []).find(x => x.kind === 'big'); // 逐字出现的时间和人声碎片同一张表
+      const box = lyric(ctx, L, { ...bg, at: it.at, out: it.out, text: t1, times: vb ? vb.sched.t.map(x => vb.at + x / BAR) : undefined });
       if (it.sub) {
         const sb = { size: 38, w: 500, col: rgba(bg.col.startsWith('#') ? bg.col : '#ffffff', .78), anim: 'fade', ...(st.bigSub || {}) };
         const nl = t1.split('\n').length;

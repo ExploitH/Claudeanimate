@@ -17997,16 +17997,15 @@ function voxSched(kind, text, s) {
     t: b.g.map((_, i) => (i + 1) * .75 / n),
     dur: .8
   };
-  if (kind === 'big') {
-    const st = Math.min(((s.bigS || {}).st ?? .1) / 4, .3 / n) * BAR;
-    return {
-      ...b,
-      t: b.g.map((_, i) => i * st),
-      dur: n * st + .1
-    };
-  }
+  // 大字：和字幕同样的打字节奏（标点处停顿），再慢一点（BIG_SLOW 倍）。以前整句挤在 0.3 小节里，长句的人声碎片会连成一串
+  if (kind === 'big') return {
+    ...b,
+    t: b.t.map(x => x * BIG_SLOW),
+    dur: b.dur * BIG_SLOW
+  };
   return b;
 }
+const BIG_SLOW = 1.3;
 const VOX_LEAD = {
     say: .06,
     big: .15,
@@ -18210,11 +18209,13 @@ function narrate(ctx, L, S, st = {}) {
       if (it.y !== undefined) bg.y = it.y;
       ctx.font = fnt(bg.w, bg.size, bg.fam || F.sans);
       const t1 = it.nowrap ? it.big : wrapText(ctx, it.big, bg.maxW || 1600);
+      const vb = (it.vox || []).find(x => x.kind === 'big'); // 逐字出现的时间和人声碎片同一张表
       const box = lyric(ctx, L, {
         ...bg,
         at: it.at,
         out: it.out,
-        text: t1
+        text: t1,
+        times: vb ? vb.sched.t.map(x => vb.at + x / BAR) : undefined
       });
       if (it.sub) {
         const sb = {

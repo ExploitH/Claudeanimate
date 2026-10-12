@@ -104,21 +104,24 @@ function qrMat(seed) {
   for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) m[QRN - 9 + j][QRN - 9 + i] = Math.max(Math.abs(i), Math.abs(j)) === 1 ? 0 : 1;
   QRC.set(seed, m); return m;
 }
-// k: 0..1 模块逐个出现；ink 颜色
-function qr(c, x, y, size, seed, k = 1, ink = C.ink) {
+// 方块拼码时每个模块的落定进度：先留 0.15 给三个定位角淡入，模块按种子错开落下
+const qrLand = (seed, i, j, k) => eio(pr(k, .15 + hash(i * 7.31 + j * 3.17 + seed * .71) * .45, .55 + hash(i * 7.31 + j * 3.17 + seed * .71) * .45));
+// k: 0..1 模块逐个出现（倒着走就是逐格消散）；ink 颜色；land：和 3D 方块配合——模块在方块落定的那一刻整格出现
+function qr(c, x, y, size, seed, k = 1, ink = C.ink, land = false) {
   const m = qrMat(seed), cs = size / QRN, ga = c.globalAlpha;
   c.fillStyle = ink;
   for (let j = 0; j < QRN; j++) for (let i = 0; i < QRN; i++) {
     if (m[j][i] !== 1) continue;
+    if (land) { if (qrLand(seed, i, j, k) < 1) continue; c.globalAlpha = ga; c.fillRect(x + i * cs - .2, y + j * cs - .2, cs + .4, cs + .4); continue; }
     const a = hash(i * 3.1 + j * 17.7 + seed) * .7, e = eo(pr(k, a, a + .3)); if (e <= 0) continue;
     const s = cs * (.25 + .75 * e) + .4, cx = x + (i + .5) * cs, cy = y + (j + .5) * cs;
     c.globalAlpha = ga * Math.min(1, e * 2); c.fillRect(cx - s / 2, cy - s / 2, s, s);
   }
   c.globalAlpha = ga;
-  const fk = eo(pr(k, 0, .35));
+  const fk = land ? eio(pr(k, 0, .2)) : eo(pr(k, 0, .35));
   if (fk > 0) [[0, 0], [QRN - 7, 0], [0, QRN - 7]].forEach(([i, j]) => {
     const X = x + i * cs, Y = y + j * cs, S = 7 * cs;
-    sc(c, X + S / 2, Y + S / 2, .6 + .4 * fk, () => al(c, fk, () => {
+    sc(c, X + S / 2, Y + S / 2, land ? .94 + .06 * fk : .6 + .4 * fk, () => al(c, fk, () => {
       rr(c, X, Y, S, S, cs * 1.6, ink); rr(c, X + cs, Y + cs, S - 2 * cs, S - 2 * cs, cs * 1.1, '#ffffff'); rr(c, X + 2 * cs, Y + 2 * cs, S - 4 * cs, S - 4 * cs, cs * .8, ink);
     }));
   });
@@ -166,7 +169,7 @@ function payScreen(c, st) {
   topBar(c, '付款码', { refresh: st.press || 0 });
   rr(c, 16, 92, 328, 378, 24, C.card, C.line);
   const q = 250, qx = 180 - q / 2, qy = 116;
-  qr(c, qx, qy, q, st.seed || 1, st.qrK ?? 1);
+  qr(c, qx, qy, q, st.seed || 1, st.qrK ?? 1, C.ink, !!st.qrLand);
   if (st.flash > 0) al(c, st.flash, () => rr(c, qx - 8, qy - 8, q + 16, q + 16, 14, null, C.brandHi, 3));
   if (st.scan >= 0 && st.scan <= 1) {
     const y = qy + st.scan * q;
@@ -448,24 +451,23 @@ function phone(T) {
     if (!qim) { qim = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicMaterial({ toneMapped: false }), QRN * QRN); qim.renderOrder = 4; inner.add(qim); }
     if (seed !== qseed) {
       qseed = seed; const m = qrMat(seed); qcells = [];
-      for (let j = 0; j < QRN; j++) for (let i = 0; i < QRN; i++) {
-        let on = m[j][i] === 1;
-        for (const [fx, fy] of [[0, 0], [QRN - 7, 0], [0, QRN - 7]]) { const u = i - fx, v = j - fy; if (u >= 0 && v >= 0 && u < 7 && v < 7) { const d = Math.max(Math.abs(u - 3), Math.abs(v - 3)); on = d === 3 || d <= 1; } }
-        if (on) qcells.push([i, j]);
-      }
+      for (let j = 0; j < QRN; j++) for (let i = 0; i < QRN; i++) if (m[j][i] === 1) qcells.push([i, j]);
     }
     qim.visible = k > 0 && k < 1; if (!qim.visible) return;
     qim.count = qcells.length;
     qcells.forEach(([i, j], n) => {
-      const d0 = hash(n * 1.37 + seed) * .4, e = eio(pr(k, d0, d0 + .6));
-      const tx0 = (QX + (i + .5) * QS - 180) * FX, ty0 = (390 - QY - (j + .5) * QS) * FY, tz = zf + 2;
-      const sx = (hash(n * 2.1) - .5) * 1100, sy = (hash(n * 3.3) - .5) * 900, sz = 260 + hash(n * 4.7) * 520;
-      const sw = (1 - e) * (1 - e);
+      // 进度：从它开始飞的那一刻（0）到落定（1）
+      const a0 = .15 + hash(i * 7.31 + j * 3.17 + seed * .71) * .45, raw = pr(k, a0 - .02, a0 + .4), e = eio(raw);
+      const tx0 = (QX + (i + .5) * QS - 180) * FX, ty0 = (390 - QY - (j + .5) * QS) * FY, tz = zf + 1.5;
+      if (raw <= 0 || raw >= 1) { dummy.scale.set(1e-4, 1e-4, 1e-4); dummy.position.set(tx0, ty0, tz); dummy.updateMatrix(); qim.setMatrixAt(n, dummy.matrix); return; }
+      // 起点：目标附近、靠向镜头一些（不从画面外冲进来）
+      const ang = hash(n * 2.1 + seed) * 6.283, dist = 160 + hash(n * 3.3 + seed) * 320;
+      const sx = tx0 + Math.cos(ang) * dist, sy = ty0 + Math.sin(ang) * dist * .8, sz = tz + 160 + hash(n * 4.7 + seed) * 360, sw = 1 - e;
       dummy.position.set(tx0 + (sx - tx0) * sw, ty0 + (sy - ty0) * sw, tz + (sz - tz) * sw);
-      dummy.rotation.set((1 - e) * 1.6 * hash(n * 5.1), (1 - e) * 1.6 * hash(n * 6.3), (1 - e) * .8);
-      const s = QS * FX * (e >= 1 ? 1 : .92); dummy.scale.set(s, s, 3 + 10 * sw);
+      dummy.rotation.set(sw * .9 * (hash(n * 5.1) - .5), sw * .9 * (hash(n * 6.3) - .5), sw * .5 * (hash(n * 7.7) - .5));
+      const grow = eio(pr(raw, 0, .35)), s = QS * FX * grow; dummy.scale.set(s, s, Math.max(1e-4, 2 * grow));
       dummy.updateMatrix(); qim.setMatrixAt(n, dummy.matrix);
-      qim.setColorAt(n, cA.copy(cB).lerp(cC, Math.pow(e, 3)));
+      qim.setColorAt(n, cA.copy(cB).lerp(cC, eio(pr(raw, .3, 1))));
     });
     qim.instanceMatrix.needsUpdate = true; if (qim.instanceColor) qim.instanceColor.needsUpdate = true;
   }

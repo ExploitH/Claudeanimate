@@ -151,7 +151,7 @@ R.n1 = K => {
 // ============ 02 · 12:08 食堂 · 付款码 ============
 R.n2 = K => {
   const { prog, lerp, E } = K, n = N(), X = FX();
-  const HEAD = 2, QR0 = 4.1, QR1 = 5.9, CD0 = 7.2, REF = 8.9, SCAN = 10.1, DI = 10.8;
+  const HEAD = 2, QR0 = 4.1, QR1 = 5.9, CD0 = 7.2, REF = 8.9, SWAP = REF + .4, SCAN = 10.1, DI = 10.8;
   const P = {
     pose(L) {
       const b = L.b;
@@ -163,10 +163,11 @@ R.n2 = K => {
     paint(c, L, flat) {
       const b = L.b;
       const left = b < CD0 ? 56 - Math.max(0, b - QR1) * 2 : b < REF ? lerp(52, 0, prog(b, CD0, REF, E.io)) : 60 - (b - REF - .6) * 2;
-      const qrK = flat ? (b < REF ? prog(b, QR0, QR1, E.lin) : prog(b, REF + .1, REF + 1, E.lin)) : (b < REF ? (b >= QR1 ? 1 : 0) : (b >= REF + 1 ? 1 : 0));
-      n.payScreen(c, { time: '12:08', seed: b < REF ? 11 : 12, qrK, left: b > REF && b < REF + .6 ? 0 : Math.min(60, left), press: prog(b, REF - .2, REF + .4, E.io), flash: 0, scan: -1 });
+      // 首次出码：3D 方块聚拢，模块在方块落定时整格接替；刷新：旧码逐格消散，新码逐格浮现
+      const old = b < SWAP, qrK = old ? (b < REF - .1 ? prog(b, QR0, QR1, E.lin) : 1 - prog(b, REF - .1, SWAP, E.lin)) : prog(b, SWAP, REF + 1.3, E.lin);
+      n.payScreen(c, { time: '12:08', seed: old ? 11 : 12, qrK, qrLand: !flat && b < REF - .1, left: b > REF && b < REF + .6 ? 0 : Math.min(60, left), press: prog(b, REF - .2, REF + .4, E.io), flash: 0, scan: -1 });
     },
-    layers(Ph) { return L => { const b = L.b; if (b < REF) Ph.qrFx(11, prog(b, QR0, QR1, E.lin), L.t); else Ph.qrFx(12, prog(b, REF + .1, REF + 1, E.lin), L.t); }; },
+    layers(Ph) { return L => Ph.qrFx(11, prog(L.b, QR0, QR1, E.lin), L.t); },
   };
   return base(K, {
     scene: '02 · 12:08 食堂', bars: 12,
@@ -209,7 +210,7 @@ R.n2 = K => {
       n.head(tx, L, '倒计时走完之前，\n新的二维码已经换好。', { at: CD0 + .7, out: 9.6, x: 200, y: 690, size: 36, w: 500, align: 'left', col: n.C.grey, lh: 1.5, d: .7 });
       n.head(tx, L, '滴，\n付好了。', { at: DI + .1, x: 196, y: 520, size: 120, w: 900, align: 'left', grad: n.GRAD, st: .3, d: .8 });
     },
-    sfx: [[.55, 'tock'], [3.1, 'swish'], [QR1, 'chime', 1319], [REF, 'click'], [REF + 1, 'chime', 1568], [SCAN, 'swish'], [DI, 'ding']],
+    sfx: [[.55, 'tock'], [3.1, 'swish'], [QR1, 'chime', 1319], [REF, 'click'], [REF + 1.3, 'chime', 1568], [SCAN, 'swish'], [DI, 'ding']],
     music(S, H) {
       const C2 = N().calm;
       C2(S, H, 0, 2, { keys: .3, glass: .2, sub: .25 });

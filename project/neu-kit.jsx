@@ -327,9 +327,9 @@ function wWeek(c, st = {}) {
   D.week7.forEach(([d, s, n, ci, nm], i) => {
     const x = x0 + d * cw + 1.5, y = y0 + (s - 1) * rh + 1, bw = cw - 3, bh = n * rh - 2;
     const blk = () => { rr(c, x, y, bw, bh, 5, COURSE[ci][0]); tx(c, nm, x + bw / 2, y + bh / 2, fnt(700, 9.5), COURSE[ci][1], 'center'); };
-    if (st.drop) { // 俄罗斯方块式：从上方落下，落地弹一下
-      const a0 = (i * .061) % .6, e = pr(k, a0, a0 + .35); if (e <= 0) return;
-      c.save(); c.translate(0, -(1 - bounce(e)) * (y + bh + 20)); blk(); c.restore(); return;
+    if (st.drop) { // 按列依次淡入、轻轻上浮
+      const a0 = d * .09 + s * .01, e = eio(pr(k, a0, a0 + .4)); if (e <= 0) return;
+      c.save(); c.globalAlpha *= e; c.translate(0, (1 - e) * 10); blk(); c.restore(); return;
     }
     const a = back(pr(k, d * .1 + s * .012, d * .1 + s * .012 + .3)); if (a <= 0) return;
     sc(c, x + bw / 2, y + bh / 2, a, blk);
@@ -457,12 +457,12 @@ function phone(T) {
     qim.visible = k > 0 && k < 1; if (!qim.visible) return;
     qim.count = qcells.length;
     qcells.forEach(([i, j], n) => {
-      const d0 = hash(n * 1.37 + seed) * .45, e = eio(pr(k, d0, d0 + .55));
+      const d0 = hash(n * 1.37 + seed) * .4, e = eio(pr(k, d0, d0 + .6));
       const tx0 = (QX + (i + .5) * QS - 180) * FX, ty0 = (390 - QY - (j + .5) * QS) * FY, tz = zf + 2;
-      const sx = (hash(n * 2.1) - .5) * 2600, sy = (hash(n * 3.3) - .5) * 1600, sz = 300 + hash(n * 4.7) * 1400;
+      const sx = (hash(n * 2.1) - .5) * 1100, sy = (hash(n * 3.3) - .5) * 900, sz = 260 + hash(n * 4.7) * 520;
       const sw = (1 - e) * (1 - e);
-      dummy.position.set(tx0 + (sx - tx0) * sw + Math.sin(t * 2 + n) * 30 * sw, ty0 + (sy - ty0) * sw, tz + (sz - tz) * sw);
-      dummy.rotation.set((1 - e) * 6 * hash(n * 5.1), (1 - e) * 6 * hash(n * 6.3), (1 - e) * 3);
+      dummy.position.set(tx0 + (sx - tx0) * sw, ty0 + (sy - ty0) * sw, tz + (sz - tz) * sw);
+      dummy.rotation.set((1 - e) * 1.6 * hash(n * 5.1), (1 - e) * 1.6 * hash(n * 6.3), (1 - e) * .8);
       const s = QS * FX * (e >= 1 ? 1 : .92); dummy.scale.set(s, s, 3 + 10 * sw);
       dummy.updateMatrix(); qim.setMatrixAt(n, dummy.matrix);
       qim.setColorAt(n, cA.copy(cB).lerp(cC, Math.pow(e, 3)));
@@ -506,9 +506,9 @@ function head(c, L, text, o) {
     const k = eo(pr(b, o.at + i * st, o.at + i * st + d)); if (k <= 0) return;
     c.save(); c.font = fnt(o.w || 700, size, fam); c.textBaseline = 'middle'; c.textAlign = o.align || 'center';
     if (o.ls) c.letterSpacing = (o.ls * size) + 'px';
-    const wd = c.measureText(ln).width, x = o.x ?? 960, y = y0 + i * lh + (1 - k) * size * .32 - kout * size * .15;
+    const wd = c.measureText(ln).width, x = o.x ?? 960, y = y0 + i * lh + (1 - k) * size * .22 - kout * size * .1;
     c.globalAlpha *= k * (1 - kout);
-    const blur = (1 - k) * size * .1 + kout * size * .06; if (blur > .3) c.filter = `blur(${blur.toFixed(1)}px)`;
+    const blur = (1 - k) * size * .05 + kout * size * .04; if (blur > .3) c.filter = `blur(${blur.toFixed(1)}px)`;
     let f = o.col || C.white;
     if (o.grad) { const x0 = (o.align === 'left' ? x : o.align === 'right' ? x - wd : x - wd / 2); const g = c.createLinearGradient(x0, y - size / 2, x0 + wd, y + size / 2); o.grad.forEach((cc, j) => g.addColorStop(j / (o.grad.length - 1), cc)); f = g; }
     c.fillStyle = f; c.fillText(ln, x, y);
@@ -550,10 +550,28 @@ function groove(S, H, b0, b1, o = {}) {
   }
 }
 
+// 安静的律动（发布会式）：轻底鼓在 1、3 拍，轻沙锤，钢琴琶音，长铺底，低音只在小节头。o 里每项是音量，0 表示不要
+function calm(S, H, b0, b1, o0 = {}) {
+  const o = {}; for (const k in o0) o[k] = typeof o0[k] === 'number' && k !== 'off' ? o0[k] * 1.3 : o0[k];
+  const CH = H.CH, ch = b => CH[PROG[(Math.round(b - b0) + (o.off || 0)) % 4]];
+  for (let b = b0; b < b1; b++) {
+    const c = ch(b);
+    if (o.kick) { S.add('kick', b, 0, 0, 0, o.kick, 'soft'); S.add('kick', b, 2, 0, 0, o.kick * .8, 'soft'); }
+    if (o.shaker) for (let j = 0; j < 8; j++) S.add('shaker', b, j / 2, 0, 0, o.shaker * (j % 2 ? 1 : .6));
+    if (o.tick) for (let j = 0; j < 4; j++) S.add('tick', b, j + .5, 0, 0, o.tick);
+    if (o.sub) S.add('bass', b, 0, c.r, 3.6, o.sub, 'sub');
+    if (o.bass) { S.add('bass', b, 0, c.r + 12, 1.4, o.bass, 'upright'); S.add('bass', b, 2.5, c.r + 12, 1, o.bass * .7, 'upright'); }
+    if (o.piano) { const a = c.arp || c.pad; [0, 1, 2, 3, 2, 1, 2, 3].forEach((q, j) => S.add('piano', b, j / 2, [a[q % a.length]], 1.2, o.piano * (j % 2 ? .75 : 1))); }
+    if (o.keys) S.add('rhodes', b, 0, c.pad, 3.5, o.keys);
+    if (o.pad) S.add('pad', b, 0, c.pad, 4, o.pad, o.padKind || 'string');
+    if (o.glass) S.add('pad', b, 0, c.pad.map(m => m + 12), 4, o.glass, 'glass');
+  }
+}
+
 // 全部文案（字体按需加载用）
 const TXT = '付款码向收银员出示此码秒后自动刷新正在获取新码校园卡余额网费刚刚更新充值启用e码通自动刷新二维码课表我的内网连接未连接中已连接学生VPN连接后即可访问教务系统等校内接口，其他流量不经过隧道。正在…断开考试成绩同步学年秋季学期场门座位学分今日周第下一节本一二三四五六日东大码' +
   D.today.flat().join('') + D.week7.map(x => x[4]).join('') + D.exams.flat().join('') + D.grades.flat().join('') + '¥0123456789.:-·，。、！？（）「」— ';
 
-window.NEU = { balCard, examCard, bounce, C, COURSE, D, money, rr, tx, al, sc, glow, hexA, fnt, SANS, SERIF, MONO, logo, qr, status, payScreen, vpnScreen, acadScreen, homeScreen, wToday, wECode, wExam, wWeek, HOME,
+window.NEU = { calm, balCard, examCard, bounce, C, COURSE, D, money, rr, tx, al, sc, glow, hexA, fnt, SANS, SERIF, MONO, logo, qr, status, payScreen, vpnScreen, acadScreen, homeScreen, wToday, wECode, wExam, wWeek, HOME,
   screen, phone, phone2D, phoneLayer, phoneThree, lights, env, head, GRAD, PROG, MEL, MEL2, melody, groove, TXT, eo, eio, back, pr, hash };
 })();

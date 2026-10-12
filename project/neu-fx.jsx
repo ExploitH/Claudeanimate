@@ -32,15 +32,15 @@ function swarm(c, x, y, w, k, t, o = {}) {
   const P = logoPts(o.n || 560), s = w / 68;
   const pos = (i, e) => {
     const [px, py] = P[i], tx0 = x + (px - 54) * s, ty0 = y + (py - 53.5) * s;
-    const ang = hash(i * 2.3) * 6.283, R = 420 + hash(i * 3.1) * 900, sw = 1 - e, spin = ang + sw * 2.4;
+    const ang = hash(i * 2.3) * 6.283, R = 380 + hash(i * 3.1) * 700, sw = 1 - e, spin = ang + sw * 1.1;
     return [lerp(tx0, 960 + Math.cos(spin) * R * 1.7, sw * sw), lerp(ty0, 540 + Math.sin(spin) * R, sw * sw)];
   };
   c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
   for (let i = 0; i < P.length; i++) {
-    const d0 = hash(i * 1.7) * .4, e = eio(pr(k, d0, d0 + .6)); if (e <= 0) continue;
+    const d0 = hash(i * 1.7) * .35, e = eio(pr(k, d0, d0 + .65)); if (e <= 0) continue;
     const [X, Y] = pos(i, e), [X0, Y0] = pos(i, Math.max(0, e - .07)), a = (.25 + .75 * e) * (.7 + .3 * Math.sin(t * 9 + i));
     const col = hash(i * 9.1) > .7 ? '127,214,222' : '143,178,255';
-    if (e < 1) { c.strokeStyle = `rgba(${col},${a * .45})`; c.lineWidth = 1.6; c.beginPath(); c.moveTo(X0, Y0); c.lineTo(X, Y); c.stroke(); }
+    if (e < 1) { c.strokeStyle = `rgba(${col},${a * .16})`; c.lineWidth = 1.2; c.beginPath(); c.moveTo(X0, Y0); c.lineTo(X, Y); c.stroke(); }
     c.fillStyle = `rgba(${col},${a})`; c.beginPath(); c.arc(X, Y, 1.4 + 1.4 * hash(i * 4.4), 0, 7); c.fill();
   }
   c.restore();
@@ -138,11 +138,30 @@ function flip(c, cx, cy, size, from, to, k, o = {}) {
   return total;
 }
 
+// ---------- 时间：变了的那一位，旧数字向上淡出、新数字从下面淡入 ----------
+function timeRoll(c, cx, cy, size, from, to, k, o = {}) {
+  const chars = [...to], fr = [...String(from).padStart(chars.length, ' ')];
+  c.save(); c.font = fnt(o.w || 400, size); c.textBaseline = 'middle'; c.textAlign = 'center';
+  const dw = c.measureText('0').width * 1.04, cwd = ch => ch === ':' ? size * .34 : dw;
+  const total = chars.reduce((a, ch) => a + cwd(ch), 0); let x = cx - total / 2;
+  chars.forEach((t, i) => {
+    const f = fr[i], w = cwd(t), ki = eio(pr(k, i * .06, i * .06 + .7));
+    if (f === t || ki >= 1) { c.globalAlpha = 1; c.fillStyle = o.col || '#F5F5F7'; c.fillText(t, x + w / 2, cy - (t === ':' ? size * .05 : 0)); }
+    else {
+      c.fillStyle = o.col || '#F5F5F7';
+      c.globalAlpha = 1 - ki; c.fillText(f, x + w / 2, cy - ki * size * .45);
+      c.globalAlpha = ki; c.fillText(t, x + w / 2, cy + (1 - ki) * size * .45);
+    }
+    x += w;
+  });
+  c.restore(); return total;
+}
+
 // ---------- 滚轮数字（里程表） ----------
 // v 当前值，fin 最终值（决定位数），vel 每小节变化量（决定拖影）；居中画在 (cx, y)，col 数字颜色
 function odo(c, cx, y, v, fin, size, o = {}) {
-  const fmt = fin.toFixed(2), places = [];
-  const intLen = fmt.indexOf('.'); for (let i = 0; i < fmt.length; i++) places.push(fmt[i] === '.' ? '.' : Math.pow(10, i < intLen ? intLen - 1 - i : intLen - i));
+  const fmt = fin.toFixed(o.dec ?? 2), places = [];
+  const intLen = fmt.indexOf('.') < 0 ? fmt.length : fmt.indexOf('.'); for (let i = 0; i < fmt.length; i++) places.push(fmt[i] === '.' ? '.' : Math.pow(10, i < intLen ? intLen - 1 - i : intLen - i));
   c.save(); c.font = fnt(700, size); c.textBaseline = 'middle'; c.textAlign = 'center';
   const dw = c.measureText('0').width * 1.02, pw = size * .3, lh = size * 1.05;
   const total = places.reduce((a, p) => a + (p === '.' ? pw : dw), 0), pre = o.pre || '';
@@ -154,15 +173,17 @@ function odo(c, cx, y, v, fin, size, o = {}) {
   const g = o.grad ? c.createLinearGradient(x, y - size / 2, x + total, y + size / 2) : null; if (g) o.grad.forEach((cc, j) => g.addColorStop(j / (o.grad.length - 1), cc));
   for (const p of places) {
     if (p === '.') { c.fillStyle = g || o.col || '#fff'; c.fillText('.', x + pw / 2, y); x += pw; continue; }
+    // 以最小一位为单位做整数运算，避免 128.6 / 0.1 这类浮点误差
+    const V = v / low + 1e-6, u = Math.round(p / low);
     let base, frac;
-    if (p === low) { const d = (v / p) % 10; base = Math.floor(d); frac = d - base; }
-    else { base = Math.floor(v / p) % 10; const r = v % p, w0 = low * 10 > p ? p : p / 10; frac = clamp01((r - (p - w0)) / w0); }
+    if (u === 1) { const d = V % 10; base = Math.floor(d); frac = d - base; }
+    else { base = Math.floor(V / u) % 10; frac = clamp01((V % u) - (u - 1)); }
     const lead = v < p && p > 1 && p * 10 > 1; // 还没到这一位：淡一点
-    c.save(); c.beginPath(); c.rect(x - 4, y - lh / 2, dw + 8, lh); c.clip();
+    c.save(); c.beginPath(); c.rect(x - 8, y - lh, dw + 16, lh * 2); c.clip();
     c.globalAlpha *= lead ? .18 : 1;
     const draw = (d, dy, a) => { c.globalAlpha *= a; c.fillStyle = g || o.col || '#fff'; c.fillText(String((d + 10) % 10), x + dw / 2, y + dy); c.globalAlpha /= a; };
-    draw(base, -frac * lh, 1); draw(base + 1, (1 - frac) * lh, 1);
-    if (blur > .2 && p === low) for (let k = 1; k <= 3; k++) { draw(base, -frac * lh + k * blur * 6, .18); draw(base + 1, (1 - frac) * lh + k * blur * 6, .18); }
+    const ef = eio(frac); draw(base, -ef * lh * .4, 1 - ef); draw(base + 1, (1 - ef) * lh * .4, ef);
+    if (o.trail && blur > .2 && p === low) for (let k = 1; k <= 3; k++) { draw(base, -frac * lh + k * blur * 6, .18); draw(base + 1, (1 - frac) * lh + k * blur * 6, .18); }
     c.restore();
     x += dw;
   }
@@ -218,13 +239,13 @@ function chapter(tx, L, o) {
   const kin = o.card === false ? 1 : pr(b, o.at ?? 0, (o.at ?? 0) + .35), m = o.card === false ? 1 : eio(pr(b, o.out, o.out + .55));
   const kend = o.end === undefined ? 0 : pr(b, o.end - .35, o.end);
   const a = kin * (1 - kend); if (a <= 0) return;
-  const size = lerp(200, 28, m), cx = lerp(960, 70 + size * 1.6, m), cy = lerp(500, 66, m);
-  const fk = o.card === false ? 1 : pr(b, o.flip, o.flip + .5);
+  const size = lerp(210, 26, m), cx = lerp(960, 70 + size * 1.25, m), cy = lerp(500, 66, m);
+  const fk = o.card === false ? 1 : pr(b, o.flip, o.flip + .7);
   n.al(tx, a, () => {
-    const w = flip(tx, cx, cy, size, o.from, o.to, fk);
+    const w = timeRoll(tx, cx, cy, size, o.from, o.to, fk, { w: m > .5 ? 500 : 400 });
     tx.font = fnt(lerp(500, 500, m), lerp(38, 22, m)); tx.textBaseline = 'middle';
-    const lw = tx.measureText(o.place).width, lx = lerp(960 - lw / 2, cx + w / 2 + 16, m), ly = lerp(cy - size * .9, cy, m);
-    tx.fillStyle = lerp(0, 1, m) > .5 ? '#C9D3E6' : '#8A8F98'; tx.fillText(o.place, lx, ly);
+    const lw = tx.measureText(o.place).width, lx = lerp(960 - lw / 2, cx + w / 2 + 16, m), ly = lerp(cy - size * .78, cy, m);
+    tx.fillStyle = m > .5 ? '#9AA3B5' : '#8A8F98'; tx.fillText(o.place, lx, ly);
     if (m < 1) n.al(tx, (1 - m) * pr(b, o.flip + .3, o.flip + .7), () => { tx.fillStyle = '#5B6070'; tx.font = fnt(500, 26); tx.textAlign = 'center'; tx.fillText(o.line || '', 960, cy + size * .95); tx.textAlign = 'left'; });
   });
 }
@@ -233,12 +254,11 @@ function chapter(tx, L, o) {
 // hits: [[小节, 强度], ...]
 function cam(bars, hits = [], push = .025) {
   return L => {
-    let sh = 0; for (const [b0, a] of hits) sh += L.hit(b0, .7) * a;
-    const f = Math.floor(L.t * 30);
-    return [1 + push * L.b / bars + sh * .025, (hash(f * 1.3) - .5) * sh * .02, (hash(f * 2.1) - .5) * sh * .02, (hash(f * 3.7) - .5) * sh * .02];
+    let sh = 0; for (const [b0, a] of hits) sh += eio(pr(L.b, b0 - .3, b0 + .6)) * (1 - eio(pr(L.b, b0 + .6, b0 + 2))) * a;
+    return [1 + push * eio(L.b / bars) + sh * .006, 0, 0, 0];
   };
 }
 function flash(hits) { return L => { let f = 0; for (const [b0, a] of hits) f += L.hit(b0, .35) * a; return Math.min(1, f); }; }
 
-window.NEU_FX = { logoPts, swarm, ring, burst, bokeh, sky, leak, flip, odo, warp, sweep, slam, chapter, cam, flash };
+window.NEU_FX = { timeRoll, logoPts, swarm, ring, burst, bokeh, sky, leak, flip, odo, warp, sweep, slam, chapter, cam, flash };
 })();

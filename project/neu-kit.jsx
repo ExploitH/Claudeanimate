@@ -9,6 +9,7 @@ const pr = (x, a, b) => clamp01((x - a) / (b - a));
 const eo = k => 1 - Math.pow(1 - clamp01(k), 3);
 const eio = k => (k = clamp01(k), k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 const back = k => { const c = 1.70158; k = clamp01(k) - 1; return 1 + (c + 1) * k * k * k + c * k * k; };
+const bounce = k => { k = clamp01(k); const n = 7.5625, d = 2.75; if (k < 1 / d) return n * k * k; if (k < 2 / d) return n * (k -= 1.5 / d) * k + .75; if (k < 2.5 / d) return n * (k -= 2.25 / d) * k + .9375; return n * (k -= 2.625 / d) * k + .984375; };
 const hash = x => { const s = Math.sin(x * 127.1 + 3.7) * 43758.5453; return s - Math.floor(s); };
 const SANS = '"Noto Sans SC", "PingFang SC", sans-serif', SERIF = '"Noto Serif SC", "Songti SC", serif', MONO = '"JetBrains Mono", "Noto Sans SC", monospace';
 const fnt = (w, s, fam = SANS) => `${w} ${s}px ${fam}`;
@@ -68,6 +69,12 @@ function logo(c, x, y, w, o = {}) {
     let f = o.fill;
     if (f === 'grad') { const g = c.createLinearGradient(30, 25, 80, 82); g.addColorStop(0, '#5B8CFF'); g.addColorStop(.55, '#1A55D0'); g.addColorStop(1, '#0F45AF'); f = g; }
     al(c, o.fillK ?? 1, () => { c.fillStyle = f; c.beginPath(); P.forEach((q, i) => { if (o.only === undefined || o.only === i) path(i, q); }); c.fill(); });
+  }
+  if (o.sweep > 0 && o.sweep < 1) { // 扫光：裁在图标里的一道斜亮带
+    c.save(); c.beginPath(); P.forEach((q, i) => path(i, q)); c.clip();
+    const bx = 5 + 110 * eio(o.sweep), g = c.createLinearGradient(bx - 16, 20, bx + 8, 90);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.85)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g; c.fillRect(0, 0, 108, 108); c.restore();
   }
   if (o.stroke && (o.strokeK ?? 1) > 0) {
     c.strokeStyle = o.stroke; c.lineWidth = (o.lw || 2) / s; c.lineJoin = 'round'; c.lineCap = 'round';
@@ -170,19 +177,26 @@ function payScreen(c, st) {
   const left = Math.max(0, Math.ceil(st.left ?? 56)), ttl = st.ttl || 60;
   tx(c, left > 0 ? `${left} 秒后自动刷新` : '正在获取新码…', 180, 420, fnt(600, 13), C.brand, 'center');
   rr(c, 90, 440, 180, 4, 2, C.cont); rr(c, 90, 440, 180 * clamp01((st.left ?? 56) / ttl), 4, 2, C.brand);
-  // 余额卡
-  const hk = st.hi || 0;
-  rr(c, 16, 486, 328, 116, 22, C.card, hk > 0 ? hexA(C.brand, .25 + .75 * hk) : C.line, 1 + 1.5 * hk);
-  tx(c, '校园卡余额', 36, 514, fnt(500, 13), C.sub);
-  tx(c, '¥ ' + money(st.bal ?? D.bal), 36, 551, fnt(700, 30), C.ink);
-  tx(c, `网费 ¥${money(D.fee)} · 刚刚更新`, 36, 584, fnt(400, 12), C.faint);
-  const pk = st.pay || 0;
-  sc(c, 297, 548, 1 - .08 * Math.sin(Math.PI * pk), () => { rr(c, 264, 530, 66, 36, 18, pk > 0 ? '#C8D7FF' : C.pc); tx(c, '充值', 297, 548, fnt(600, 14), C.onPc, 'center'); });
+  // 余额卡（noBal：卡片被抬到 3D 图层上，这里只留一个空槽）
+  if (st.noBal) rr(c, 16, 486, 328, 116, 22, C.cont);
+  else { c.save(); c.translate(16, 486); balCard(c, st); c.restore(); }
   // 开关
   rr(c, 16, 616, 328, 84, 20, C.card, C.line);
   tx(c, '启用 e码通', 32, 640, fnt(500, 14.5), C.ink); toggle(c, 286, 627, true);
   tx(c, '自动刷新二维码', 32, 678, fnt(500, 14.5), C.ink); toggle(c, 286, 665, true);
   bottomNav(c, 0);
+}
+
+// 余额卡 328×116（原点在卡片左上角）。st: { hi, pay, bal }
+function balCard(c, st = {}) {
+  const hk = st.hi || 0;
+  rr(c, 0, 0, 328, 116, 22, C.card, hk > 0 ? hexA(C.brand, .25 + .75 * hk) : C.line, 1 + 1.5 * hk);
+  tx(c, '校园卡余额', 20, 28, fnt(500, 13), C.sub);
+  tx(c, '¥ ' + money(st.bal ?? D.bal), 20, 65, fnt(700, 30), C.ink);
+  tx(c, `网费 ¥${money(D.fee)} · 刚刚更新`, 20, 98, fnt(400, 12), C.faint);
+  const pk = st.pay || 0;
+  if (pk > 0 && pk < 1) al(c, 1 - pk, () => { c.save(); c.beginPath(); c.roundRect(248, 44, 66, 36, 18); c.clip(); c.fillStyle = hexA(C.brand, .25); c.beginPath(); c.arc(281, 62, 10 + 60 * pk, 0, 7); c.fill(); c.restore(); });
+  sc(c, 281, 62, 1 - .08 * Math.sin(Math.PI * pk), () => { rr(c, 248, 44, 66, 36, 18, pk > 0 && pk < 1 ? '#C8D7FF' : C.pc); tx(c, '充值', 281, 62, fnt(600, 14), C.onPc, 'center'); });
 }
 
 // 内网连接页。st: { state: 0 未连接 / 1 连接中 / 2 已连接, t, k (切到已连接的进度), press }
@@ -236,13 +250,8 @@ function acadScreen(c, st) {
   const k = st.k ?? 1;
   if (!tab) D.exams.forEach((e, i) => {
     const y = 172 + i * 104, a = eo(pr(k, i * .15, i * .15 + .45)); if (a <= 0) return;
-    al(c, a, () => { c.save(); c.translate(0, (1 - a) * 24);
-      rr(c, 16, y, 328, 92, 18, C.card, C.line); rr(c, 16, y + 16, 5, 60, 3, COURSE[e[5]][1]);
-      tx(c, e[0], 34, y + 24, fnt(700, 16), C.ink);
-      tx(c, `${e[1]}  ${e[2]}`, 34, y + 50, fnt(500, 13), C.sub);
-      tx(c, e[3], 34, y + 72, fnt(400, 12.5), C.faint);
-      rr(c, 268, y + 58, 62, 24, 12, C.pc); tx(c, `座位 ${e[4]}`, 299, y + 70, fnt(600, 12), C.onPc, 'center');
-      c.restore(); });
+    if (st.lift) { rr(c, 16, y, 328, 92, 18, C.cont); return; }
+    al(c, a, () => { c.save(); c.translate(16, y + (1 - a) * 24); examCard(c, i); c.restore(); });
   });
   else D.grades.forEach((g, i) => {
     const y = 172 + i * 76, a = eo(pr(k, i * .12, i * .12 + .4)); if (a <= 0) return;
@@ -254,6 +263,16 @@ function acadScreen(c, st) {
       tx(c, String(n), 326, y + 33, fnt(700, 26), C.brand, 'right');
       c.restore(); });
   });
+}
+
+// 考试卡片 328×92（原点在左上角）
+function examCard(c, i) {
+  const e = D.exams[i];
+  rr(c, 0, 0, 328, 92, 18, C.card, C.line); rr(c, 0, 16, 5, 60, 3, COURSE[e[5]][1]);
+  tx(c, e[0], 18, 24, fnt(700, 16), C.ink);
+  tx(c, `${e[1]}  ${e[2]}`, 18, 50, fnt(500, 13), C.sub);
+  tx(c, e[3], 18, 72, fnt(400, 12.5), C.faint);
+  rr(c, 252, 58, 62, 24, 12, C.pc); tx(c, `座位 ${e[4]}`, 283, 70, fnt(600, 12), C.onPc, 'center');
 }
 
 // ---------- 桌面小组件（各自的逻辑尺寸） ----------
@@ -306,9 +325,14 @@ function wWeek(c, st = {}) {
   c.fillStyle = hexA(C.brand, .06); c.fillRect(x0 + 2 * cw, y0 - 4, cw, h - y0 - 4);
   const k = st.k ?? 1;
   D.week7.forEach(([d, s, n, ci, nm], i) => {
-    const a = back(pr(k, d * .1 + s * .012, d * .1 + s * .012 + .3)); if (a <= 0) return;
     const x = x0 + d * cw + 1.5, y = y0 + (s - 1) * rh + 1, bw = cw - 3, bh = n * rh - 2;
-    sc(c, x + bw / 2, y + bh / 2, a, () => { rr(c, x, y, bw, bh, 5, COURSE[ci][0]); tx(c, nm, x + bw / 2, y + bh / 2, fnt(700, 9.5), COURSE[ci][1], 'center'); });
+    const blk = () => { rr(c, x, y, bw, bh, 5, COURSE[ci][0]); tx(c, nm, x + bw / 2, y + bh / 2, fnt(700, 9.5), COURSE[ci][1], 'center'); };
+    if (st.drop) { // 俄罗斯方块式：从上方落下，落地弹一下
+      const a0 = (i * .061) % .6, e = pr(k, a0, a0 + .35); if (e <= 0) return;
+      c.save(); c.translate(0, -(1 - bounce(e)) * (y + bh + 20)); blk(); c.restore(); return;
+    }
+    const a = back(pr(k, d * .1 + s * .012, d * .1 + s * .012 + .3)); if (a <= 0) return;
+    sc(c, x + bw / 2, y + bh / 2, a, blk);
   });
 }
 // 主屏幕。st: { t, w: [今日, e码通, 考试, 本周] 各自出现进度, time }
@@ -319,6 +343,7 @@ function homeScreen(c, st) {
   al(c, .14, () => logo(c, 190, 600, 420, { fill: '#ffffff', wave: 3, t: (st.t || 0) * .6 }));
   status(c, st.time || '07:52', true);
   HOME.forEach(([x, y, w, h, fn], i) => {
+    if (st.layers) return;
     const k = (st.w || [1, 1, 1, 1])[i]; if (k <= 0) return;
     const s = .6 + .4 * back(k);
     c.save(); c.translate(x + w / 2, y + h / 2); c.scale(s, s); c.translate(-w / 2, -h / 2); c.globalAlpha *= Math.min(1, k * 2.5);
@@ -346,7 +371,13 @@ function rrShape(T, w, h, r) {
 }
 function shapeUV(geo, w, h) { const p = geo.attributes.position, uv = geo.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / w + .5, p.getY(i) / h + .5); uv.needsUpdate = true; return geo; }
 const col3 = (T, c) => new T.Color(c).convertSRGBToLinear();
-let ENV = null;
+let ENV = null, SHT = null;
+function shadowTex(T) {
+  if (SHT) return SHT;
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c = cv.getContext('2d');
+  const g = c.createRadialGradient(64, 64, 10, 64, 64, 64); g.addColorStop(0, 'rgba(0,0,0,.9)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+  SHT = new T.CanvasTexture(cv); return SHT;
+}
 // 影棚环境：几块柔光板，给金属边框和玻璃一点反光
 function env(T, U, scene) {
   if (!ENV && U.renderer) {
@@ -391,8 +422,55 @@ function phone(T) {
   // 侧键
   const kMat = side;
   [[PW / 2 + 1.5, 150, 120], [PW / 2 + 1.5, 20, 70]].forEach(([x, y, h]) => { const m = new T.Mesh(new T.BoxGeometry(5, h, 9), kMat); m.position.set(x, y, 0); inner.add(m); });
+  // 浮起的图层：一块圆角卡片（自己的画布贴图），按屏幕逻辑坐标摆在屏幕上方，可以抬高、倾斜；下面带一片软阴影
+  const FX = (PW - 24) / 360, FY = (PH - 24) / 780;
+  function layer(w, h, r = 22) {
+    const cv = document.createElement('canvas'); cv.width = w * 2; cv.height = h * 2; const c = cv.getContext('2d');
+    const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; t.anisotropy = 8;
+    const mat = new T.MeshBasicMaterial({ map: t, transparent: true, toneMapped: false, side: T.DoubleSide, depthWrite: false });
+    const mesh = new T.Mesh(shapeUV(new T.ShapeGeometry(rrShape(T, w * FX, h * FY, r * FX), 12), w * FX, h * FY), mat); mesh.renderOrder = 3;
+    const sh = new T.Mesh(new T.PlaneGeometry(w * FX * 1.3, h * FY * 1.35), new T.MeshBasicMaterial({ map: shadowTex(T), transparent: true, depthWrite: false, opacity: 0, toneMapped: false })); sh.renderOrder = 2;
+    inner.add(sh); inner.add(mesh);
+    return {
+      set(o) {
+        const a = o.a ?? 1, z = o.z || 0, x = (o.sx - 180) * FX + (o.dx || 0), y = (390 - o.sy) * FY + (o.dy || 0);
+        mesh.visible = a > .01; mat.opacity = a;
+        mesh.position.set(x, y, zf + 1.2 + z); mesh.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0); mesh.scale.setScalar(o.s ?? 1);
+        sh.visible = mesh.visible && z > 2; sh.position.set(x + z * .12, y - z * .22, zf + 1 + z * .25); sh.scale.setScalar((o.s ?? 1) * (1 + z / 600)); sh.material.opacity = .55 * a * Math.min(1, z / 80);
+      },
+      paint(fn) { c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, w, h); c.globalAlpha = 1; fn(c); t.needsUpdate = true; },
+    };
+  }
+  // 二维码方块：每个模块是一个小立方体，从四面八方飞来，落在屏幕上二维码的位置
+  let qim = null, qseed = -1, qcells = [];
+  const QX = 55, QY = 116, QS = 250 / QRN, dummy = new T.Object3D(), cA = new T.Color(), cB = col3(T, '#8FB2FF'), cC = col3(T, '#0F172A');
+  function qrFx(seed, k, t) {
+    if (!qim) { qim = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicMaterial({ toneMapped: false }), QRN * QRN); qim.renderOrder = 4; inner.add(qim); }
+    if (seed !== qseed) {
+      qseed = seed; const m = qrMat(seed); qcells = [];
+      for (let j = 0; j < QRN; j++) for (let i = 0; i < QRN; i++) {
+        let on = m[j][i] === 1;
+        for (const [fx, fy] of [[0, 0], [QRN - 7, 0], [0, QRN - 7]]) { const u = i - fx, v = j - fy; if (u >= 0 && v >= 0 && u < 7 && v < 7) { const d = Math.max(Math.abs(u - 3), Math.abs(v - 3)); on = d === 3 || d <= 1; } }
+        if (on) qcells.push([i, j]);
+      }
+    }
+    qim.visible = k > 0 && k < 1; if (!qim.visible) return;
+    qim.count = qcells.length;
+    qcells.forEach(([i, j], n) => {
+      const d0 = hash(n * 1.37 + seed) * .45, e = eio(pr(k, d0, d0 + .55));
+      const tx0 = (QX + (i + .5) * QS - 180) * FX, ty0 = (390 - QY - (j + .5) * QS) * FY, tz = zf + 2;
+      const sx = (hash(n * 2.1) - .5) * 2600, sy = (hash(n * 3.3) - .5) * 1600, sz = 300 + hash(n * 4.7) * 1400;
+      const sw = (1 - e) * (1 - e);
+      dummy.position.set(tx0 + (sx - tx0) * sw + Math.sin(t * 2 + n) * 30 * sw, ty0 + (sy - ty0) * sw, tz + (sz - tz) * sw);
+      dummy.rotation.set((1 - e) * 6 * hash(n * 5.1), (1 - e) * 6 * hash(n * 6.3), (1 - e) * 3);
+      const s = QS * FX * (e >= 1 ? 1 : .92); dummy.scale.set(s, s, 3 + 10 * sw);
+      dummy.updateMatrix(); qim.setMatrixAt(n, dummy.matrix);
+      qim.setColorAt(n, cA.copy(cB).lerp(cC, Math.pow(e, 3)));
+    });
+    qim.instanceMatrix.needsUpdate = true; if (qim.instanceColor) qim.instanceColor.needsUpdate = true;
+  }
   return {
-    g, scr, tex, gTex,
+    g, scr, tex, gTex, layer, qrFx,
     // p: { x, y (画布像素), z, rx, ry, rz, s }
     set(p, U) { U.at(g, p.x ?? 960, p.y ?? 540, p.z || 0); g.rotation.set(p.rx || 0, p.ry || 0, p.rz || 0); g.scale.setScalar(p.s ?? 1); g.visible = (p.s ?? 1) > .001 && p.hide !== true; gTex.offset.x = -(p.ry || 0) * .9 + (p.rx || 0) * .3; },
     paint(fn) { scr.paint(fn); tex.needsUpdate = true; },
@@ -408,11 +486,12 @@ function phone2D(c, p, scr) {
   c.restore();
 }
 // 世界里用：three 层画手机，失败就画平面版。paint(c) 画屏幕，pose 给姿态
-function phoneLayer(cx, L, m) { if (!MK().three(cx, L)) { const p = m.pose(L); if (p.hide || (p.s ?? 1) <= .001) return; if (!m._s2) m._s2 = screen(); m._s2.paint(c => m.paint(c, L)); phone2D(cx, p, m._s2); } }
+function phoneLayer(cx, L, m) { if (!MK().three(cx, L)) { const p = m.pose(L); if (p.hide || (p.s ?? 1) <= .001) return; if (!m._s2) m._s2 = screen(); m._s2.paint(c => m.paint(c, L, true)); phone2D(cx, p, m._s2); } }
 function phoneThree(m) {
   return (T, U) => {
     const scene = new T.Scene(); lights(T, scene); const P = phone(T); scene.add(P.g);
-    return { scene, update(L) { env(T, U, scene); const p = m.pose(L); P.set(p, U); if (!P.g.visible) return false; P.paint(c => m.paint(c, L)); return true; } };
+    const ex = m.layers ? m.layers(P) : null;
+    return { scene, update(L) { env(T, U, scene); const p = m.pose(L); P.set(p, U); if (!P.g.visible) return false; P.paint(c => m.paint(c, L, false)); if (ex) ex(L); return true; } };
   };
 }
 
@@ -425,7 +504,7 @@ function head(c, L, text, o) {
   const y0 = o.y - (lines.length - 1) * lh / 2, fam = o.fam || SANS;
   lines.forEach((ln, i) => {
     const k = eo(pr(b, o.at + i * st, o.at + i * st + d)); if (k <= 0) return;
-    c.save(); c.font = fnt(o.w || 800, size, fam); c.textBaseline = 'middle'; c.textAlign = o.align || 'center';
+    c.save(); c.font = fnt(o.w || 700, size, fam); c.textBaseline = 'middle'; c.textAlign = o.align || 'center';
     if (o.ls) c.letterSpacing = (o.ls * size) + 'px';
     const wd = c.measureText(ln).width, x = o.x ?? 960, y = y0 + i * lh + (1 - k) * size * .32 - kout * size * .15;
     c.globalAlpha *= k * (1 - kout);
@@ -434,6 +513,7 @@ function head(c, L, text, o) {
     if (o.grad) { const x0 = (o.align === 'left' ? x : o.align === 'right' ? x - wd : x - wd / 2); const g = c.createLinearGradient(x0, y - size / 2, x0 + wd, y + size / 2); o.grad.forEach((cc, j) => g.addColorStop(j / (o.grad.length - 1), cc)); f = g; }
     c.fillStyle = f; c.fillText(ln, x, y);
     c.restore();
+    if (o.sweep && window.NEU_FX && k >= 1) window.NEU_FX.sweep(c, ln, x, y, fnt(o.w || 700, size, fam), o.align || 'center', pr(b, o.sweep[0] + i * .08, o.sweep[0] + (o.sweep[1] || .6) + i * .08), o.sweep[2]);
   });
 }
 const GRAD = ['#8FB2FF', '#5B8CFF', '#7FD6DE'];
@@ -474,6 +554,6 @@ function groove(S, H, b0, b1, o = {}) {
 const TXT = '付款码向收银员出示此码秒后自动刷新正在获取新码校园卡余额网费刚刚更新充值启用e码通自动刷新二维码课表我的内网连接未连接中已连接学生VPN连接后即可访问教务系统等校内接口，其他流量不经过隧道。正在…断开考试成绩同步学年秋季学期场门座位学分今日周第下一节本一二三四五六日东大码' +
   D.today.flat().join('') + D.week7.map(x => x[4]).join('') + D.exams.flat().join('') + D.grades.flat().join('') + '¥0123456789.:-·，。、！？（）「」— ';
 
-window.NEU = { C, COURSE, D, money, rr, tx, al, sc, glow, hexA, fnt, SANS, SERIF, MONO, logo, qr, status, payScreen, vpnScreen, acadScreen, homeScreen, wToday, wECode, wExam, wWeek, HOME,
+window.NEU = { balCard, examCard, bounce, C, COURSE, D, money, rr, tx, al, sc, glow, hexA, fnt, SANS, SERIF, MONO, logo, qr, status, payScreen, vpnScreen, acadScreen, homeScreen, wToday, wECode, wExam, wWeek, HOME,
   screen, phone, phone2D, phoneLayer, phoneThree, lights, env, head, GRAD, PROG, MEL, MEL2, melody, groove, TXT, eo, eio, back, pr, hash };
 })();

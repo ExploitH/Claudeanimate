@@ -21,9 +21,10 @@
 
 ## 作品：东大码宣传片（`project/东大码宣传片.dc.html`）
 
-给 [NEU-ECode-Android](https://github.com/ExploitH/NEU-ECode-Android)（东大码）做的 2 分钟发布会风格宣传片，七场：开场、付款码、校园卡余额、桌面小组件、校园内网、考试与成绩、收尾。
+给 [NEU-ECode-Android](https://github.com/ExploitH/NEU-ECode-Android)（东大码）做的约 2 分钟发布会风格宣传片，主线是「从早八，到深夜」：一个学生的一天，每章用翻页时钟开场——07:52 宿舍（桌面小组件）、12:08 食堂（付款码）、12:09（校园卡余额）、21:30 校外（校园内网）、21:32（考试与成绩），开场和收尾各一场。
 
 - `neu-logo.jsx` — 山川图标轮廓（取自 App 的 `ic_launcher_foreground.xml`）
 - `neu-kit.jsx` — 共用道具 `window.NEU`：3D 手机（屏幕是每帧重画的画布贴图）、App 的付款码 / 内网连接 / 考试成绩 / 主屏幕界面、四款桌面小组件、标题字、配乐（F 大调 I–V–vi–IV）
-- `neu-film.jsx` — 七个世界模块 `n0`–`n6`
+- `neu-fx.jsx` — 特效 `window.NEU_FX`：粒子汇聚成图标、冲击波、放射线、散景、天色、漏光、翻页时钟、滚轮数字、光速隧道、扫光、撞色大字、章节卡与角标、镜头抖动和闪白
+- `neu-film.jsx` — 七个世界模块 `n0`–`n6`；手机上的小组件、余额卡、考试卡片可以作为 3D 图层浮起（爆炸图），付款码由 3D 小方块飞来拼成
 - `mv.config.json` 指向这个入口，`tools/` 里的构建、截图、导出命令可以直接用

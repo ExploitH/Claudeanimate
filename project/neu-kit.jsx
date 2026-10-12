@@ -72,8 +72,9 @@ function logo(c, x, y, w, o = {}) {
   }
   if (o.sweep > 0 && o.sweep < 1) { // 扫光：裁在图标里的一道斜亮带
     c.save(); c.beginPath(); P.forEach((q, i) => path(i, q)); c.clip();
-    const bx = 5 + 110 * eio(o.sweep), g = c.createLinearGradient(bx - 16, 20, bx + 8, 90);
-    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, 'rgba(255,255,255,.85)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    // 渐变沿 (1, -0.36) 方向，等亮线是一道向右上倾斜的窄带；带心从 x≈0 走到 x≈125（图标在 20–88 之间）
+    const a = Math.sin(Math.PI * o.sweep), bx = 125 * eio(o.sweep), g = c.createLinearGradient(bx - 11, 57, bx + 11, 49);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.5, `rgba(255,255,255,${.5 * a})`); g.addColorStop(1, 'rgba(255,255,255,0)');
     c.fillStyle = g; c.fillRect(0, 0, 108, 108); c.restore();
   }
   if (o.stroke && (o.strokeK ?? 1) > 0) {
@@ -202,39 +203,49 @@ function balCard(c, st = {}) {
   sc(c, 281, 62, 1 - .08 * Math.sin(Math.PI * pk), () => { rr(c, 248, 44, 66, 36, 18, pk > 0 && pk < 1 ? '#C8D7FF' : C.pc); tx(c, '充值', 281, 62, fnt(600, 14), C.onPc, 'center'); });
 }
 
-// 内网连接页。st: { state: 0 未连接 / 1 连接中 / 2 已连接, t, k (切到已连接的进度), press }
+// 内网连接页。st: { s: 0 未连接 → 1 连接中 → 2 已连接（连续值，中间交叉淡化）, t, press }
 function vpnScreen(c, st) {
   c.fillStyle = C.bg; c.fillRect(0, 0, 360, 780);
   status(c, st.time || '21:30');
   topBar(c, '内网连接', { back: true });
-  const cx = 180, cy = 262, t = st.t || 0, s = st.state || 0;
-  if (s === 0) {
-    const br = .5 + .5 * Math.sin(t * 2.4);
-    c.fillStyle = hexA(C.faint, .08 + .08 * br); c.beginPath(); c.arc(cx, cy, 92 + 8 * br, 0, 7); c.fill();
+  const cx = 180, cy = 262, t = st.t || 0, s = st.s ?? st.state ?? 0;
+  const a0 = clamp01(1 - s), a1 = s <= 1 ? clamp01(s) : clamp01(2 - s), a2 = clamp01(s - 1), e2 = eio(a2);
+  // 未连接：灰色圆标，外圈缓慢呼吸
+  if (a0 > 0) al(c, a0, () => {
+    const br = .5 + .5 * Math.sin(t * 1.6);
+    c.fillStyle = hexA(C.faint, .08 + .08 * br); c.beginPath(); c.arc(cx, cy, 90 + 6 * br, 0, 7); c.fill();
     rr(c, cx - 76, cy - 76, 152, 152, 76, C.cont, C.line, 1.5);
     logo(c, cx, cy + 2, 92, { fill: C.faint });
-  } else if (s === 1) {
+  });
+  // 连接中：浅蓝底，细弧绕圈，水纹起伏
+  if (a1 > 0) al(c, a1, () => {
     rr(c, cx - 76, cy - 76, 152, 152, 76, C.pc);
-    c.strokeStyle = C.brand; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.arc(cx, cy, 92, t * 4, t * 4 + 1.6); c.stroke();
-    logo(c, cx, cy + 2, 92, { fill: C.brand, wave: 2.2, t: t * 2.5 });
-  } else {
-    const k = eo(st.k ?? 1);
-    c.save(); c.beginPath(); c.arc(cx, cy, 76 + 16 * k, 0, 7); c.clip();
+    c.strokeStyle = C.brand; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.arc(cx, cy, 90, t * 3, t * 3 + 1.4); c.stroke();
+    logo(c, cx, cy + 2, 92, { fill: C.brand, wave: 1.6, t: t * 1.8 });
+  });
+  // 已连接：品牌蓝圆从内向外长到 88，里面是缓慢的数据流
+  if (a2 > 0) al(c, a2, () => {
+    const R = 76 + 12 * e2;
+    c.save(); c.beginPath(); c.arc(cx, cy, R, 0, 7); c.clip();
     c.fillStyle = C.brand; c.fillRect(cx - 100, cy - 100, 200, 200);
-    for (let i = 0; i < 14; i++) {
-      const x = cx - 91 + i * 14, sp = 60 + hash(i) * 70, ph = hash(i * 3.3) * 200;
-      for (let j = 0; j < 3; j++) { const y = cy - 100 + ((t * sp + ph + j * 70) % 200); c.fillStyle = `rgba(169,195,255,${.25 + .5 * hash(i + j)})`; c.fillRect(x, y, 3, 14 + 10 * hash(i * 7 + j)); }
+    for (let i = 0; i < 12; i++) {
+      const x = cx - 84 + i * 15, sp = 26 + hash(i) * 30, ph = hash(i * 3.3) * 200;
+      for (let j = 0; j < 2; j++) { const y = cy - 100 + ((t * sp + ph + j * 100) % 200), g = c.createLinearGradient(0, y, 0, y + 30); g.addColorStop(0, 'rgba(169,195,255,0)'); g.addColorStop(1, `rgba(169,195,255,${.18 + .25 * hash(i + j)})`); c.fillStyle = g; c.fillRect(x, y, 2, 30); }
     }
     c.restore();
     logo(c, cx, cy + 2, 92, { fill: '#ffffff' });
-  }
-  tx(c, ['未连接', '连接中', '已连接'][s], cx, 398, fnt(700, 24), s === 2 ? C.brand : C.ink, 'center');
+  });
+  // 文字和按钮：先淡出旧的，再淡入新的（不叠在一起）；圆标上面是同时交叉淡化
+  // 出去的在前半程（a 从 1 降到 0.5）淡完，进来的在后半程（a 从 0.5 升到 1）出现：两者都是 2a−1
+  const seq = a => clamp01(a * 2 - 1), b0 = seq(a0), b1 = seq(a1), b2 = seq(a2);
+  [['未连接', b0, C.ink, -1], ['连接中', b1, C.ink, s < 1 ? 1 : -1], ['已连接', b2, C.brand, 1]].forEach(([w, a, col, dir]) => { if (a > 0) al(c, a, () => tx(c, w, cx, 398 + (1 - eio(a)) * 8 * dir, fnt(700, 24), col, 'center')); });
   ['连接学生 VPN 后即可访问教务系统等校内', '接口，其他流量不经过隧道。'].forEach((l, i) => tx(c, l, cx, 438 + i * 22, fnt(400, 13.5), C.sub, 'center'));
+  // 按钮：同一个位置三种样式交叉淡化；按下时轻轻缩一下
   const pk = st.press || 0;
-  sc(c, cx, 586, 1 - .06 * Math.sin(Math.PI * pk), () => {
-    if (s === 0) { rr(c, 40, 562, 280, 48, 24, C.brand); tx(c, '连接学生 VPN', cx, 586, fnt(600, 16), '#fff', 'center'); }
-    else if (s === 1) { rr(c, 40, 562, 280, 48, 24, C.cont); tx(c, '正在连接…', cx, 586, fnt(600, 16), C.sub, 'center'); }
-    else { rr(c, 40, 562, 280, 48, 24, null, C.faint, 1.5); tx(c, '断开', cx, 586, fnt(600, 16), C.brand, 'center'); }
+  sc(c, cx, 586, 1 - .04 * Math.sin(Math.PI * pk), () => {
+    if (b0 > 0) al(c, b0, () => { rr(c, 40, 562, 280, 48, 24, C.brand); if (pk > 0 && pk < 1) al(c, 1 - pk, () => { c.save(); c.beginPath(); c.roundRect(40, 562, 280, 48, 24); c.clip(); c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(cx, 586, 20 + 160 * pk, 0, 7); c.fill(); c.restore(); }); tx(c, '连接学生 VPN', cx, 586, fnt(600, 16), '#fff', 'center'); });
+    if (b1 > 0) al(c, b1, () => { rr(c, 40, 562, 280, 48, 24, C.cont); tx(c, '正在连接…', cx, 586, fnt(600, 16), C.sub, 'center'); });
+    if (b2 > 0) al(c, b2, () => { rr(c, 40, 562, 280, 48, 24, C.card, C.faint, 1.5); tx(c, '断开', cx, 586, fnt(600, 16), C.brand, 'center'); });
   });
 }
 

@@ -275,15 +275,18 @@ R.n3 = K => {
 // ============ 04 · 21:30 校外 · 校园内网 ============
 R.n4 = K => {
   const { prog, E } = K, n = N(), X = FX();
-  const ERR = 1.5, UP = 3.1, PRESS = 3.8, ON = 5.2, DIA = 6.6;
+  const ERR = 1.5, UP = 3.1, PRESS = 3.8, ON = 5.2, DIA = 6.8;
   const P = {
     pose(L) {
       const b = L.b;
       if (b < UP) return { ...DEF, hide: true };
-      return float(kf(b, [[UP, { x: 960, y: 1450, rx: -.45, ry: -.25 }], [UP + .8, { x: 960, y: 545, rx: .03, ry: .08 }], [PRESS + .2, { x: 960, y: 545, ry: 0 }], [ON, { x: 960, y: 545, z: 520 }],
-        [ON + 1, { x: 1260, y: 545, z: 120, ry: -.2 }], [DIA, { x: 1260, y: 545, z: 120, ry: -.24 }], [DIA + .9, { x: 410, y: 545, z: -200, ry: .2 }], [10, { x: 410, y: 545, z: -200, ry: .14 }]]), L.t, b > PRESS && b < ON + .5 ? .2 : .7);
+      // 一条路走完：升起 → 居中 → 连接时缓缓推近 → 连上后一次滑到左边停住（右边留给标题和示意图）
+      const amp = .7 - .5 * prog(b, PRESS - .3, PRESS + .2, E.io) * (1 - prog(b, ON + .3, ON + 1.2, E.io)); // 漂浮幅度连续变化，不跳
+      return float(kf(b, [[UP, { x: 960, y: 1450, rx: -.45, ry: -.25 }], [UP + .8, { x: 960, y: 545, rx: .03, ry: .08 }], [PRESS + .2, { x: 960, y: 545, ry: 0 }], [ON, { x: 960, y: 545, z: 260 }],
+        [ON + 1.4, { x: 440, y: 545, z: -90, ry: .2, rx: .03 }], [10, { x: 430, y: 545, z: -150, ry: .14, rx: .03 }]]), L.t, amp);
     },
-    paint(c, L) { const b = L.b; n.vpnScreen(c, { time: '21:30', t: L.t, state: b < PRESS + .15 ? 0 : b < ON ? 1 : 2, k: prog(b, ON, ON + .7, E.io), press: prog(b, PRESS, PRESS + .3, E.lin) }); },
+    // 屏幕状态是连续值：按下后 0→1（连接中），连上时 1→2（已连接），中间交叉淡化
+    paint(c, L) { const b = L.b; n.vpnScreen(c, { time: '21:30', t: L.t, s: prog(b, PRESS + .1, PRESS + .6, E.io) + prog(b, ON - .1, ON + .4, E.io), press: prog(b, PRESS, PRESS + .4, E.lin) }); },
   };
   // 慢速光线：稀疏、细、慢
   function lines(cx, t, a) {
@@ -312,7 +315,7 @@ R.n4 = K => {
     scene: '04 · 21:30 校外', bars: 10,
     par: L => [.74 - .2 * prog(L.b, ERR, ERR + .8, E.io) * (1 - prog(L.b, UP - .4, UP + .4, E.io)), .5, .36, .12],
     cam: X.cam(10, [], .03),
-    desc: '时间平滑跳到 21:30，夜里城市的散景；画面暗下去：「人在校外，教务系统打不开？」，一张安静的报错卡片；手机升起，点「连接学生 VPN」，镜头缓缓推近屏幕，连接中；已连接时屏幕中心泛起柔光，背景里慢速光线流过；分流示意图：校内流量走学生 VPN 隧道到校园内网，其他流量直连互联网。',
+    desc: '时间平滑跳到 21:30，夜里城市的散景；画面暗下去：「人在校外，教务系统打不开？」，一张安静的报错卡片；手机升起，点「连接学生 VPN」，屏幕状态从未连接淡到连接中，镜头缓缓推近；连上时淡到已连接，圆标处泛起柔光，手机一次滑到左边停住，右边是「校园内网，随身带着。」，背景里慢速光线流过；随后右边画出分流示意图：校内流量走学生 VPN 隧道到校园内网，其他流量直连互联网。',
     text: TXT() + '周三 · 校外自习回来人在校外，教务系统打不开？无法连接到教务系统请在校园网环境下访问校园内网，随身带着。学生 VPN 隧道教务系统 · 课表 · 考试 · 成绩互联网其他流量照常直连应用内学生 VPN，只分流，不劫持公网。',
     three: n.phoneThree(P),
     draw(cx, tx, L) {
@@ -331,14 +334,16 @@ R.n4 = K => {
         n.tx(cx, '请在校园网环境下访问', 730, y + 32, n.fnt(500, 28), '#8A8F98');
       });
       n.head(tx, L, '人在校外，\n教务系统打不开？', { at: ERR, out: UP - .5, y: 360, size: 88, w: 900, st: .3, d: .8 });
-      n.glow(cx, 960, 545 - 128 * 1.35, 520, 'rgba(143,178,255,.45)', Math.sin(Math.PI * prog(b, ON - .2, ON + 1.4)));
+      // 连上的那一刻：屏幕圆标处泛起柔光，跟着手机走
+      const p = P.pose(L), ps = 2015 / (2015 - p.z), ka2 = Math.sin(Math.PI * prog(b, ON - .2, ON + 1.8));
+      if (ka2 > 0 && !p.hide) n.glow(cx, p.x, p.y - 127 * ps, 420 * ps, 'rgba(143,178,255,.40)', ka2);
       n.phoneLayer(cx, L, P);
       X.chapter(tx, L, { from: '21:29', to: '21:30', place: '周三 · 校外', line: '自习回来', at: 0, flip: .55, out: 1.3 });
-      n.head(tx, L, '校园内网，\n随身带着。', { at: ON + .5, out: DIA, x: 196, y: 520, size: 110, w: 900, align: 'left', grad: n.GRAD, st: .25, d: .8 });
+      n.head(tx, L, '校园内网，\n随身带着。', { at: ON + .7, out: DIA, x: 860, y: 520, size: 110, w: 900, align: 'left', grad: n.GRAD, st: .25, d: .8 });
       const ka = prog(b, DIA + .7, DIA + 1.6, E.io), kb = prog(b, DIA + 1.5, DIA + 2.3, E.io);
-      route(cx, [600, 500], [920, 330], [1180, 330], ka, 'rgba(91,140,255,.22)', 26, t, 0, 0);
-      route(cx, [600, 500], [920, 330], [1180, 330], ka, '#8FB2FF', 3, t, 3, .35);
-      route(cx, [600, 600], [920, 770], [1180, 770], kb, 'rgba(255,255,255,.22)', 2, t, 2, .28);
+      route(cx, [640, 500], [940, 330], [1180, 330], ka, 'rgba(91,140,255,.22)', 26, t, 0, 0);
+      route(cx, [640, 500], [940, 330], [1180, 330], ka, '#8FB2FF', 3, t, 3, .35);
+      route(cx, [640, 600], [940, 770], [1180, 770], kb, 'rgba(255,255,255,.22)', 2, t, 2, .28);
       const kl = prog(b, DIA + 1.3, DIA + 1.8, E.io);
       if (kl > 0) n.al(tx, kl, () => { n.rr(tx, 795, 342, 230, 46, 23, 'rgba(10,26,68,.85)', 'rgba(143,178,255,.45)', 1.2); n.tx(tx, '学生 VPN 隧道', 910, 365, n.fnt(600, 22), '#A9C3FF', 'center'); });
       box(cx, tx, 1200, 230, 560, 200, prog(b, DIA + 1.2, DIA + 1.9, E.io), '校园内网', '教务系统 · 课表 · 考试 · 成绩', true);

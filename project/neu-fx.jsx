@@ -215,8 +215,8 @@ function sweep(c, text, x, y, font, align, k, col = '255,255,255') {
   if (k <= 0 || k >= 1) return;
   c.save(); c.font = font; c.textAlign = align; c.textBaseline = 'middle';
   const w = c.measureText(text).width, x0 = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x, bx = x0 - 260 + (w + 520) * eio(k);
-  const g = c.createLinearGradient(bx - 140, 0, bx + 140, 0); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(.5, `rgba(${col},1)`); g.addColorStop(1, `rgba(${col},0)`);
-  c.fillStyle = g; c.shadowColor = `rgba(${col},.8)`; c.shadowBlur = 18; c.fillText(text, x, y);
+  const ia = .7 * Math.sin(Math.PI * k), g = c.createLinearGradient(bx - 140, 0, bx + 140, 0); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(.5, `rgba(${col},${ia})`); g.addColorStop(1, `rgba(${col},0)`);
+  c.fillStyle = g; c.shadowColor = `rgba(${col},${.6 * ia})`; c.shadowBlur = 12; c.fillText(text, x, y);
   c.restore();
 }
 // 撞色大字：从大到小砸下来，红青两色错位慢慢合回去

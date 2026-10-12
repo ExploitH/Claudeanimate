@@ -18,3 +18,12 @@
 ## 工具（`project/tools/`）
 
 通用工具：构建单文件、截关键帧、**快速导出 mp4**、音轨分析、剧本和配音台本导出、人声碎片库的生成和打包。任何基于此引擎的动画都可以直接用，用法、项目布局和配置见 [`project/tools/README.md`](project/tools/README.md)。
+
+## 作品：东大码宣传片（`project/东大码宣传片.dc.html`）
+
+给 [NEU-ECode-Android](https://github.com/ExploitH/NEU-ECode-Android)（东大码）做的 2 分钟发布会风格宣传片，七场：开场、付款码、校园卡余额、桌面小组件、校园内网、考试与成绩、收尾。
+
+- `neu-logo.jsx` — 山川图标轮廓（取自 App 的 `ic_launcher_foreground.xml`）
+- `neu-kit.jsx` — 共用道具 `window.NEU`：3D 手机（屏幕是每帧重画的画布贴图）、App 的付款码 / 内网连接 / 考试成绩 / 主屏幕界面、四款桌面小组件、标题字、配乐（F 大调 I–V–vi–IV）
+- `neu-film.jsx` — 七个世界模块 `n0`–`n6`
+- `mv.config.json` 指向这个入口，`tools/` 里的构建、截图、导出命令可以直接用
